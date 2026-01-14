@@ -7,3 +7,37 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+  api:
+    build:
+      context: ./api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bananapics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bananapics}
+      POSTGRES_DB: ${POSTGRES_DB:-bananapics}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bananapics} -d ${POSTGRES_DB:-bananapics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  db_data:

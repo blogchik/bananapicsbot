@@ -14,6 +14,17 @@
 docker compose up -d --build
 ```
 
+## API servis
+
+- API `http://localhost:8000` manzilda ishlaydi.
+- Root info: `GET /`
+- Healthcheck: `GET /api/v1/health`
+- API info: `GET /api/v1/info`
+
+## Postgres
+
+- DB `localhost:5432` portda ishlaydi.
+
 ## To'xtatish
 
 ```

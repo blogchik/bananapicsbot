@@ -15,6 +15,7 @@ Ushbu loyiha uchun AI agentlar ishlash yo'riqnomasi.
 - `docker-compose.yml` - xizmatni ishga tushirish
 - `.env` - konfiguratsiya (token)
 - `.env.example` - env namunasi
+- `api/` - FastAPI backend servis
 
 ## Asosiy fayllar
 
@@ -24,9 +25,18 @@ Ushbu loyiha uchun AI agentlar ishlash yo'riqnomasi.
 - `bot/handlers/start.py` - `/start` handler
 - `bot/requirements.txt` - Python paketlar
 - `bot/Dockerfile` - bot image build
+- `api/app/main.py` - FastAPI kirish nuqtasi
+- `api/app/api/v1` - versiyalashgan routerlar
+- `api/app/core` - config, logging, exception handlerlar
+- `api/app/middlewares` - request id va rate limit
+- `api/alembic` - migratsiyalar
+- `api/alembic.ini` - Alembic konfiguratsiya
+- `api/requirements.txt` - API paketlar
+- `api/Dockerfile` - API image build
 - `docs/env.md` - env sozlamalar
 - `docs/bot.md` - ishga tushirish yo'riqnomasi
 - `docs/functionality.md` - funksionallari
+- `docs/api.md` - API tuzilmasi va endpointlar
 
 ## Ishlash qoidalari
 
