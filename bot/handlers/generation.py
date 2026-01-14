@@ -1,9 +1,14 @@
 import asyncio
+from datetime import datetime
+import html
+import re
+from urllib.parse import unquote, urlparse
+from typing import Awaitable, Callable
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, URLInputFile
 
 from api_client import ApiClient, ApiError
 from config import load_settings
@@ -17,6 +22,123 @@ from keyboards import (
 )
 
 router = Router()
+
+ALLOWED_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif")
+USER_REFERENCE_LOCKS: dict[int, asyncio.Lock] = {}
+MEDIA_GROUP_DELAY_SECONDS = 1.0
+MEDIA_GROUP_BUFFERS: dict[tuple[int, str], dict[str, object]] = {}
+
+POLL_INTERVAL_SECONDS = 2
+SEND_RETRY_ATTEMPTS = 3
+SEND_RETRY_DELAY_SECONDS = 1.5
+MAX_DOCUMENT_CAPTION_LEN = 1024
+
+QUEUE_STATUSES = {"pending", "configuring", "queued", "created"}
+
+
+def format_status_label(status: str | None) -> str:
+    if not status:
+        return "Jarayonda"
+    normalized = status.lower()
+    if normalized in QUEUE_STATUSES:
+        return "Navbatda"
+    return "Jarayonda"
+
+
+async def retry_send(
+    action: Callable[[], Awaitable[None]],
+    attempts: int = SEND_RETRY_ATTEMPTS,
+    delay_seconds: float = SEND_RETRY_DELAY_SECONDS,
+) -> bool:
+    for attempt in range(attempts):
+        try:
+            await action()
+            return True
+        except Exception:
+            if attempt == attempts - 1:
+                return False
+            await asyncio.sleep(delay_seconds * (attempt + 1))
+    return False
+
+
+def format_model_hashtag(model_name: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "", model_name.title())
+    if not cleaned:
+        return "#Model"
+    return f"#{cleaned}"
+
+
+def build_escaped_prompt(prompt: str, max_len: int) -> str:
+    if max_len <= 0:
+        return ""
+    ellipsis = "..."
+    truncated = False
+    target_len = max_len
+    if max_len > len(ellipsis):
+        target_len = max_len - len(ellipsis)
+    chunks: list[str] = []
+    current_len = 0
+    for ch in prompt:
+        escaped = html.escape(ch)
+        if current_len + len(escaped) > target_len:
+            truncated = True
+            break
+        chunks.append(escaped)
+        current_len += len(escaped)
+    result = "".join(chunks)
+    if truncated and max_len > len(ellipsis):
+        return result + ellipsis
+    return result
+
+
+def parse_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        if value.endswith("Z"):
+            value = value[:-1] + "+00:00"
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def format_duration_seconds(started_at: str | None, completed_at: str | None, created_at: str | None) -> int | None:
+    start_time = parse_datetime(started_at) or parse_datetime(created_at)
+    end_time = parse_datetime(completed_at)
+    if not start_time or not end_time:
+        return None
+    delta = end_time - start_time
+    seconds = int(delta.total_seconds())
+    return seconds if seconds >= 0 else None
+
+
+def build_result_caption(
+    prompt: str,
+    model_name: str,
+    cost: int | None,
+    duration_seconds: int | None,
+) -> str:
+    hashtag = format_model_hashtag(model_name)
+    credits = cost if cost is not None else 0
+    duration_text = f"{duration_seconds}s" if duration_seconds is not None else "-"
+    header = (
+        "✅ Natija tayyor\n"
+        f"Model: {hashtag}\n"
+        f"Credit: {credits}\n"
+        f"Vaqt: {duration_text}\n"
+        "Prompt:\n"
+    )
+    prefix = f"{header}<blockquote>"
+    suffix = "</blockquote>"
+    max_prompt_len = MAX_DOCUMENT_CAPTION_LEN - len(prefix) - len(suffix)
+    escaped_prompt = build_escaped_prompt(prompt, max_prompt_len)
+    return f"{prefix}{escaped_prompt}{suffix}"
+
+
+def extract_filename_from_url(url: str) -> str:
+    path = urlparse(url).path
+    name = unquote(path.rsplit("/", 1)[-1]) if path else ""
+    return name or "result"
 
 
 def get_support_flags(
@@ -127,8 +249,21 @@ async def get_models_from_state(state: FSMContext, client: ApiClient) -> list[di
     return models
 
 
-@router.message(F.photo)
-async def handle_reference_photo(message: Message, state: FSMContext) -> None:
+def is_image_document(message: Message) -> bool:
+    document = message.document
+    if not document:
+        return False
+    if document.mime_type and document.mime_type.startswith("image/"):
+        return True
+    filename = (document.file_name or "").lower()
+    return filename.endswith(ALLOWED_IMAGE_EXTENSIONS)
+
+
+async def process_reference_batch(
+    message: Message,
+    state: FSMContext,
+    files: list[tuple[str, str | None]],
+) -> None:
     user = message.from_user
     if not user:
         return
@@ -136,41 +271,154 @@ async def handle_reference_photo(message: Message, state: FSMContext) -> None:
     settings = load_settings()
     client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
 
-    if await has_active_generation(client, user.id):
-        await message.answer(
-            "Sizda hozir aktiv generatsiya bor. Iltimos, tugashini kuting va keyinroq urinib ko'ring."
+    lock = USER_REFERENCE_LOCKS.setdefault(user.id, asyncio.Lock())
+    async with lock:
+        if await has_active_generation(client, user.id):
+            await message.answer(
+                "Sizda hozir aktiv generatsiya bor. Iltimos, tugashini kuting va keyinroq urinib ko'ring."
+            )
+            return
+
+        data = await state.get_data()
+        references = list(data.get("reference_urls", []))
+        reference_file_ids = list(data.get("reference_file_ids", []))
+        if len(references) + len(files) > 10:
+            await message.answer("Maksimal 10 ta reference rasm yuborish mumkin.")
+            return
+
+        new_urls: list[str] = []
+        new_file_ids: list[str] = []
+        for file_id, filename in files:
+            file = await message.bot.get_file(file_id)
+            file_bytes = await message.bot.download_file(file.file_path)
+            content = file_bytes.read()
+            safe_name = filename or file.file_path.split("/")[-1]
+
+            try:
+                download_url = await client.upload_media(content, safe_name)
+            except Exception:
+                download_url = ""
+            if not download_url:
+                await message.answer("Rasm yuklashda xatolik. Keyinroq urinib ko'ring.")
+                return
+
+            new_urls.append(download_url)
+            new_file_ids.append(file_id)
+
+        references.extend(new_urls)
+        reference_file_ids.extend(new_file_ids)
+        await state.update_data(
+            reference_urls=references,
+            reference_file_ids=reference_file_ids,
+        )
+
+    await handle_prompt_message(message, state)
+
+
+async def queue_media_group_item(
+    message: Message,
+    state: FSMContext,
+    file_id: str,
+    filename: str | None,
+) -> None:
+    media_group_id = message.media_group_id
+    if not media_group_id:
+        return
+
+    key = (message.chat.id, str(media_group_id))
+    entry = MEDIA_GROUP_BUFFERS.get(key)
+    if not entry:
+        entry = {
+            "files": [],
+            "prompt_message": None,
+            "state": state,
+            "last_message": message,
+            "task": None,
+        }
+        MEDIA_GROUP_BUFFERS[key] = entry
+
+    files = entry["files"]
+    if isinstance(files, list):
+        files.append((file_id, filename))
+    if message.caption:
+        entry["prompt_message"] = message
+    entry["last_message"] = message
+
+    task = entry.get("task")
+    if isinstance(task, asyncio.Task) and not task.done():
+        task.cancel()
+    entry["task"] = asyncio.create_task(process_media_group(key))
+
+
+async def process_media_group(key: tuple[int, str]) -> None:
+    await asyncio.sleep(MEDIA_GROUP_DELAY_SECONDS)
+    entry = MEDIA_GROUP_BUFFERS.pop(key, None)
+    if not entry:
+        return
+
+    prompt_message = entry.get("prompt_message")
+    last_message = entry.get("last_message")
+    state = entry.get("state")
+    files = entry.get("files")
+
+    if not isinstance(prompt_message, Message) or not isinstance(state, FSMContext):
+        if isinstance(last_message, Message):
+            await last_message.answer(
+                "Rasmni prompt bilan yuboring.",
+                reply_to_message_id=last_message.message_id,
+            )
+        return
+
+    if not isinstance(files, list) or not files:
+        await prompt_message.answer(
+            "Rasm topilmadi. Qaytadan yuboring.",
+            reply_to_message_id=prompt_message.message_id,
         )
         return
 
-    data = await state.get_data()
-    references = list(data.get("reference_urls", []))
-    reference_file_ids = list(data.get("reference_file_ids", []))
-    if len(references) >= 10:
-        await message.answer("Maksimal 10 ta reference rasm yuborish mumkin.")
-        return
+    await process_reference_batch(prompt_message, state, files)
 
+
+@router.message(F.photo)
+async def handle_reference_photo(message: Message, state: FSMContext) -> None:
     photo = message.photo[-1]
-    file = await message.bot.get_file(photo.file_id)
-    file_bytes = await message.bot.download_file(file.file_path)
-    content = file_bytes.read()
-    filename = file.file_path.split("/")[-1]
-
-    try:
-        download_url = await client.upload_media(content, filename)
-    except Exception:
-        download_url = ""
-    if not download_url:
-        await message.answer("Rasm yuklashda xatolik. Keyinroq urinib ko'ring.")
+    if message.media_group_id:
+        await queue_media_group_item(message, state, photo.file_id, None)
         return
+    if not message.caption:
+        await message.answer(
+            "Rasmni prompt bilan yuboring.",
+            reply_to_message_id=message.message_id,
+        )
+        return
+    await process_reference_batch(message, state, [(photo.file_id, None)])
 
-    references.append(download_url)
-    reference_file_ids.append(photo.file_id)
-    await state.update_data(reference_urls=references, reference_file_ids=reference_file_ids)
 
-    if message.caption:
-        await handle_prompt_message(message, state)
-    else:
-        await message.answer("Rasm qabul qilindi. Endi prompt yuboring.")
+@router.message(F.document)
+async def handle_reference_document(message: Message, state: FSMContext) -> None:
+    document = message.document
+    if not document:
+        return
+    if not is_image_document(message):
+        await message.answer(
+            "Faqat rasm fayl yuboring.",
+            reply_to_message_id=message.message_id,
+        )
+        return
+    if message.media_group_id:
+        await queue_media_group_item(message, state, document.file_id, document.file_name)
+        return
+    if not message.caption:
+        await message.answer(
+            "Rasmni prompt bilan yuboring.",
+            reply_to_message_id=message.message_id,
+        )
+        return
+    await process_reference_batch(
+        message,
+        state,
+        [(document.file_id, document.file_name)],
+    )
 
 
 @router.message(F.text & ~F.text.startswith("/"))
@@ -227,6 +475,7 @@ async def handle_prompt_message(message: Message, state: FSMContext) -> None:
         model_id=selected_model["id"],
         model_name=selected_model["name"],
         model_key=selected_model.get("key"),
+        prompt_message_id=message.message_id,
         price=selected_model["price"],
         size=None,
         aspect_ratio=None,
@@ -268,7 +517,11 @@ async def handle_prompt_message(message: Message, state: FSMContext) -> None:
         show_aspect,
         show_resolution,
     )
-    msg = await message.answer(menu_text, reply_markup=menu)
+    msg = await message.answer(
+        menu_text,
+        reply_markup=menu,
+        reply_to_message_id=message.message_id,
+    )
     await state.update_data(menu_message_id=msg.message_id)
 
 
@@ -773,24 +1026,50 @@ async def back_to_generation(call: CallbackQuery, state: FSMContext) -> None:
             raise
 
 
-async def send_result_summary(bot, chat_id: int, prompt: str, model_name: str) -> None:
-    text = "✅ Natija tayyor\n" f"Model: {model_name}\n" f"Prompt: {prompt}"
-    await bot.send_message(chat_id, text)
-
-
-async def send_outputs(bot, chat_id: int, outputs: list[str]) -> None:
+async def send_outputs(
+    bot,
+    chat_id: int,
+    outputs: list[str],
+    reply_to_message_id: int | None,
+    caption_text: str,
+) -> None:
+    caption_pending = True
+    document_failed = False
     for url in outputs:
-        sent_photo = False
-        try:
-            await bot.send_photo(chat_id, url)
-            sent_photo = True
-        except Exception:
-            pass
-        try:
-            await bot.send_document(chat_id, url)
-        except Exception:
-            if not sent_photo:
-                await bot.send_message(chat_id, url)
+        sent_photo = await retry_send(
+            lambda: bot.send_photo(
+                chat_id, url, reply_to_message_id=reply_to_message_id
+            )
+        )
+        caption_value = caption_text if caption_pending else None
+        filename = extract_filename_from_url(url)
+        sent_document = await retry_send(
+            lambda: bot.send_document(
+                chat_id,
+                URLInputFile(url, filename=filename),
+                reply_to_message_id=reply_to_message_id,
+                caption=caption_value,
+                parse_mode="HTML",
+            )
+        )
+        if not sent_document:
+            document_failed = True
+        if sent_document and caption_pending:
+            caption_pending = False
+        if not sent_photo and not sent_document:
+            await retry_send(
+                lambda: bot.send_message(
+                    chat_id, url, reply_to_message_id=reply_to_message_id
+                )
+            )
+    if document_failed:
+        await retry_send(
+            lambda: bot.send_message(
+                chat_id,
+                "Natijani fayl ko'rinishida yuborishda muammo bo'ldi. Keyinroq urinib ko'ring.",
+                reply_to_message_id=reply_to_message_id,
+            )
+        )
 
 
 async def poll_generation_status(
@@ -802,46 +1081,92 @@ async def poll_generation_status(
     telegram_id: int,
     prompt: str,
     model_name: str,
+    prompt_message_id: int | None,
 ) -> None:
-    last_status = None
-    for _ in range(20):
-        await asyncio.sleep(3)
+    last_label = None
+    consecutive_errors = 0
+    while True:
+        await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
             result = await client.refresh_generation(request_id, telegram_id)
-        except Exception:
+        except ApiError as exc:
+            consecutive_errors += 1
+            if consecutive_errors in {3, 6, 10}:
+                detail = exc.data.get("detail") if isinstance(exc.data, dict) else None
+                if isinstance(detail, dict):
+                    detail_value = detail.get("message") or str(detail)
+                else:
+                    detail_value = str(detail) if detail else ""
+                detail_text = f" ({detail_value})" if detail_value else ""
+                try:
+                    await bot.edit_message_text(
+                        "⚠️ Status tekshirishda muammo bo'ldi."
+                        f"{detail_text}",
+                        chat_id=chat_id,
+                        message_id=message_id,
+                    )
+                except TelegramBadRequest as error:
+                    if "message is not modified" not in str(error):
+                        raise
             continue
+        except Exception:
+            consecutive_errors += 1
+            if consecutive_errors in {3, 6, 10}:
+                try:
+                    await bot.edit_message_text(
+                        "⚠️ Status tekshirishda vaqtinchalik muammo bo'ldi.",
+                        chat_id=chat_id,
+                        message_id=message_id,
+                    )
+                except TelegramBadRequest as error:
+                    if "message is not modified" not in str(error):
+                        raise
+            continue
+        consecutive_errors = 0
         status = result.get("status")
-        if status and status != last_status and status not in ("completed", "failed"):
-            try:
-                await bot.edit_message_text(
-                    f"⏳ Jarayonda: {status}",
-                    chat_id=chat_id,
-                    message_id=message_id,
-                )
-            except TelegramBadRequest as exc:
-                if "message is not modified" not in str(exc):
-                    raise
-            last_status = status
+        if status and status not in ("completed", "failed"):
+            label = format_status_label(status)
+            if label != last_label:
+                try:
+                    await bot.edit_message_text(
+                        f"⏳ Holat: {label}",
+                        chat_id=chat_id,
+                        message_id=message_id,
+                    )
+                except TelegramBadRequest as exc:
+                    if "message is not modified" not in str(exc):
+                        raise
+                last_label = label
         if status == "completed":
             try:
                 outputs = await client.get_generation_results(request_id, telegram_id)
             except Exception:
                 outputs = []
+            duration_seconds = format_duration_seconds(
+                result.get("started_at"),
+                result.get("completed_at"),
+                result.get("created_at"),
+            )
+            caption_text = build_result_caption(
+                prompt, model_name, result.get("cost"), duration_seconds
+            )
             try:
-                await bot.edit_message_text(
-                    "✅ Tayyor bo'ldi", chat_id=chat_id, message_id=message_id
-                )
-            except TelegramBadRequest as exc:
-                if "message is not modified" not in str(exc):
-                    raise
-            await send_result_summary(bot, chat_id, prompt, model_name)
+                await bot.delete_message(chat_id=chat_id, message_id=message_id)
+            except TelegramBadRequest:
+                pass
             if outputs:
-                await send_outputs(bot, chat_id, outputs)
+                await send_outputs(
+                    bot, chat_id, outputs, prompt_message_id, caption_text
+                )
             return
         if status == "failed":
             try:
+                error_message = result.get("error_message")
+                text = "❌ Generatsiya muvaffaqiyatsiz"
+                if error_message:
+                    text = f"{text}\nSabab: {error_message}"
                 await bot.edit_message_text(
-                    "❌ Generatsiya muvaffaqiyatsiz",
+                    text,
                     chat_id=chat_id,
                     message_id=message_id,
                 )
@@ -864,6 +1189,9 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
     resolution = data.get("resolution")
     references = list(data.get("reference_urls", []))
     reference_file_ids = list(data.get("reference_file_ids", []))
+    prompt_message_id = data.get("prompt_message_id")
+    if not prompt_message_id and call.message.reply_to_message:
+        prompt_message_id = call.message.reply_to_message.message_id
 
     if not prompt or not model_id:
         await call.message.answer("Prompt yoki model topilmadi.")
@@ -888,7 +1216,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
     client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
 
     try:
-        await call.message.edit_text("⏳ Generatsiya qabul qilindi, ishlanmoqda...")
+        await call.message.edit_text("⏳ Holat: Navbatda")
     except TelegramBadRequest as exc:
         if "message is not modified" not in str(exc):
             raise
@@ -921,6 +1249,14 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
                 "Sizda yetarli balans mavjud emas.", reply_markup=profile_menu()
             )
             return
+        detail = exc.data.get("detail") if isinstance(exc.data, dict) else None
+        if detail:
+            if isinstance(detail, dict):
+                detail_text = detail.get("message") or str(detail)
+            else:
+                detail_text = str(detail)
+            await call.message.edit_text(f"Generatsiya xatolik: {detail_text}")
+            return
         await call.message.edit_text(
             "Generatsiya boshlashda xatolik. Keyinroq urinib ko'ring."
         )
@@ -939,7 +1275,11 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
 
     note = "Trial ishlatildi" if trial_used else f"Narx: {price} cr"
     display_id = public_id or request_id
-    text = f"Generatsiya boshlandi. ID: {display_id}\n{note}"
+    status_label = format_status_label(request_status)
+    text = (
+        f"Generatsiya qabul qilindi. Holat: {status_label}\n"
+        f"ID: {display_id}\n{note}"
+    )
     try:
         await call.message.edit_text(text)
     except TelegramBadRequest as exc:
@@ -954,14 +1294,26 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
             outputs = await client.get_generation_results(request_id, call.from_user.id)
         except Exception:
             outputs = []
+        duration_seconds = format_duration_seconds(
+            request.get("started_at"),
+            request.get("completed_at"),
+            request.get("created_at"),
+        )
+        caption_text = build_result_caption(
+            prompt, model_name, request.get("cost"), duration_seconds
+        )
         try:
-            await call.message.edit_text("✅ Tayyor bo'ldi")
-        except TelegramBadRequest as exc:
-            if "message is not modified" not in str(exc):
-                raise
-        await send_result_summary(call.message.bot, call.message.chat.id, prompt, model_name)
+            await call.message.delete()
+        except TelegramBadRequest:
+            pass
         if outputs:
-            await send_outputs(call.message.bot, call.message.chat.id, outputs)
+            await send_outputs(
+                call.message.bot,
+                call.message.chat.id,
+                outputs,
+                prompt_message_id or call.message.message_id,
+                caption_text,
+            )
         await state.clear()
         return
     try:
@@ -975,6 +1327,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
                 call.from_user.id,
                 prompt,
                 model_name,
+                prompt_message_id or call.message.message_id,
             )
         )
     except Exception:

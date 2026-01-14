@@ -4,7 +4,8 @@
 
 - **Bot:** /start welcome message, inline menyular, reply keyboard tozalanadi.
 - **Profil:** TG ma'lumotlari, balans, trial holati API orqali ko'rsatiladi.
-- **Generatsiya:** prompt va reference rasm(lar) bilan menyu ochiladi, model/size/aspect ratio/resolution tanlanadi (size faqat `seedream-v4`, aspect ratio `nano-banana` va `nano-banana-pro`, resolution faqat `nano-banana-pro`), status avtomatik yangilanadi, natija yuboriladi.
+- **Generatsiya:** prompt va reference rasm(lar) bilan menyu ochiladi, reference rasm foto yoki fayl ko'rinishida yuborilishi mumkin (faqat image, 1-10 ta, doim prompt bilan birga), model/size/aspect ratio/resolution tanlanadi (size faqat `seedream-v4`, aspect ratio `nano-banana` va `nano-banana-pro`, resolution faqat `nano-banana-pro`), status har 2 sekundda avtomatik yangilanadi (navbatda/jarayonda), tayyor bo'lganda status xabari o'chadi va natija prompt xabariga reply bo'ladi.
+- **Natija caption:** model hashtag, prompt blockquote, ketgan vaqt va sarflangan credit ko'rsatiladi (file ko'rinishidagi natijada).
 - **Natija:** prompt va model nomi bilan xabar yuboriladi, rasmlar photo va file ko'rinishida jo'natiladi.
 - **Cheklov:** user bir vaqtda faqat 1 ta generatsiya boshlaydi (Redis lock + DB advisory lock).
 - **Aktiv holat:** aktiv generatsiya bor paytda yangi so'rov yuborilsa, bot kutishni so'raydi va oldingi generatsiya davom etadi.

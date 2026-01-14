@@ -77,7 +77,7 @@ Text-to-image (T2I):
   - `prompt` (string, required)
   - `size` (string, default `2048*2048`, 1024-4096 per dimension)
   - `enable_base64_output` (bool, default false)
-  - `enable_sync_mode` (bool, default false, bizda true)
+  - `enable_sync_mode` (bool, default false, bizda false)
 - Result: `GET https://api.wavespeed.ai/api/v3/predictions/{id}/result`
 
 Image-to-image (I2I):
@@ -88,10 +88,10 @@ Image-to-image (I2I):
   - `images` (array, required, 1-10 items)
   - `size` (string, optional)
   - `enable_base64_output` (bool, default false)
-  - `enable_sync_mode` (bool, default false, bizda true)
+  - `enable_sync_mode` (bool, default false, bizda false)
 - Result: `GET https://api.wavespeed.ai/api/v3/predictions/{id}/result`
 - `images` uchun Wavespeed media upload ishlatiladi: `POST /api/v3/media/upload/binary`, javobdagi `data.download_url`.
-  - Bizda `enable_sync_mode` yoqilgan, shuning uchun natija tez qaytishi mumkin.
+- Bizda `enable_sync_mode` o'chirilgan, natija `/predictions/{id}/result` orqali polling bilan olinadi.
 
 Nano Banana (T2I/I2I):
 - T2I: `POST https://api.wavespeed.ai/api/v3/google/nano-banana/text-to-image`
@@ -111,6 +111,7 @@ Nano Banana Pro (T2I/I2I):
 - `resolution` ixtiyoriy, faqat `nano-banana-pro` uchun; variantlar `model.options.resolution_options` orqali keladi.
 - `reference_urls` bo'lsa image-to-image ishlaydi, bo'lmasa text-to-image.
 - `reference_file_ids` ixtiyoriy, Telegram file_id lar (URLlar bilan bir xil tartibda saqlanadi).
+- `error_message` faqat `failed` holatlarda qaytishi mumkin.
 - Har bir generatsiya `public_id` (UUID) bilan unique identifikatsiya qilinadi.
 - So'rov parametrlari `input_params` maydonida saqlanadi.
 

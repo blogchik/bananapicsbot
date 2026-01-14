@@ -20,6 +20,7 @@
 - `WAVESPEED_NANO_BANANA_I2I_URL`: Nano Banana image-to-image endpoint.
 - `WAVESPEED_NANO_BANANA_PRO_T2I_URL`: Nano Banana Pro text-to-image endpoint.
 - `WAVESPEED_NANO_BANANA_PRO_I2I_URL`: Nano Banana Pro image-to-image endpoint.
+- `WAVESPEED_TIMEOUT_SECONDS`: Wavespeed HTTP timeout (sekund).
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD`: Redis ulanish sozlamalari.
 - `REDIS_ACTIVE_GENERATION_TTL_SECONDS`: Active generatsiya lock TTL.
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
@@ -30,7 +31,7 @@
 ```
 BOT_TOKEN=123456:ABCDEF
 API_BASE_URL=http://api:8000
-API_TIMEOUT_SECONDS=60
+API_TIMEOUT_SECONDS=180
 APP_NAME=Bananapics API
 APP_VERSION=0.1.0
 API_PREFIX=/api/v1
@@ -48,6 +49,7 @@ WAVESPEED_NANO_BANANA_T2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana
 WAVESPEED_NANO_BANANA_I2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana/edit
 WAVESPEED_NANO_BANANA_PRO_T2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana-pro/text-to-image
 WAVESPEED_NANO_BANANA_PRO_I2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit
+WAVESPEED_TIMEOUT_SECONDS=180
 REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_DB=0

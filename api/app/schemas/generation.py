@@ -43,6 +43,7 @@ class GenerationRequestOut(BaseModel):
     input_params: dict | None = None
     aspect_ratio: str | None = None
     style: str | None = None
+    error_message: str | None = None
     references_count: int
     cost: int | None = None
     created_at: datetime

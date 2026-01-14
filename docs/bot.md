@@ -34,13 +34,14 @@ docker compose up -d --build
 
 ## Generatsiya flow
 
-- User prompt yoki reference rasm yuboradi.
+- User prompt yoki reference rasm yuboradi (rasmni foto yoki fayl ko'rinishida yuborish mumkin, faqat image; 1-10 ta reference; rasm doim prompt bilan birga yuboriladi).
 - Reference rasm backend orqali Wavespeed media upload qiladi.
 - Menu: Model tanlash (`seedream-v4`, `nano-banana`, `nano-banana-pro`), Seedream uchun `Size`, Nano Banana(lar) uchun `Aspect ratio`, faqat Nano Banana Pro uchun `Resolution`, Generate.
 - Parametrlar ro'yxati `GET /api/v1/models` dagi `model.options` orqali keladi va bot shunga moslashadi.
 - `Generate` bosilganda `/api/v1/generations/submit` ishlaydi.
-- Status avtomatik yangilanadi (refresh tugmasi yo'q).
-- Natija tayyor bo'lsa prompt va model nomi bilan xabar yuboriladi.
+- Status avtomatik yangilanadi (har 2 sekundda), faqat 3 holat: navbatda, jarayonda, tayyor.
+- Natija tayyor bo'lsa file ko'rinishidagi natijaga caption biriktiriladi (model hashtag, prompt blockquote, vaqt, credit).
+- Status xabari tayyor bo'lganda o'chiriladi, natija esa prompt xabariga reply bo'lib yuboriladi.
 - Natijalar oddiy rasm va fayl ko'rinishida yuboriladi.
 - User bir vaqtning o'zida faqat 1 ta generatsiya boshlaydi.
 - Aktiv generatsiya mavjud bo'lsa, yangi so'rovda bot kutishni so'raydi.

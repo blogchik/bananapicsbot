@@ -214,13 +214,13 @@ async def submit_wavespeed_generation(
                 images=reference_urls,
                 size=size,
                 enable_base64_output=False,
-                enable_sync_mode=True,
+                enable_sync_mode=False,
             )
         return await client.submit_seedream_v4_t2i(
             prompt=prompt,
             size=size,
             enable_base64_output=False,
-            enable_sync_mode=True,
+            enable_sync_mode=False,
         )
     if model_key == "nano-banana":
         if reference_urls:
@@ -229,13 +229,13 @@ async def submit_wavespeed_generation(
                 images=reference_urls,
                 aspect_ratio=aspect_ratio,
                 enable_base64_output=False,
-                enable_sync_mode=True,
+                enable_sync_mode=False,
             )
         return await client.submit_nano_banana_t2i(
             prompt=prompt,
             aspect_ratio=aspect_ratio,
             enable_base64_output=False,
-            enable_sync_mode=True,
+            enable_sync_mode=False,
         )
     if model_key == "nano-banana-pro":
         if reference_urls:
@@ -245,14 +245,14 @@ async def submit_wavespeed_generation(
                 aspect_ratio=aspect_ratio,
                 resolution=resolution,
                 enable_base64_output=False,
-                enable_sync_mode=True,
+                enable_sync_mode=False,
             )
         return await client.submit_nano_banana_pro_t2i(
             prompt=prompt,
             aspect_ratio=aspect_ratio,
             resolution=resolution,
             enable_base64_output=False,
-            enable_sync_mode=True,
+            enable_sync_mode=False,
         )
     raise HTTPException(status_code=400, detail="Unsupported model")
 
@@ -484,7 +484,7 @@ async def refresh_generation(
 
     client = wavespeed_client()
     response = await client.get_prediction_result(job.provider_job_id)
-    status_value = str(response.data.get("status", ""))
+    status_value = str(response.data.get("status", "")).lower()
     outputs = normalize_outputs(response.data.get("outputs", []))
 
     if status_value == "completed" or (not status_value and outputs):
@@ -502,16 +502,25 @@ async def refresh_generation(
         job.error_message = response.message
         await clear_generation_lock(redis, request.user_id, request.id)
     else:
-        request.status = GenerationStatus.running
-        if not request.started_at:
-            request.started_at = datetime.utcnow()
-        job.status = JobStatus.running
-        if not job.started_at:
-            job.started_at = datetime.utcnow()
+        if status_value in {"created", "queued"}:
+            request.status = GenerationStatus.queued
+            job.status = JobStatus.queued
+        else:
+            request.status = GenerationStatus.running
+            job.status = JobStatus.running
+            if not request.started_at:
+                request.started_at = datetime.utcnow()
+            if not job.started_at:
+                job.started_at = datetime.utcnow()
 
     db.commit()
     db.refresh(request)
-    return GenerationRequestOut.model_validate(request)
+    request_out = GenerationRequestOut.model_validate(request)
+    if job.error_message:
+        request_out = request_out.model_copy(
+            update={"error_message": job.error_message}
+        )
+    return request_out
 
 
 @router.get("/generations/{request_id}/results")

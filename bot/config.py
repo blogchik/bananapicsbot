@@ -15,7 +15,7 @@ def load_settings() -> Settings:
     load_dotenv()
     token = os.getenv("BOT_TOKEN", "").strip()
     api_base_url = os.getenv("API_BASE_URL", "").strip()
-    api_timeout_seconds = int(os.getenv("API_TIMEOUT_SECONDS", "60"))
+    api_timeout_seconds = int(os.getenv("API_TIMEOUT_SECONDS", "180"))
     if not token:
         raise RuntimeError("BOT_TOKEN is not set in environment")
     if not api_base_url:

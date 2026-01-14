@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     wavespeed_nano_banana_pro_i2i_url: str = (
         "https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit"
     )
-    wavespeed_timeout_seconds: int = 30
+    wavespeed_timeout_seconds: int = 180
 
     postgres_user: str = "bananapics"
     postgres_password: str = "bananapics"
