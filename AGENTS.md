@@ -7,6 +7,7 @@ Ushbu loyiha uchun AI agentlar ishlash yo'riqnomasi.
 - Python + aiogram asosidagi Telegram bot.
 - Docker Compose orqali ishga tushiriladi.
 - Hozircha minimal: `/start` komandasi uchun welcome message yuboradi.
+- Maqsad: Telegram orqali image generation (text-to-image, image-to-image) va balans/trial tizimi.
 
 ## Repo strukturasi
 
@@ -31,6 +32,8 @@ Ushbu loyiha uchun AI agentlar ishlash yo'riqnomasi.
 - `api/app/middlewares` - request id va rate limit
 - `api/alembic` - migratsiyalar
 - `api/alembic.ini` - Alembic konfiguratsiya
+- `api/app/db` - SQLAlchemy bazasi, session va modellari
+- `api/app/schemas` - Pydantic schemalar
 - `api/requirements.txt` - API paketlar
 - `api/Dockerfile` - API image build
 - `docs/env.md` - env sozlamalar

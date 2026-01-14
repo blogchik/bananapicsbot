@@ -1,6 +1,7 @@
 # Env sozlamalari
 
 - `BOT_TOKEN`: Telegram bot tokeni. `.env` ichida saqlanadi.
+- `API_BASE_URL`: API bazaviy manzili (ko'rsatilmasa `http://api:8000`).
 - `APP_NAME`: API nomi.
 - `APP_VERSION`: API versiyasi.
 - `API_PREFIX`: API prefiksi (default: `/api/v1`).
@@ -9,6 +10,7 @@
 - `RATE_LIMIT_ENABLED`: Rate limit yoqilgan/yoqilmagan.
 - `RATE_LIMIT_RPS`: 1 soniyadagi ruxsat etilgan so'rovlar soni.
 - `RATE_LIMIT_BURST`: Qisqa burst limiti.
+- `RUN_MIGRATIONS`: API startida migratsiyalarni avtomatik ishga tushirish.
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - `POSTGRES_HOST`, `POSTGRES_PORT`
 
@@ -24,6 +26,7 @@ CORS_ORIGINS=
 RATE_LIMIT_ENABLED=true
 RATE_LIMIT_RPS=5
 RATE_LIMIT_BURST=10
+RUN_MIGRATIONS=true
 POSTGRES_USER=bananapics
 POSTGRES_PASSWORD=bananapics
 POSTGRES_DB=bananapics

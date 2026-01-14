@@ -7,11 +7,15 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    depends_on:
+      - api
   api:
     build:
       context: ./api
     env_file:
       - .env
+    environment:
+      RUN_MIGRATIONS: "true"
     ports:
       - "8000:8000"
     depends_on:

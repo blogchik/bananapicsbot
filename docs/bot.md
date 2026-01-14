@@ -25,6 +25,22 @@ docker compose up -d --build
 
 - DB `localhost:5432` portda ishlaydi.
 
+## Keyingi flow (reja)
+
+- User `/start` bosadi va trial generatsiyadan foydalanadi.
+- Balans to'ldiriladi va keyingi generatsiyalar balansdan yechiladi.
+- Prompt + reference(lar) yuborilgach inline menyu ochiladi:
+  - model, aspect ratio, style tanlash
+  - generatsiya narxi ko'rsatilgan "Generate" tugmasi
+- User bir vaqtda 5 tagacha generatsiya qila oladi.
+
+## Bot menyulari
+
+- Barcha tugmalar inline.
+- Home menyu welcome message bilan chiqadi, faqat `Profile` inline tugmasi bor.
+- Profile menyu: TG info + balans + trial holati, `Home` inline tugmasi bor.
+- `/start` bosilganda oddiy reply keyboardlar tozalanadi.
+
 ## To'xtatish
 
 ```
