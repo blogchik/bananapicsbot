@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.model_options import get_model_parameter_options
 from app.deps.db import db_session_dep
-from app.schemas.model_catalog import ModelCatalogOut, ModelCatalogWithPricesOut, ModelPriceOut
+from app.schemas.model_catalog import (
+    ModelCatalogOut,
+    ModelCatalogWithPricesOut,
+    ModelOptionsOut,
+    ModelPriceOut,
+)
 from app.services.models import list_active_models, list_active_prices_for_models
 
 router = APIRouter()
@@ -14,9 +20,21 @@ async def list_models(db: Session = Depends(db_session_dep)) -> list[ModelCatalo
     prices_by_model = list_active_prices_for_models(db, [model.id for model in models])
     response = []
     for model in models:
+        options = get_model_parameter_options(model.key)
+        options_out = ModelOptionsOut(
+            supports_size=options.supports_size,
+            supports_aspect_ratio=options.supports_aspect_ratio,
+            supports_resolution=options.supports_resolution,
+            size_options=options.size_options,
+            aspect_ratio_options=options.aspect_ratio_options,
+            resolution_options=options.resolution_options,
+        )
+        model_out = ModelCatalogOut.model_validate(model).model_copy(
+            update={"options": options_out}
+        )
         response.append(
             ModelCatalogWithPricesOut(
-                model=ModelCatalogOut.model_validate(model),
+                model=model_out,
                 prices=[
                     ModelPriceOut.model_validate(price)
                     for price in prices_by_model.get(model.id, [])

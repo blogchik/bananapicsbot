@@ -2,7 +2,7 @@
 
 ## Talablar
 
-- Docker va Docker Compose o'rnatilgan bo'lishi kerak.
+Docker va Docker Compose o'rnatilgan bo'lishi kerak.
 
 ## Ishga tushirish
 
@@ -25,21 +25,25 @@ docker compose up -d --build
 
 - DB `localhost:5432` portda ishlaydi.
 
-## Keyingi flow (reja)
-
-- User `/start` bosadi va trial generatsiyadan foydalanadi.
-- Balans to'ldiriladi va keyingi generatsiyalar balansdan yechiladi.
-- Prompt + reference(lar) yuborilgach inline menyu ochiladi:
-  - model, aspect ratio, style tanlash
-  - generatsiya narxi ko'rsatilgan "Generate" tugmasi
-- User bir vaqtda 5 tagacha generatsiya qila oladi.
-
 ## Bot menyulari
 
 - Barcha tugmalar inline.
 - Home menyu welcome message bilan chiqadi, faqat `Profile` inline tugmasi bor.
 - Profile menyu: TG info + balans + trial holati, `Home` inline tugmasi bor.
 - `/start` bosilganda oddiy reply keyboardlar tozalanadi.
+
+## Generatsiya flow
+
+- User prompt yoki reference rasm yuboradi.
+- Reference rasm backend orqali Wavespeed media upload qiladi.
+- Menu: Model tanlash (`seedream-v4`, `nano-banana`, `nano-banana-pro`), Seedream uchun `Size`, Nano Banana(lar) uchun `Aspect ratio`, faqat Nano Banana Pro uchun `Resolution`, Generate.
+- Parametrlar ro'yxati `GET /api/v1/models` dagi `model.options` orqali keladi va bot shunga moslashadi.
+- `Generate` bosilganda `/api/v1/generations/submit` ishlaydi.
+- Status avtomatik yangilanadi (refresh tugmasi yo'q).
+- Natija tayyor bo'lsa prompt va model nomi bilan xabar yuboriladi.
+- Natijalar oddiy rasm va fayl ko'rinishida yuboriladi.
+- User bir vaqtning o'zida faqat 1 ta generatsiya boshlaydi.
+- Aktiv generatsiya mavjud bo'lsa, yangi so'rovda bot kutishni so'raydi.
 
 ## To'xtatish
 

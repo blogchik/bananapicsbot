@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from enum import Enum
 
 from sqlalchemy import (
@@ -8,6 +9,7 @@ from sqlalchemy import (
     Enum as SqlEnum,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
 )
@@ -76,6 +78,8 @@ class ModelCatalog(Base):
     key: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     provider: Mapped[str] = mapped_column(String(100))
+    supports_text_to_image: Mapped[bool] = mapped_column(Boolean, default=False)
+    supports_image_to_image: Mapped[bool] = mapped_column(Boolean, default=False)
     supports_reference: Mapped[bool] = mapped_column(Boolean, default=False)
     supports_aspect_ratio: Mapped[bool] = mapped_column(Boolean, default=False)
     supports_style: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -111,6 +115,9 @@ class GenerationRequest(Base):
     __tablename__ = "generation_requests"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[str] = mapped_column(
+        String(36), unique=True, index=True, default=lambda: str(uuid.uuid4())
+    )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     model_id: Mapped[int] = mapped_column(ForeignKey("model_catalog.id"), index=True)
     prompt: Mapped[str] = mapped_column(Text)
@@ -118,6 +125,8 @@ class GenerationRequest(Base):
         SqlEnum(GenerationStatus, name="generation_status"),
         default=GenerationStatus.pending,
     )
+    size: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    input_params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     aspect_ratio: Mapped[str | None] = mapped_column(String(50), nullable=True)
     style: Mapped[str | None] = mapped_column(String(100), nullable=True)
     references_count: Mapped[int] = mapped_column(Integer, default=0)

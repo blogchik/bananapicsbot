@@ -1,21 +1,46 @@
 from datetime import datetime
-
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GenerationRequestCreate(BaseModel):
     model_id: int
     prompt: str
+    size: str | None = None
     aspect_ratio: str | None = None
     style: str | None = None
 
 
+class GenerationSubmitIn(BaseModel):
+    telegram_id: int
+    model_id: int
+    prompt: str
+    size: str | None = None
+    aspect_ratio: str | None = None
+    resolution: str | None = None
+    reference_urls: list[str] = Field(default_factory=list)
+    reference_file_ids: list[str] = Field(default_factory=list)
+
+
+class GenerationAccessIn(BaseModel):
+    telegram_id: int
+
+
+class GenerationActiveOut(BaseModel):
+    has_active: bool
+    request_id: int | None = None
+    public_id: str | None = None
+    status: str | None = None
+
+
 class GenerationRequestOut(BaseModel):
     id: int
+    public_id: str
     user_id: int
     model_id: int
     prompt: str
     status: str
+    size: str | None = None
+    input_params: dict | None = None
     aspect_ratio: str | None = None
     style: str | None = None
     references_count: int
@@ -27,6 +52,13 @@ class GenerationRequestOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class GenerationSubmitOut(BaseModel):
+    request: GenerationRequestOut
+    job_id: int | None = None
+    provider_job_id: str | None = None
+    trial_used: bool
 
 
 class GenerationReferenceOut(BaseModel):

@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from keyboards import home_menu
 
-WELCOME_TEXT = "Assalomu alaykum! Bananapicsbotga xush kelibsiz 😊"
+WELCOME_TEXT = "Assalomu alaykum! Bananapics botiga xush kelibsiz 😊\nPrompt yuboring yoki rasm qo'shib generatsiya boshlang."
 
 router = Router()
 

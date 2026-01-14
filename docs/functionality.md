@@ -2,28 +2,19 @@
 
 ## Hozirgi holat
 
-- Faqat `/start` komandasi uchun welcome message yuboradi.
-- Handlerlar alohida modulga ajratilgan (`bot/handlers`), kengaytirish oson.
-- FastAPI asosidagi `api` servis mavjud.
-- API `GET /` root info endpointiga ega.
-- API `GET /api/v1/health` (uptime, request id) va `GET /api/v1/info` endpointlari mavjud.
-- Versiyalash `/api/v1` orqali amalga oshiriladi.
-- CORS, rate limit, global error handling qo'shilgan.
-- Postgres servis va Alembic skeleti qo'shilgan.
-
-## Maqsadli funksionallar (reja)
-
-- Telegram bot orqali image generation (text-to-image va image-to-image).
-- Model turlari: Seedream v4, nano banana, nano banana pro, gpt image va boshqalar.
-- Har bir user uchun balans tizimi.
-- Balans ledger yozuvlari orqali hisoblanadi (alohida column emas).
-- Trial generatsiya: har bir yangi user uchun 1 ta prompt (istalgan model).
-- Generatsiya narxi modelga qarab hisoblanadi va balansdan yechiladi.
-- User bir vaqtda 5 tagacha generatsiyani ishga tushira oladi.
-- Prompt va reference (rasmlar) asosida requestlar saqlanadi.
-- Inline menyu: model, aspect ratio, style tanlash va narx ko'rsatilgan "Generate" tugmasi.
-- Generatsiya yakunida userga rasm, prompt, sozlamalar, model va ishlash vaqti yuboriladi.
+- **Bot:** /start welcome message, inline menyular, reply keyboard tozalanadi.
+- **Profil:** TG ma'lumotlari, balans, trial holati API orqali ko'rsatiladi.
+- **Generatsiya:** prompt va reference rasm(lar) bilan menyu ochiladi, model/size/aspect ratio/resolution tanlanadi (size faqat `seedream-v4`, aspect ratio `nano-banana` va `nano-banana-pro`, resolution faqat `nano-banana-pro`), status avtomatik yangilanadi, natija yuboriladi.
+- **Natija:** prompt va model nomi bilan xabar yuboriladi, rasmlar photo va file ko'rinishida jo'natiladi.
+- **Cheklov:** user bir vaqtda faqat 1 ta generatsiya boshlaydi (Redis lock + DB advisory lock).
+- **Aktiv holat:** aktiv generatsiya bor paytda yangi so'rov yuborilsa, bot kutishni so'raydi va oldingi generatsiya davom etadi.
+- **Backend va saqlash:** FastAPI /api/v1, Postgres + Alembic, CORS, rate limit, request id, global error handling; requestlar `public_id` bilan unique, prompt/size/reference URL + telegram file id, input params, natijalar va joblar saqlanadi.
+- **Model:** `seedream-v4`, `nano-banana`, `nano-banana-pro` (1 credit), text-to-image va image-to-image; `aspect_ratio` nano modellarda yoqilgan, `resolution` faqat `nano-banana-pro`, `size` faqat `seedream-v4`.
+- **Model konfiguratsiya:** parametrlar va variantlar `/api/v1/models` javobidagi `model.options` orqali keladi, bot shunga moslashadi.
 
 ## Reja
 
-- Qo'shimcha komandalar va media ishlovlari keyingi bosqichlarda qo'shiladi.
+- Qo'shimcha modellar va narxlar boshqaruvi.
+- Queue/worker integratsiyasi va batch ishga tushirish.
+- Admin balans boshqaruvi va to'lov integratsiyasi.
+- Generatsiya tarixini ko'rish va qayta yuborish.

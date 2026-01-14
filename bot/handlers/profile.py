@@ -18,7 +18,7 @@ def format_user_name(user: User) -> str:
 async def send_profile(message: Message, user: User) -> None:
 
     settings = load_settings()
-    client = ApiClient(settings.api_base_url)
+    client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
 
     try:
         await client.sync_user(user.id)
@@ -33,7 +33,8 @@ async def send_profile(message: Message, user: User) -> None:
 
     trial_status = "bor" if trial.trial_available else "yo'q"
     text = (
-        f"Profil 👤\n"
+        "👤 Profil\n"
+        "Mana sizning ma'lumotlaringiz:\n"
         f"Ism: {name}\n"
         f"Username: {username}\n"
         f"Telegram ID: {user.id}\n\n"
