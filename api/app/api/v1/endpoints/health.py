@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Depends
+import time
 
-from app.core.config import Settings
-from app.deps.common import settings_dep
+from fastapi import APIRouter, Request
 
 router = APIRouter()
 
+START_TIME = time.monotonic()
+
 
 @router.get("/health")
-async def healthcheck(settings: Settings = Depends(settings_dep)) -> dict:
-    return {"status": "ok", "version": settings.app_version}
+async def healthcheck(request: Request) -> dict:
+    uptime_seconds = time.monotonic() - START_TIME
+    request_id = getattr(request.state, "request_id", None)
+    return {
+        "status": "ok",
+        "uptime_seconds": round(uptime_seconds, 3),
+        "request_id": request_id,
+    }

@@ -14,7 +14,7 @@
 ## Endpointlar
 
 - `GET /` - root info.
-- `GET /api/v1/health` - healthcheck.
+- `GET /api/v1/health` - healthcheck (uptime, request id).
 - `GET /api/v1/info` - API info.
 
 ## Middlewarelar
