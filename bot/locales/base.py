@@ -34,6 +34,23 @@ class TranslationKey(str, Enum):
     PROFILE_TRIAL_UNAVAILABLE = "profile_trial_unavailable"
     PROFILE_TRIAL_USED = "profile_trial_used"
     
+    # Referral
+    REFERRAL_TITLE = "referral_title"
+    REFERRAL_INFO = "referral_info"
+    REFERRAL_LINK = "referral_link"
+    REFERRAL_COUNT = "referral_count"
+    REFERRAL_BONUS = "referral_bonus"
+    REFERRAL_DESCRIPTION = "referral_description"
+    REFERRAL_BONUS_TOTAL = "referral_bonus_total"
+    REFERRAL_NEW_APPLIED = "referral_new_applied"
+    
+    # Errors
+    ERROR_USER_NOT_FOUND = "error_user_not_found"
+    INSUFFICIENT_BALANCE = "insufficient_balance"
+    RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
+    USER_NOT_FOUND = "user_not_found"
+    MODEL_NOT_FOUND = "model_not_found"
+    
     # Menu buttons
     BTN_PROFILE = "btn_profile"
     BTN_TOPUP = "btn_topup"
@@ -60,6 +77,25 @@ class TranslationKey(str, Enum):
     GEN_PROMPT_WITH_IMAGE = "gen_prompt_with_image"
     GEN_MAX_REFERENCES = "gen_max_references"
     GEN_UPLOAD_ERROR = "gen_upload_error"
+    GEN_TIMEOUT = "gen_timeout"
+    GEN_STATUS_CHECK_ERROR = "gen_status_check_error"
+    GEN_ACCEPTED = "gen_accepted"
+    GEN_CONFLICT = "gen_conflict"
+    GEN_ERROR = "gen_error"
+    GEN_SEND_ERROR = "gen_send_error"
+    GEN_STATUS = "gen_status"
+    GEN_TRIAL_USED = "gen_trial_used"
+    GEN_PRICE = "gen_price"
+    GEN_PROMPT_NOT_FOUND = "gen_prompt_not_found"
+    GEN_MODEL_FETCH_ERROR = "gen_model_fetch_error"
+    GEN_MODEL_NOT_FOUND_ERROR = "gen_model_not_found_error"
+    GEN_SIZE_NOT_AVAILABLE = "gen_size_not_available"
+    GEN_ASPECT_NOT_AVAILABLE = "gen_aspect_not_available"
+    GEN_INSUFFICIENT_BALANCE = "gen_insufficient_balance"
+    GEN_STATUS_CHECK_TEMP_ERROR = "gen_status_check_temp_error"
+    GEN_ERROR_GENERIC = "gen_error_generic"
+    GEN_STATUS_LABEL_QUEUE = "gen_status_label_queue"
+    GEN_STATUS_LABEL_PROCESSING = "gen_status_label_processing"
     
     # Payments
     TOPUP_TITLE = "topup_title"
@@ -73,24 +109,10 @@ class TranslationKey(str, Enum):
     TOPUP_SUCCESS = "topup_success"
     TOPUP_DISABLED = "topup_disabled"
     
-    # Referral
-    REFERRAL_TITLE = "referral_title"
-    REFERRAL_DESCRIPTION = "referral_description"
-    REFERRAL_LINK = "referral_link"
-    REFERRAL_COUNT = "referral_count"
-    REFERRAL_BONUS_TOTAL = "referral_bonus_total"
-    REFERRAL_NEW_APPLIED = "referral_new_applied"
-    
     # Settings
     SETTINGS_TITLE = "settings_title"
     SETTINGS_LANGUAGE = "settings_language"
     SETTINGS_LANGUAGE_CHANGED = "settings_language_changed"
-    
-    # Errors
-    INSUFFICIENT_BALANCE = "insufficient_balance"
-    RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
-    USER_NOT_FOUND = "user_not_found"
-    MODEL_NOT_FOUND = "model_not_found"
     
     # Admin
     ADMIN_PANEL_TITLE = "admin_panel_title"

@@ -65,6 +65,9 @@ api/app/
 - `BOT_TOKEN` faqat `.env` ichida saqlansin, kodga yozilmasin.
 - `.env` repoga qo'shilmasin, `.env.example` bilan ishlang.
 - Minimal dizayn va xavfsiz defaults (no hardcoded secrets).
+- **Localization**: Handlers must use `_` parameter from middleware, NEVER use `bot.get("_")` (it returns None).
+- **Translation Keys**: All user-facing text must use TranslationKey enum from `locales/base.py`.
+- **Error Handling**: Use ApiError for API calls, TelegramBadRequest for bot operations.
 
 ## Tezkor ishga tushirish
 

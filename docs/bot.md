@@ -27,12 +27,17 @@ bot/
 ## Features
 
 - **Multi-instance scaling**: Redis FSM storage allows running multiple bot instances
-- **Internationalization**: Supports Uzbek, Russian, and English languages
+- **Internationalization**: Supports Uzbek, Russian, and English languages with auto-detection from Telegram
+  - All user-facing texts use translation keys defined in `locales/uz.py`, `locales/ru.py`, `locales/en.py`
+  - I18n middleware injects `_` (LocalizationFunction) into handler data dict
+  - Handlers must use `_` parameter from middleware, NOT `bot.get("_")`
 - **Structured logging**: JSON logs with structlog, Sentry integration
 - **Rate limiting**: Redis-based sliding window throttling
 - **DI Container**: Singleton pattern for shared resources
 - **Professional error handling**: Centralized error middleware with user-friendly messages
 - **Admin panel**: Full-featured admin with stats, user management, credits, broadcast, refund
+- **Generation timeout**: 5-minute timeout protection with automatic cleanup
+- **Translation system**: All user-facing text uses translation keys for full localization
 
 ## Talablar
 
@@ -151,8 +156,67 @@ Admin will see specific error messages for these cases:
 1. User prompt yoki reference rasm yuboradi
 2. Bot menu ko'rsatadi: model, size/aspect_ratio/resolution tanlash
 3. Generate bosilganda so'rov yuboriladi
-4. Status avtomatik yangilanadi (polling)
-5. Natija tayyor bo'lsa rasm va file yuboriladi
+4. Status avtomatik yangilanadi (polling):
+   - "⏳ Holat: Navbatda" (queue)
+   - "⏳ Holat: Jarayonda" (processing)
+   - Natija tayyor bo'lganda rasm va file yuboriladi
+5. Timeout: 5 minut (300 soniya)
+
+## Localization
+
+Bot supports 3 languages: Uzbek (uz), Russian (ru), English (en).
+
+### Language Detection Flow
+
+1. **Telegram language_code** - First check user's Telegram language
+2. **Redis explicit setting** - If user changed language in settings
+3. **DEFAULT_LANGUAGE** env variable - Fallback (default: `uz`)
+
+### Translation System
+
+- **Translation Keys**: Defined in `locales/base.py` as `TranslationKey` enum
+- **Translation Dictionaries**: Stored in `locales/uz.py`, `locales/ru.py`, `locales/en.py`
+- **Middleware**: `I18nMiddleware` detects language and injects `_` (LocalizationFunction) into handler data dict
+- **Usage in Handlers**: Handlers MUST use `_` parameter from middleware, NOT `bot.get("_")`
+
+### Correct Handler Pattern
+
+```python
+@router.message(Command("start"))
+async def start_handler(message: Message, _) -> None:
+    # ✅ CORRECT: Use _ parameter from middleware
+    await message.answer(_(TranslationKey.WELCOME))
+
+@router.callback_query(F.data == "menu:profile")
+async def profile_callback(call: CallbackQuery, _) -> None:
+    # ✅ CORRECT: Use _ parameter
+    await call.message.edit_text(_(TranslationKey.PROFILE_TITLE))
+```
+
+### Incorrect Pattern (NEVER USE)
+
+```python
+# ❌ WRONG: bot.get("_") returns None
+_ = message.bot.get("_")
+await message.answer(_(TranslationKey.WELCOME))
+
+# ❌ WRONG: call.message.bot.get("_") returns None
+_ = call.message.bot.get("_")
+await call.message.edit_text(_(TranslationKey.PROFILE_TITLE))
+```
+
+### Why `bot.get("_")` Doesn't Work
+
+- Middleware sets `data["_"]` in handler data dict
+- Middleware does NOT set `bot["_"]` on bot object
+- Calling `bot.get("_")` returns `None`
+- Translation system falls back to default language (Uzbek) when translator is `None`
+
+### Adding New Translations
+
+1. Add key to `locales/base.py` TranslationKey enum
+2. Add translations to `locales/uz.py`, `locales/ru.py`, `locales/en.py`
+3. Use in handlers: `await message.answer(_(TranslationKey.YOUR_NEW_KEY))`
 
 ## API servis
 

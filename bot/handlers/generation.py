@@ -20,6 +20,8 @@ from keyboards import (
     resolution_menu,
     size_menu,
 )
+from locales.base import TranslationKey
+from locales.manager import LocalizationFunction
 
 router = Router()
 
@@ -37,13 +39,13 @@ MAX_DOCUMENT_CAPTION_LEN = 1024
 QUEUE_STATUSES = {"pending", "configuring", "queued", "created"}
 
 
-def format_status_label(status: str | None) -> str:
+def format_status_label(status: str | None, _: LocalizationFunction) -> str:
     if not status:
-        return "Jarayonda"
+        return _(TranslationKey.GEN_STATUS_LABEL_PROCESSING)
     normalized = status.lower()
     if normalized in QUEUE_STATUSES:
-        return "Navbatda"
-    return "Jarayonda"
+        return _(TranslationKey.GEN_STATUS_LABEL_QUEUE)
+    return _(TranslationKey.GEN_STATUS_LABEL_PROCESSING)
 
 
 async def retry_send(
@@ -118,22 +120,22 @@ def build_result_caption(
     model_name: str,
     cost: int | None,
     duration_seconds: int | None,
+    _: LocalizationFunction,
 ) -> str:
     hashtag = format_model_hashtag(model_name)
     credits = cost if cost is not None else 0
     duration_text = f"{duration_seconds}s" if duration_seconds is not None else "-"
-    header = (
-        "✅ Natija tayyor\n"
-        f"Model: {hashtag}\n"
-        f"Credit: {credits}\n"
-        f"Vaqt: {duration_text}\n"
-        "Prompt:\n"
+    result_text = _(TranslationKey.GEN_RESULT_CAPTION).format(
+        model=hashtag,
+        credits=credits,
+        duration=duration_text,
+        prompt="{PROMPT_PLACEHOLDER}"
     )
-    prefix = f"{header}<blockquote>"
-    suffix = "</blockquote>"
+    prefix = result_text.split("{PROMPT_PLACEHOLDER}")[0]
+    suffix = result_text.split("{PROMPT_PLACEHOLDER}")[1] if "{PROMPT_PLACEHOLDER}" in result_text else ""
     max_prompt_len = MAX_DOCUMENT_CAPTION_LEN - len(prefix) - len(suffix)
     escaped_prompt = build_escaped_prompt(prompt, max_prompt_len)
-    return f"{prefix}{escaped_prompt}{suffix}"
+    return result_text.replace("{PROMPT_PLACEHOLDER}", escaped_prompt)
 
 
 def extract_filename_from_url(url: str) -> str:
@@ -284,7 +286,7 @@ async def process_reference_batch(
         references = list(data.get("reference_urls", []))
         reference_file_ids = list(data.get("reference_file_ids", []))
         if len(references) + len(files) > 10:
-            await message.answer("Maksimal 10 ta reference rasm yuborish mumkin.")
+            await message.answer(_(TranslationKey.GEN_MAX_REFERENCES))
             return
 
         new_urls: list[str] = []
@@ -300,7 +302,7 @@ async def process_reference_batch(
             except Exception:
                 download_url = ""
             if not download_url:
-                await message.answer("Rasm yuklashda xatolik. Keyinroq urinib ko'ring.")
+                await message.answer(_(TranslationKey.GEN_UPLOAD_ERROR))
                 return
 
             new_urls.append(download_url)
@@ -431,7 +433,7 @@ async def handle_prompt_message(message: Message, state: FSMContext) -> None:
     prompt = message.caption or message.text or ""
     prompt = prompt.strip()
     if not prompt:
-        await message.answer("Prompt bo'sh bo'lmasin.")
+        await message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED))
         return
 
     settings = load_settings()
@@ -446,11 +448,11 @@ async def handle_prompt_message(message: Message, state: FSMContext) -> None:
     try:
         models = await fetch_models(client)
     except Exception:
-        await message.answer("Serverdan model ma'lumotini olishda xatolik.")
+        await message.answer(_(TranslationKey.GEN_MODEL_FETCH_ERROR))
         return
 
     if not models:
-        await message.answer("Hozircha model topilmadi.")
+        await message.answer(_(TranslationKey.GEN_MODEL_NOT_FOUND_ERROR))
         return
 
     selected_model = models[0]
@@ -527,12 +529,12 @@ async def handle_prompt_message(message: Message, state: FSMContext) -> None:
 
 
 @router.callback_query(F.data == "gen:model:menu")
-async def open_model_menu(call: CallbackQuery, state: FSMContext) -> None:
+async def open_model_menu(call: CallbackQuery, state: FSMContext, _) -> None:
     await call.answer()
     data = await state.get_data()
     prompt = data.get("prompt")
     if not prompt:
-        await call.message.answer("Prompt topilmadi. Iltimos, qaytadan yuboring.")
+        await call.message.answer(_(TranslationKey.GEN_PROMPT_NOT_FOUND))
         return
 
     settings = load_settings()
@@ -581,7 +583,7 @@ async def select_model(call: CallbackQuery, state: FSMContext) -> None:
     data = await state.get_data()
     prompt = data.get("prompt")
     if not prompt:
-        await call.message.answer("Prompt topilmadi. Iltimos, qaytadan yuboring.")
+        await call.message.answer(_(TranslationKey.GEN_PROMPT_NOT_FOUND))
         return
 
     try:
@@ -594,12 +596,12 @@ async def select_model(call: CallbackQuery, state: FSMContext) -> None:
     try:
         models = await get_models_from_state(state, client)
     except Exception:
-        await call.message.answer("Model ma'lumotini olishda xatolik.")
+        await call.message.answer(_(TranslationKey.GEN_MODEL_FETCH_ERROR))
         return
 
     selected = find_model(models, model_id)
     if not selected:
-        await call.message.answer("Model topilmadi.")
+        await call.message.answer(_(TranslationKey.GEN_MODEL_NOT_FOUND_ERROR))
         return
 
     supports_size = selected.get("supports_size")
@@ -681,13 +683,13 @@ async def open_size_menu(call: CallbackQuery, state: FSMContext) -> None:
         data.get("resolution_options"),
     )
     if not show_size:
-        await call.answer("Bu modelda size mavjud emas.", show_alert=True)
+        await call.answer(_(TranslationKey.GEN_SIZE_NOT_AVAILABLE), show_alert=True)
         return
 
     await call.answer()
     prompt = data.get("prompt")
     if not prompt:
-        await call.message.answer("Prompt topilmadi. Iltimos, qaytadan yuboring.")
+        await call.message.answer(_(TranslationKey.GEN_PROMPT_NOT_FOUND))
         return
 
     model_name = data.get("model_name", "-")
@@ -781,13 +783,13 @@ async def open_ratio_menu(call: CallbackQuery, state: FSMContext) -> None:
         data.get("resolution_options"),
     )
     if not show_aspect:
-        await call.answer("Bu modelda aspect ratio mavjud emas.", show_alert=True)
+        await call.answer(_(TranslationKey.GEN_ASPECT_NOT_AVAILABLE), show_alert=True)
         return
 
     await call.answer()
     prompt = data.get("prompt")
     if not prompt:
-        await call.message.answer("Prompt topilmadi. Iltimos, qaytadan yuboring.")
+        await call.message.answer(_(TranslationKey.GEN_PROMPT_NOT_FOUND))
         return
 
     model_name = data.get("model_name", "-")
@@ -1033,6 +1035,7 @@ async def send_outputs(
     outputs: list[str],
     reply_to_message_id: int | None,
     caption_text: str,
+    _: LocalizationFunction,
 ) -> None:
     caption_pending = True
     document_failed = False
@@ -1067,7 +1070,7 @@ async def send_outputs(
         await retry_send(
             lambda: bot.send_message(
                 chat_id,
-                "Natijani fayl ko'rinishida yuborishda muammo bo'ldi. Keyinroq urinib ko'ring.",
+                _(TranslationKey.GEN_SEND_ERROR),
                 reply_to_message_id=reply_to_message_id,
             )
         )
@@ -1083,6 +1086,7 @@ async def poll_generation_status(
     prompt: str,
     model_name: str,
     prompt_message_id: int | None,
+    _: LocalizationFunction,
 ) -> None:
     last_label = None
     consecutive_errors = 0
@@ -1095,7 +1099,7 @@ async def poll_generation_status(
         if elapsed > MAX_POLL_DURATION_SECONDS:
             try:
                 await bot.edit_message_text(
-                    "⏱ Generatsiya vaqti tugadi. Qaytadan urinib ko'ring.",
+                    _(TranslationKey.GEN_TIMEOUT),
                     chat_id=chat_id,
                     message_id=message_id,
                 )
@@ -1117,7 +1121,7 @@ async def poll_generation_status(
                 detail_text = f" ({detail_value})" if detail_value else ""
                 try:
                     await bot.edit_message_text(
-                        "⚠️ Status tekshirishda muammo bo'ldi."
+                        f"{_(TranslationKey.GEN_STATUS_CHECK_ERROR)}"
                         f"{detail_text}",
                         chat_id=chat_id,
                         message_id=message_id,
@@ -1131,7 +1135,7 @@ async def poll_generation_status(
             if consecutive_errors in {3, 6, 10}:
                 try:
                     await bot.edit_message_text(
-                        "⚠️ Status tekshirishda vaqtinchalik muammo bo'ldi.",
+                        _(TranslationKey.GEN_STATUS_CHECK_TEMP_ERROR),
                         chat_id=chat_id,
                         message_id=message_id,
                     )
@@ -1141,19 +1145,8 @@ async def poll_generation_status(
             continue
         consecutive_errors = 0
         status = result.get("status")
-        if status and status not in ("completed", "failed"):
-            label = format_status_label(status)
-            if label != last_label:
-                try:
-                    await bot.edit_message_text(
-                        f"⏳ Holat: {label}",
-                        chat_id=chat_id,
-                        message_id=message_id,
-                    )
-                except TelegramBadRequest as exc:
-                    if "message is not modified" not in str(exc):
-                        raise
-                last_label = label
+        # Status updates removed to avoid unnecessary intermediate messages
+        # User sees initial "queue" message, then directly gets the result
         if status == "completed":
             try:
                 outputs = await client.get_generation_results(request_id, telegram_id)
@@ -1165,7 +1158,7 @@ async def poll_generation_status(
                 result.get("created_at"),
             )
             caption_text = build_result_caption(
-                prompt, model_name, result.get("cost"), duration_seconds
+                prompt, model_name, result.get("cost"), duration_seconds, _
             )
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -1173,15 +1166,15 @@ async def poll_generation_status(
                 pass
             if outputs:
                 await send_outputs(
-                    bot, chat_id, outputs, prompt_message_id, caption_text
+                    bot, chat_id, outputs, prompt_message_id, caption_text, _
                 )
             return
         if status == "failed":
             try:
                 error_message = result.get("error_message")
-                text = "❌ Generatsiya muvaffaqiyatsiz"
+                text = _(TranslationKey.GEN_FAILED)
                 if error_message:
-                    text = f"{text}\nSabab: {error_message}"
+                    text = _(TranslationKey.GEN_ERROR).format(error=error_message)
                 await bot.edit_message_text(
                     text,
                     chat_id=chat_id,
@@ -1233,7 +1226,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
     client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
 
     try:
-        await call.message.edit_text("⏳ Holat: Navbatda")
+        await call.message.edit_text(_(TranslationKey.GEN_IN_QUEUE))
     except TelegramBadRequest as exc:
         if "message is not modified" not in str(exc):
             raise
@@ -1257,13 +1250,13 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
                 active_id = detail.get("active_request_id")
             suffix = f" (ID: {active_id})" if active_id else ""
             await call.message.edit_text(
-                "Sizda boshqa generatsiya jarayoni ketmoqda. Iltimos, tugashini kuting."
+                f"{_(TranslationKey.GEN_CONFLICT)}"
                 f"{suffix}"
             )
             return
         if exc.status == 402:
             await call.message.edit_text(
-                "Sizda yetarli balans mavjud emas.", reply_markup=profile_menu()
+                _(TranslationKey.GEN_INSUFFICIENT_BALANCE), reply_markup=profile_menu()
             )
             return
         detail = exc.data.get("detail") if isinstance(exc.data, dict) else None
@@ -1272,38 +1265,24 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
                 detail_text = detail.get("message") or str(detail)
             else:
                 detail_text = str(detail)
-            await call.message.edit_text(f"Generatsiya xatolik: {detail_text}")
+            await call.message.edit_text(_(TranslationKey.GEN_ERROR).format(error=detail_text))
             return
         await call.message.edit_text(
-            "Generatsiya boshlashda xatolik. Keyinroq urinib ko'ring."
+            _(TranslationKey.GEN_ERROR_GENERIC)
         )
         return
     except Exception:
         await call.message.edit_text(
-            "Generatsiya boshlashda xatolik. Keyinroq urinib ko'ring."
+            _(TranslationKey.GEN_ERROR_GENERIC)
         )
         return
 
     request = result.get("request", {})
     request_id = request.get("id")
-    public_id = request.get("public_id")
     request_status = request.get("status")
-    trial_used = result.get("trial_used")
 
-    note = "Trial ishlatildi" if trial_used else f"Narx: {price} cr"
-    display_id = public_id or request_id
-    status_label = format_status_label(request_status)
-    text = (
-        f"Generatsiya qabul qilindi. Holat: {status_label}\n"
-        f"ID: {display_id}\n{note}"
-    )
-    try:
-        await call.message.edit_text(text)
-    except TelegramBadRequest as exc:
-        if "message is not modified" not in str(exc):
-            raise
     if not request_id:
-        await call.message.answer("Job ID topilmadi. Keyinroq urinib ko'ring.")
+        await call.message.answer(_(TranslationKey.GEN_ERROR_GENERIC))
         await state.clear()
         return
     if request_status == "completed":
@@ -1317,7 +1296,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
             request.get("created_at"),
         )
         caption_text = build_result_caption(
-            prompt, model_name, request.get("cost"), duration_seconds
+            prompt, model_name, request.get("cost"), duration_seconds, _
         )
         try:
             await call.message.delete()
@@ -1330,6 +1309,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
                 outputs,
                 prompt_message_id or call.message.message_id,
                 caption_text,
+                _,
             )
         await state.clear()
         return
@@ -1345,6 +1325,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
                 prompt,
                 model_name,
                 prompt_message_id or call.message.message_id,
+                _,
             )
         )
     except Exception:

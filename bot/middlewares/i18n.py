@@ -37,6 +37,11 @@ class I18nMiddleware(BaseMiddleware):
         telegram_language = self._get_telegram_language(event)
         language = await self._get_user_language(user_id, telegram_language)
         
+        # Debug log for language detection
+        from core.logging import get_logger
+        logger = get_logger(__name__)
+        logger.info(f"Language detected", user_id=user_id, telegram_lang=telegram_language, final_lang=language)
+        
         # Add language and translator to handler data
         data["language"] = language
         data["_"] = get_translator(language)
