@@ -78,6 +78,8 @@ class DashboardStatsOut(BaseModel):
     active_users_7d: int
     active_users_30d: int
     new_users_today: int
+    new_users_week: int
+    new_users_month: int
     banned_users: int
     
     # Generations
@@ -88,6 +90,9 @@ class DashboardStatsOut(BaseModel):
     
     # Revenue
     total_deposits: float
+    today_deposits: float
+    week_deposits: float
+    month_deposits: float
     total_spent: float
     net_revenue: float
     

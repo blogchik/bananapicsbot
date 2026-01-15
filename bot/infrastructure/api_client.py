@@ -328,8 +328,8 @@ class ApiClient:
             "users": {
                 "total": stats.get("total_users", 0),
                 "today": stats.get("new_users_today", 0),
-                "week": stats.get("active_users_7d", 0),
-                "month": stats.get("active_users_30d", 0),
+                "week": stats.get("new_users_week", 0),
+                "month": stats.get("new_users_month", 0),
             },
             "generations": {
                 "total": stats.get("total_generations", 0),
@@ -338,8 +338,8 @@ class ApiClient:
             },
             "revenue": {
                 "total_stars": stats.get("total_deposits", 0),
-                "today_stars": 0,
-                "week_stars": 0,
+                "today_stars": stats.get("today_deposits", 0),
+                "week_stars": stats.get("week_deposits", 0),
             },
         }
     
@@ -370,9 +370,9 @@ class ApiClient:
         stats = await self._request("GET", "/api/v1/admin/stats")
         return {
             "total_stars": stats.get("total_deposits", 0),
-            "today_stars": 0,
-            "week_stars": 0,
-            "month_stars": stats.get("total_deposits", 0),
+            "today_stars": stats.get("today_deposits", 0),
+            "week_stars": stats.get("week_deposits", 0),
+            "month_stars": stats.get("month_deposits", 0),
             "total_credits_purchased": 0,
             "credits_spent": stats.get("total_spent", 0),
         }

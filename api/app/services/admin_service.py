@@ -13,6 +13,7 @@ from app.db.models import (
     LedgerEntry,
     ModelCatalog,
     ModelPrice,
+    PaymentLedger,
 )
 
 
@@ -26,21 +27,38 @@ class AdminService:
     
     async def get_user_stats(self) -> Dict[str, Any]:
         """Get comprehensive user statistics."""
+        now = datetime.utcnow()
+        
         # Total users
         total_query = select(func.count()).select_from(User)
         total_result = await self.session.execute(total_query)
         total_users = total_result.scalar() or 0
         
         # New today
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         new_today_query = select(func.count()).select_from(User).where(
-            User.created_at >= today
+            User.created_at >= today_start
         )
         new_today_result = await self.session.execute(new_today_query)
         new_today = new_today_result.scalar() or 0
         
+        # New this week
+        week_ago = now - timedelta(days=7)
+        new_week_query = select(func.count()).select_from(User).where(
+            User.created_at >= week_ago
+        )
+        new_week_result = await self.session.execute(new_week_query)
+        new_week = new_week_result.scalar() or 0
+        
+        # New this month
+        month_ago = now - timedelta(days=30)
+        new_month_query = select(func.count()).select_from(User).where(
+            User.created_at >= month_ago
+        )
+        new_month_result = await self.session.execute(new_month_query)
+        new_month = new_month_result.scalar() or 0
+        
         # Active 7 days (has generations)
-        week_ago = datetime.utcnow() - timedelta(days=7)
         active_7d_query = select(func.count(func.distinct(GenerationRequest.user_id))).where(
             GenerationRequest.created_at >= week_ago
         )
@@ -48,7 +66,6 @@ class AdminService:
         active_7d = active_7d_result.scalar() or 0
         
         # Active 30 days
-        month_ago = datetime.utcnow() - timedelta(days=30)
         active_30d_query = select(func.count(func.distinct(GenerationRequest.user_id))).where(
             GenerationRequest.created_at >= month_ago
         )
@@ -58,6 +75,8 @@ class AdminService:
         return {
             "total_users": total_users,
             "new_today": new_today,
+            "new_week": new_week,
+            "new_month": new_month,
             "active_7d": active_7d,
             "active_30d": active_30d,
             "banned_users": 0,  # Not tracked in current schema
@@ -108,22 +127,30 @@ class AdminService:
     # ============ Revenue Stats ============
     
     async def get_revenue_stats(self, days: int = 30) -> Dict[str, Any]:
-        """Get revenue statistics."""
-        since = datetime.utcnow() - timedelta(days=days)
+        """Get revenue statistics - returns stars (not credits)."""
+        now = datetime.utcnow()
+        since = now - timedelta(days=days)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = now - timedelta(days=7)
+        month_start = now - timedelta(days=30)
         
-        # Total deposits
-        deposit_query = select(
-            func.coalesce(func.sum(LedgerEntry.amount), 0)
-        ).where(
-            and_(
-                LedgerEntry.created_at >= since,
-                LedgerEntry.entry_type == "deposit",
+        # Helper to get stars paid for a period from PaymentLedger
+        async def get_stars_since(start_date: datetime) -> float:
+            query = select(
+                func.coalesce(func.sum(PaymentLedger.stars_amount), 0)
+            ).where(
+                PaymentLedger.created_at >= start_date,
             )
-        )
-        deposit_result = await self.session.execute(deposit_query)
-        deposits = deposit_result.scalar() or 0
+            result = await self.session.execute(query)
+            return float(result.scalar() or 0)
         
-        # Total spent (generations - negative values)
+        # Total stars received
+        total_stars = await get_stars_since(since)
+        today_stars = await get_stars_since(today_start)
+        week_stars = await get_stars_since(week_start)
+        month_stars = await get_stars_since(month_start)
+        
+        # Total credits spent (generations - negative values)
         spent_query = select(
             func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0)
         ).where(
@@ -136,9 +163,12 @@ class AdminService:
         spent = spent_result.scalar() or 0
         
         return {
-            "total_deposits": deposits,
+            "total_deposits": total_stars,
+            "today_deposits": today_stars,
+            "week_deposits": week_stars,
+            "month_deposits": month_stars,
             "total_spent": spent,
-            "net_revenue": deposits,
+            "net_revenue": total_stars,
         }
     
     # ============ Payment Stats ============
