@@ -159,7 +159,7 @@ Admin will see specific error messages for these cases:
 4. Status avtomatik yangilanadi (polling):
    - "⏳ Holat: Navbatda" (queue)
    - "⏳ Holat: Jarayonda" (processing)
-   - Natija tayyor bo'lganda rasm va file yuboriladi
+   - "✅ Natija tayyor" (completed) + rasm va file yuboriladi
 5. Timeout: 5 minut (300 soniya)
 
 ## Localization
@@ -178,6 +178,8 @@ Bot supports 3 languages: Uzbek (uz), Russian (ru), English (en).
 - **Translation Dictionaries**: Stored in `locales/uz.py`, `locales/ru.py`, `locales/en.py`
 - **Middleware**: `I18nMiddleware` detects language and injects `_` (LocalizationFunction) into handler data dict
 - **Usage in Handlers**: Handlers MUST use `_` parameter from middleware, NOT `bot.get("_")`
+- **Generation UI**: Model/size/aspect/resolution buttons use translation keys (incl. default label)
+- **Stars Payments**: Invoice title/description and validation messages use translation keys
 
 ### Correct Handler Pattern
 

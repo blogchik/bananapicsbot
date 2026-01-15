@@ -40,9 +40,10 @@ def build_generation_text(
     _: Callable[[TranslationKey, dict | None], str],
 ) -> str:
     """Build generation settings text."""
-    size_label = size if size else "Default"
-    aspect_label = aspect_ratio if aspect_ratio else "Default"
-    resolution_label = resolution if resolution else "Default"
+    default_label = _(TranslationKey.GEN_DEFAULT, None)
+    size_label = size if size else default_label
+    aspect_label = aspect_ratio if aspect_ratio else default_label
+    resolution_label = resolution if resolution else default_label
     
     lines = [
         _(TranslationKey.GEN_SETTINGS_TITLE, None),
@@ -367,20 +368,7 @@ async def submit_generation(
     
     request = result.get("request", {})
     request_id = request.get("id")
-    public_id = request.get("public_id")
     request_status = request.get("status")
-    trial_used = result.get("trial_used")
-    
-    note = "Trial ishlatildi" if trial_used else f"Narx: {price} cr"
-    display_id = public_id or request_id
-    status_label = GenerationService.format_status_label(request_status)
-    
-    text = f"Generatsiya qabul qilindi. Holat: {status_label}\nID: {display_id}\n{note}"
-    
-    try:
-        await call.message.edit_text(text)
-    except TelegramBadRequest:
-        pass
     
     if not request_id:
         await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
@@ -394,14 +382,22 @@ async def submit_generation(
         except Exception:
             outputs = []
         
+        try:
+            await call.message.edit_text(_(TranslationKey.GEN_COMPLETED, None))
+        except TelegramBadRequest:
+            pass
+
         if outputs:
-            caption = GenerationService.build_result_caption(prompt, model_name, request.get("cost"), None)
+            caption = GenerationService.build_result_caption(
+                prompt, model_name, request.get("cost"), None, _
+            )
             await GenerationService.send_results(
                 call.message.bot,
                 call.message.chat.id,
                 outputs,
                 data.get("prompt_message_id"),
                 caption,
+                _,
             )
         await state.clear()
         return
@@ -419,6 +415,7 @@ async def submit_generation(
             prompt,
             model_name,
             prompt_message_id,
+            _,
         )
     )
     

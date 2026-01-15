@@ -23,39 +23,44 @@ class GenerationKeyboard:
         show_resolution: bool = False,
     ) -> InlineKeyboardMarkup:
         """Build main generation menu."""
-        size_label = size if size else "Default"
-        aspect_label = aspect_ratio if aspect_ratio else "Default"
-        resolution_label = resolution if resolution else "Default"
+        default_label = _(TranslationKey.GEN_DEFAULT, None)
+        size_label = size if size else default_label
+        aspect_label = aspect_ratio if aspect_ratio else default_label
+        resolution_label = resolution if resolution else default_label
+        model_text = _(TranslationKey.GEN_MODEL, {"model": model_name})
         
         rows: list[list[InlineKeyboardButton]] = [
             [
                 InlineKeyboardButton(
-                    text=f"🧠 Model: {model_name}",
+                    text=f"🧠 {model_text}",
                     callback_data=GenerationCallback.MODEL_MENU,
                 )
             ]
         ]
         
         if show_size:
+            size_text = _(TranslationKey.GEN_SIZE, {"size": size_label})
             rows.append([
                 InlineKeyboardButton(
-                    text=f"📐 Size: {size_label}",
+                    text=f"📐 {size_text}",
                     callback_data=GenerationCallback.SIZE_MENU,
                 )
             ])
         
         if show_aspect_ratio:
+            aspect_text = _(TranslationKey.GEN_ASPECT_RATIO, {"ratio": aspect_label})
             rows.append([
                 InlineKeyboardButton(
-                    text=f"📏 Aspect ratio: {aspect_label}",
+                    text=f"📏 {aspect_text}",
                     callback_data=GenerationCallback.RATIO_MENU,
                 )
             ])
         
         if show_resolution:
+            resolution_text = _(TranslationKey.GEN_RESOLUTION, {"resolution": resolution_label})
             rows.append([
                 InlineKeyboardButton(
-                    text=f"🖼️ Resolution: {resolution_label}",
+                    text=f"🖼️ {resolution_text}",
                     callback_data=GenerationCallback.RESOLUTION_MENU,
                 )
             ])
@@ -109,7 +114,8 @@ class GenerationKeyboard:
         rows: list[list[InlineKeyboardButton]] = []
         
         # Default option
-        default_label = "✅ Default" if not selected_size else "Default"
+        default_text = _(TranslationKey.GEN_DEFAULT, None)
+        default_label = f"✅ {default_text}" if not selected_size else default_text
         rows.append([
             InlineKeyboardButton(
                 text=default_label,
@@ -149,7 +155,8 @@ class GenerationKeyboard:
         rows: list[list[InlineKeyboardButton]] = []
         
         # Default option
-        default_label = "✅ Default" if not selected_ratio else "Default"
+        default_text = _(TranslationKey.GEN_DEFAULT, None)
+        default_label = f"✅ {default_text}" if not selected_ratio else default_text
         rows.append([
             InlineKeyboardButton(
                 text=default_label,
@@ -189,7 +196,8 @@ class GenerationKeyboard:
         rows: list[list[InlineKeyboardButton]] = []
         
         # Default option
-        default_label = "✅ Default" if not selected_resolution else "Default"
+        default_text = _(TranslationKey.GEN_DEFAULT, None)
+        default_label = f"✅ {default_text}" if not selected_resolution else default_text
         rows.append([
             InlineKeyboardButton(
                 text=default_label,

@@ -36,9 +36,10 @@ def build_generation_text(
     _: Callable[[TranslationKey, dict | None], str],
 ) -> str:
     """Build generation settings text."""
-    size_label = size if size else "Default"
-    aspect_label = aspect_ratio if aspect_ratio else "Default"
-    resolution_label = resolution if resolution else "Default"
+    default_label = _(TranslationKey.GEN_DEFAULT, None)
+    size_label = size if size else default_label
+    aspect_label = aspect_ratio if aspect_ratio else default_label
+    resolution_label = resolution if resolution else default_label
     
     lines = [
         _(TranslationKey.GEN_SETTINGS_TITLE, None),

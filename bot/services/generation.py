@@ -5,6 +5,7 @@ import html
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Callable
 from urllib.parse import unquote, urlparse
 
 from aiogram import Bot
@@ -15,6 +16,7 @@ from core.constants import BotConstants
 from core.container import get_container
 from core.exceptions import APIError, ActiveGenerationError, InsufficientBalanceError
 from core.logging import get_logger
+from locales import TranslationKey
 
 logger = get_logger(__name__)
 
@@ -162,14 +164,19 @@ class GenerationService:
         return await container.api_client.upload_media(file_bytes, filename)
     
     @staticmethod
-    def format_status_label(status: str | None) -> str:
-        """Format generation status for display."""
+    def _get_status_message(
+        status: str | None,
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> str | None:
+        """Get localized status message for queue/processing."""
         if not status:
-            return "Jarayonda"
+            return None
         normalized = status.lower()
         if normalized in BotConstants.QUEUE_STATUSES:
-            return "Navbatda"
-        return "Jarayonda"
+            return _(TranslationKey.GEN_IN_QUEUE, None)
+        if normalized == "running":
+            return _(TranslationKey.GEN_PROCESSING, None)
+        return None
     
     @staticmethod
     def format_model_hashtag(model_name: str) -> str:
@@ -185,25 +192,19 @@ class GenerationService:
         model_name: str,
         cost: int | None,
         duration_seconds: int | None,
+        _: Callable[[TranslationKey, dict | None], str],
     ) -> str:
         """Build result caption with prompt."""
         hashtag = GenerationService.format_model_hashtag(model_name)
         credits = cost if cost is not None else 0
         duration_text = f"{duration_seconds}s" if duration_seconds is not None else "-"
-        
-        header = (
-            "✅ Natija tayyor\n"
-            f"Model: {hashtag}\n"
-            f"Credit: {credits}\n"
-            f"Vaqt: {duration_text}\n"
-            "Prompt:\n"
-        )
-        prefix = f"{header}<blockquote>"
-        suffix = "</blockquote>"
-        max_prompt_len = BotConstants.MAX_CAPTION_LENGTH - len(prefix) - len(suffix)
-        
-        escaped_prompt = GenerationService._build_escaped_prompt(prompt, max_prompt_len)
-        return f"{prefix}{escaped_prompt}{suffix}"
+        template = _(TranslationKey.GEN_RESULT_CAPTION, {
+            "model": hashtag,
+            "credits": credits,
+            "duration": duration_text,
+            "prompt": "{PROMPT_PLACEHOLDER}",
+        })
+        return GenerationService._inject_prompt(template, prompt)
     
     @staticmethod
     def _build_escaped_prompt(prompt: str, max_len: int) -> str:
@@ -230,6 +231,19 @@ class GenerationService:
         if truncated and max_len > len(ellipsis):
             return result + ellipsis
         return result
+
+    @staticmethod
+    def _inject_prompt(template: str, prompt: str) -> str:
+        """Replace placeholder with escaped prompt respecting caption limits."""
+        placeholder = "{PROMPT_PLACEHOLDER}"
+        if placeholder not in template:
+            return template
+        prefix, suffix = template.split(placeholder, 1)
+        max_prompt_len = max(
+            0, BotConstants.MAX_CAPTION_LENGTH - len(prefix) - len(suffix)
+        )
+        escaped_prompt = GenerationService._build_escaped_prompt(prompt, max_prompt_len)
+        return f"{prefix}{escaped_prompt}{suffix}"
     
     @staticmethod
     def parse_duration_seconds(
@@ -272,6 +286,7 @@ class GenerationService:
         outputs: list[str],
         reply_to_message_id: int | None,
         caption_text: str,
+        _: Callable[[TranslationKey, dict | None], str],
     ) -> None:
         """Send generation results to user."""
         caption_pending = True
@@ -316,7 +331,7 @@ class GenerationService:
             await GenerationService._retry_send(
                 lambda: bot.send_message(
                     chat_id,
-                    "Natijani fayl ko'rinishida yuborishda muammo bo'ldi.",
+                    _(TranslationKey.GEN_SEND_ERROR, None),
                     reply_to_message_id=reply_to_message_id,
                 )
             )
@@ -348,49 +363,38 @@ class GenerationService:
         prompt: str,
         model_name: str,
         prompt_message_id: int | None,
+        _: Callable[[TranslationKey, dict | None], str],
     ) -> None:
         """Poll generation status and send results when done."""
         container = get_container()
-        last_label = None
-        consecutive_errors = 0
+        last_status_text = None
         
         while True:
             await asyncio.sleep(BotConstants.POLL_INTERVAL_SECONDS)
             
             try:
                 result = await container.api_client.refresh_generation(request_id, telegram_id)
-                consecutive_errors = 0
             except APIError as exc:
-                consecutive_errors += 1
-                if consecutive_errors in {3, 6, 10}:
-                    try:
-                        await bot.edit_message_text(
-                            "⚠️ Status tekshirishda muammo bo'ldi.",
-                            chat_id=chat_id,
-                            message_id=message_id,
-                        )
-                    except TelegramBadRequest:
-                        pass
+                logger.warning("Generation status check failed", error=str(exc))
                 continue
             except Exception:
-                consecutive_errors += 1
+                logger.warning("Generation status check failed")
                 continue
             
             status = result.get("status")
             
-            # Update status label
-            if status and status not in ("completed", "failed"):
-                label = GenerationService.format_status_label(status)
-                if label != last_label:
-                    try:
-                        await bot.edit_message_text(
-                            f"⏳ Holat: {label}",
-                            chat_id=chat_id,
-                            message_id=message_id,
-                        )
-                    except TelegramBadRequest:
-                        pass
-                    last_label = label
+            # Update status message only for queue/processing
+            status_text = GenerationService._get_status_message(status, _)
+            if status_text and status_text != last_status_text:
+                try:
+                    await bot.edit_message_text(
+                        status_text,
+                        chat_id=chat_id,
+                        message_id=message_id,
+                    )
+                except TelegramBadRequest:
+                    pass
+                last_status_text = status_text
             
             # Handle completion
             if status == "completed":
@@ -406,17 +410,21 @@ class GenerationService:
                 )
                 
                 caption_text = GenerationService.build_result_caption(
-                    prompt, model_name, result.get("cost"), duration_seconds
+                    prompt, model_name, result.get("cost"), duration_seconds, _
                 )
                 
                 try:
-                    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+                    await bot.edit_message_text(
+                        _(TranslationKey.GEN_COMPLETED, None),
+                        chat_id=chat_id,
+                        message_id=message_id,
+                    )
                 except TelegramBadRequest:
                     pass
                 
                 if outputs:
                     await GenerationService.send_results(
-                        bot, chat_id, outputs, prompt_message_id, caption_text
+                        bot, chat_id, outputs, prompt_message_id, caption_text, _
                     )
                 return
             
@@ -424,9 +432,10 @@ class GenerationService:
             if status == "failed":
                 try:
                     error_message = result.get("error_message")
-                    text = "❌ Generatsiya muvaffaqiyatsiz"
                     if error_message:
-                        text = f"{text}\nSabab: {error_message}"
+                        text = _(TranslationKey.GEN_ERROR, {"error": error_message})
+                    else:
+                        text = _(TranslationKey.GEN_FAILED, None)
                     await bot.edit_message_text(text, chat_id=chat_id, message_id=message_id)
                 except TelegramBadRequest:
                     pass

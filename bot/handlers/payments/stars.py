@@ -105,6 +105,7 @@ async def handle_topup_preset(
         denominator,
         currency,
         container.settings.payment_provider_token,
+        _,
     )
 
 
@@ -139,7 +140,7 @@ async def handle_custom_stars(
     
     if amount is None:
         await message.answer(
-            "Raqam ko'rinishida yuboring. Masalan: 70",
+            _(TranslationKey.TOPUP_INVALID_AMOUNT, None),
             reply_to_message_id=message.message_id,
         )
         return
@@ -184,6 +185,7 @@ async def handle_custom_stars(
         denominator,
         str(options.get("currency", "XTR")),
         container.settings.payment_provider_token,
+        _,
     )
 
 

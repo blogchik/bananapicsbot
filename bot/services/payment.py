@@ -1,12 +1,14 @@
 """Payment service."""
 
 import uuid
+from typing import Callable
 
 from aiogram import Bot
 from aiogram.types import LabeledPrice, Message
 
 from core.container import get_container
 from core.logging import get_logger
+from locales import TranslationKey
 
 logger = get_logger(__name__)
 
@@ -57,14 +59,18 @@ class PaymentService:
         denominator: int,
         currency: str,
         provider_token: str,
+        _: Callable[[TranslationKey, dict | None], str],
     ) -> None:
         """Send stars payment invoice."""
         credits = PaymentService.calculate_credits(stars_amount, numerator, denominator)
         payload = f"stars:{stars_amount}:{uuid.uuid4().hex}"
-        
-        title = "Balans to'ldirish"
-        description = f"{stars_amount} ⭐ → {credits} credit"
-        prices = [LabeledPrice(label="Telegram Stars", amount=stars_amount)]
+        title = _(TranslationKey.TOPUP_TITLE, None)
+        description = _(TranslationKey.TOPUP_INVOICE_DESCRIPTION, {
+            "stars": stars_amount,
+            "credits": credits,
+        })
+        label = _(TranslationKey.TOPUP_INVOICE_LABEL, None)
+        prices = [LabeledPrice(label=label, amount=stars_amount)]
         
         await bot.send_invoice(
             chat_id=chat_id,
