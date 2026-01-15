@@ -1,163 +1,182 @@
 # API tuzilmasi
 
+## Arxitektura
+
+API **Clean Architecture** (Domain-driven Design) asosida qurilgan:
+
+```
+app/
+├── domain/              # Domain layer - business logic
+│   ├── entities/        # Data classes (User, Generation, etc.)
+│   └── interfaces/      # Repository va service interfeyslari
+├── application/         # Application layer - use cases
+│   └── use_cases/       # Business logic orchestration
+├── infrastructure/      # Infrastructure layer
+│   ├── database/        # SQLAlchemy models va session
+│   ├── repositories/    # Repository implementations
+│   ├── cache/          # Redis + Memory multi-layer cache
+│   └── logging.py      # Structlog + Sentry
+├── api/v1/             # API layer - FastAPI endpoints
+├── worker/             # Celery background tasks
+├── core/               # Configuration
+├── deps/               # FastAPI dependencies
+└── schemas/            # Pydantic request/response models
+```
+
+## Texnologiyalar
+
+- **FastAPI** - async web framework
+- **SQLAlchemy 2.0** - async ORM (asyncpg driver)
+- **Redis** - caching, rate limiting, Celery broker
+- **Celery** - background tasks (generations, broadcasts)
+- **structlog** - structured logging
+- **Sentry** - error tracking
+- **dependency-injector** - DI container
+
 ## Qisqacha
 
-- `app/main.py` - app factory va middleware/handlerlar ulash.
+- `app/main.py` - app factory, lifespan, middleware/handlerlar.
 - `app/api/v1` - versiyalashgan routerlar.
-- `app/core` - konfiguratsiya, logging, exception handlerlar.
+- `app/core` - konfiguratsiya, constants.
 - `app/middlewares` - request id va rate limit.
-- `app/schemas` - umumiy response modellari.
+- `app/schemas` - Pydantic modellari.
 - `app/deps` - dependency funksiyalar.
-- `alembic/` - migratsiyalar (skelet).
-  - Migratsiyalar uchun `alembic.ini` va `alembic/env.py` mavjud.
+- `alembic/` - DB migratsiyalar.
 
-## Endpointlar
+## Admin Endpointlar
 
-- `GET /` - root info.
-- `GET /api/v1/health` - healthcheck (uptime, request id).
-- `GET /api/v1/info` - API info.
-- `POST /api/v1/users/sync` - Telegram userni yaratish/sync.
-- `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari (kod, soni, jami bonus).
-- `GET /api/v1/users/{telegram_id}/balance` - user balansi (ledger asosida).
-- `GET /api/v1/users/{telegram_id}/trial` - trial holati.
-- `GET /api/v1/models` - aktiv modellarning ro'yxati va narxlari (`model.options` bilan).
-- `GET /api/v1/payments/stars/options` - Stars to'lov variantlari va kursi.
-- `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash va balansni to'ldirish.
-- `POST /api/v1/admin/credits/add` - user balansiga admin credit qo'shish.
-- `POST /api/v1/generations/submit` - generatsiyani boshlash (Wavespeed job).
-- `GET /api/v1/generations/active?telegram_id=...` - userdagi aktiv generatsiya holati.
-- `GET /api/v1/generations/{id}?telegram_id=...` - generatsiya holati (userga bog'langan).
-- `POST /api/v1/generations/{id}/refresh` - Wavespeed natijasini yangilash (body: `telegram_id`).
-- `GET /api/v1/generations/{id}/results?telegram_id=...` - natija URLlar ro'yxati.
-- `GET /api/v1/sizes` - bot uchun tayyorlangan size variantlari.
-- Active generatsiya bo'lsa `409` qaytadi (`active_request_id` bilan, Redis lock + DB advisory lock).
-- `POST /api/v1/media/upload` - Wavespeed media upload (multipart file).
-  - Form field: `file`
-  - Javob: `download_url`
-  - `WAVESPEED_API_KEY` bo'lmasa 400 qaytadi.
+### Dashboard
+- `GET /api/v1/admin/stats` - umumiy statistika (users, generations, revenue)
+- `GET /api/v1/admin/health` - admin API health check
 
-## Bot integratsiya
+### User Management
+- `GET /api/v1/admin/users` - userlarni qidirish (query, pagination)
+- `GET /api/v1/admin/users/{telegram_id}` - user tafsilotlari
 
-- Bot profile menyu uchun `users/sync`, `users/{telegram_id}/balance`, `users/{telegram_id}/trial` endpointlaridan foydalanadi.
-- Referral menyu uchun `referrals/{telegram_id}` ishlatiladi.
+### Credits
+- `POST /api/v1/admin/credits` - balansni o'zgartirish
 
-## Rejalashtirilgan backend imkoniyatlar
+## Asosiy Endpointlar
 
-- User balans va trial holatini saqlash.
-- Generatsiya requestlarini (prompt, reference) saqlash.
-- Model konfiguratsiyalari, narxlar va ruxsat etilgan parametrlar (aspect ratio, resolution, size).
-- Queue/worker integratsiyasi (kelgusida).
+### Health & Info
+- `GET /` - root info
+- `GET /api/v1/health` - healthcheck (uptime, request id)
+- `GET /api/v1/info` - API info
+
+### Users
+- `POST /api/v1/users/sync` - Telegram userni yaratish/sync
+- `GET /api/v1/users/{telegram_id}/balance` - user balansi
+- `GET /api/v1/users/{telegram_id}/trial` - trial holati
+
+### Referrals
+- `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari
+
+### Models
+- `GET /api/v1/models` - aktiv modellar ro'yxati va narxlari
+- `GET /api/v1/sizes` - size variantlari
+
+### Payments
+- `GET /api/v1/payments/stars/options` - Stars to'lov variantlari
+- `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash
+
+### Generations
+- `POST /api/v1/generations/submit` - generatsiyani boshlash
+- `GET /api/v1/generations/active?telegram_id=...` - aktiv generatsiya
+- `GET /api/v1/generations/{id}?telegram_id=...` - generatsiya holati
+- `POST /api/v1/generations/{id}/refresh` - natijani yangilash
+- `GET /api/v1/generations/{id}/results?telegram_id=...` - natija URLlar
+
+### Media
+- `POST /api/v1/media/upload` - Wavespeed media upload
+
+## Caching Strategy
+
+Multi-layer cache:
+- **L1 (Memory)**: 60s TTL, tez access, process-local
+- **L2 (Redis)**: 300s TTL, shared across processes
+
+Cache patterns:
+- User profiles: 5 min
+- Balances: 1 min
+- Admin stats: 1 min
+- Model catalog: 10 min
+
+## Background Tasks (Celery)
+
+Workers:
+- `celery-worker` - task execution
+- `celery-beat` - scheduled tasks
+
+Tasks:
+- `process_generation` - Wavespeed API polling
+- `send_broadcast_message` - individual broadcast messages
+- `process_broadcast` - broadcast orchestration
+- `cleanup_expired_generations` - hourly cleanup
 
 ## Ledger balans
 
-- User balansi bitta ustun bilan emas, ledger yozuvlari orqali hisoblanadi.
-- `ledger_entries.amount` musbat yoki manfiy bo'lishi mumkin.
-- Stars to'lovlari `payment_ledger` va `ledger_entries` ga yoziladi.
-- Referral bonuslari `ledger_entries` da `referral_bonus` entry_type bilan saqlanadi.
-- Admin qo'shimcha creditlar `ledger_entries` da `admin_credit` entry_type bilan saqlanadi.
+- User balansi ledger yozuvlari orqali hisoblanadi
+- `ledger_entries.amount` musbat yoki manfiy
+- Entry types: `deposit`, `generation`, `admin_adjustment`, `referral_bonus`, `refund`
 
 ## Telegram Stars to'lovlari
 
-- Kurs: 70 ⭐ = 1000 credit (env orqali o'zgartiriladi).
-- `GET /api/v1/payments/stars/options` javobi:
-  - `min_stars`, `preset_stars`, `exchange_numerator`, `exchange_denominator`, `currency`.
-- `POST /api/v1/payments/stars/confirm`:
-  - `telegram_id`, `stars_amount`, `currency`, `telegram_charge_id`, `provider_charge_id`, `invoice_payload`.
-  - Javob: `credits_added`, `balance`.
-
-## Referral
-
-- `POST /api/v1/users/sync` qo'shimcha `referral_code` qabul qiladi (`r_` prefixsiz).
-  - Javob: `referral_code`, `referral_applied`, `referrer_telegram_id`, `bonus_percent`.
-- `GET /api/v1/referrals/{telegram_id}` javobi:
-  - `referral_code`, `referrals_count`, `referral_credits_total`, `bonus_percent`.
-- Referral bonus: to'lov qilgan userda `referred_by_id` bo'lsa, referrerga `bonus_percent` (default 10%, round up) bonus tushadi.
+- Kurs: 70 ⭐ = 1000 credit (env orqali o'zgartiriladi)
+- Referral bonus: 10% (round up)
 
 ## Ma'lumotlar modeli
 
-- `model_catalog` - modellarning katalogi va qo'llab-quvvatlanadigan parametrlar.
-- `model_prices` - model narxlari (credit asosida).
-- `generation_requests` - prompt va tanlangan sozlamalar.
-- `generation_references` - reference fayllar/linklar.
-- `generation_results` - natijaviy rasm va meta.
-- `generation_jobs` - provider bilan ishlash holati.
-- `trial_uses` - trial ishlatilganligi.
-- `payment_ledger` - Stars to'lovlari bo'yicha ledger yozuvlari.
-- `users` - `referral_code`, `referred_by_id` bilan referral bog'lanishlari.
+- `users` - foydalanuvchilar (telegram_id, referral info)
+- `ledger_entries` - balans harakatlari
+- `model_catalog` - model katalogi
+- `model_prices` - model narxlari
+- `generations` - generatsiya so'rovlari
+- `generation_jobs` - Wavespeed job holatlari
+- `generation_results` - natija URLlar
+- `trial_uses` - trial ishlatilganligi
+- `payments` - to'lovlar
+- `broadcasts` - broadcast xabarlari
 
 ## Model katalogi
 
-- Hozircha `seedream-v4`, `nano-banana`, `nano-banana-pro` modellari mavjud.
-- `aspect_ratio` `nano-banana` va `nano-banana-pro` uchun yoqilgan, `resolution` faqat `nano-banana-pro`, `size` faqat `seedream-v4`.
-- `model.options` (GET `/api/v1/models`) ichida parametrlar va variantlar keladi: `supports_size`, `supports_aspect_ratio`, `supports_resolution`, `size_options`, `aspect_ratio_options`, `resolution_options`.
-- Model parametr konfiguratsiyasi `api/app/core/model_options.py` da markazlashgan.
-- Narx: `seedream-v4` = 27 credit, `nano-banana` = 38 credit, `nano-banana-pro` = 140 credit.
-- Provider: `wavespeed`.
-- `seedream-v4`, `nano-banana`, `nano-banana-pro` text-to-image va image-to-image ni qo'llab-quvvatlaydi.
-
-## Wavespeed integratsiya (Seedream v4)
-
-Text-to-image (T2I):
-- Endpoint: `POST https://api.wavespeed.ai/api/v3/bytedance/seedream-v4`
-- Header: `Authorization: Bearer $WAVESPEED_API_KEY`
-- Request:
-  - `prompt` (string, required)
-  - `size` (string, default `2048*2048`, 1024-4096 per dimension)
-  - `enable_base64_output` (bool, default false)
-  - `enable_sync_mode` (bool, default false, bizda false)
-- Result: `GET https://api.wavespeed.ai/api/v3/predictions/{id}/result`
-
-Image-to-image (I2I):
-- Endpoint: `POST https://api.wavespeed.ai/api/v3/bytedance/seedream-v4/edit`
-- Header: `Authorization: Bearer $WAVESPEED_API_KEY`
-- Request:
-  - `prompt` (string, required)
-  - `images` (array, required, 1-10 items)
-  - `size` (string, optional)
-  - `enable_base64_output` (bool, default false)
-  - `enable_sync_mode` (bool, default false, bizda false)
-- Result: `GET https://api.wavespeed.ai/api/v3/predictions/{id}/result`
-- `images` uchun Wavespeed media upload ishlatiladi: `POST /api/v3/media/upload/binary`, javobdagi `data.download_url`.
-- Bizda `enable_sync_mode` o'chirilgan, natija `/predictions/{id}/result` orqali polling bilan olinadi.
-
-Nano Banana (T2I/I2I):
-- T2I: `POST https://api.wavespeed.ai/api/v3/google/nano-banana/text-to-image`
-- I2I: `POST https://api.wavespeed.ai/api/v3/google/nano-banana/edit`
-- Parametrlar: `aspect_ratio` (ixtiyoriy).
-
-Nano Banana Pro (T2I/I2I):
-- T2I: `POST https://api.wavespeed.ai/api/v3/google/nano-banana-pro/text-to-image`
-- I2I: `POST https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit`
-- Parametrlar: `aspect_ratio` (ixtiyoriy), `resolution` (ixtiyoriy: `1k`, `2k`, `4k`).
-
-## Generatsiya parametrlar
-
-- `size` ixtiyoriy, faqat `seedream-v4` uchun. Kiritilmasa Wavespeed default ishlaydi (T2I default `2048*2048`).
-- `size` variantlari `model.options.size_options` orqali beriladi (GET `/api/v1/models`), `GET /api/v1/sizes` esa seedream uchun umumiy ro'yxat.
-- `aspect_ratio` ixtiyoriy, faqat `nano-banana` va `nano-banana-pro` uchun; variantlar `model.options.aspect_ratio_options` orqali keladi.
-- `resolution` ixtiyoriy, faqat `nano-banana-pro` uchun; variantlar `model.options.resolution_options` orqali keladi.
-- `reference_urls` bo'lsa image-to-image ishlaydi, bo'lmasa text-to-image.
-- `reference_file_ids` ixtiyoriy, Telegram file_id lar (URLlar bilan bir xil tartibda saqlanadi).
-- `error_message` faqat `failed` holatlarda qaytishi mumkin.
-- Har bir generatsiya `public_id` (UUID) bilan unique identifikatsiya qilinadi.
-- So'rov parametrlari `input_params` maydonida saqlanadi.
+Mavjud modellar:
+- `seedream-v4` - 27 credit (size parametri)
+- `nano-banana` - 38 credit (aspect_ratio)
+- `nano-banana-pro` - 140 credit (aspect_ratio, resolution)
 
 ## Middlewarelar
 
-- `X-Request-ID` - request tracking.
-- CORS - ruxsat etilgan originlar `.env` orqali.
-- Rate limit - `RATE_LIMIT_*` sozlamalari bilan.
+- `X-Request-ID` - request tracking
+- CORS - ruxsat etilgan originlar
+- Rate limit - RPS va burst limitleri
+
+## Logging
+
+Structured logging (structlog):
+- JSON format production uchun
+- Console format development uchun
+- Sentry integratsiya errors uchun
+
+## Docker Compose Services
+
+```yaml
+services:
+  api:          # FastAPI application
+  celery-worker: # Background task worker
+  celery-beat:   # Scheduled tasks
+  redis:         # Cache, Celery broker
+  db:            # PostgreSQL
+  bot:           # Telegram bot
+```
 
 ## Alembic
 
-Ishga tushirish (API konteyneri ichida):
+```bash
+# Yangi migratsiya
+alembic -c /app/alembic.ini revision --autogenerate -m "description"
 
-```
-alembic -c /app/alembic.ini revision --autogenerate -m "init"
+# Migratsiyalarni ishga tushirish
 alembic -c /app/alembic.ini upgrade head
 ```
 
-## Migratsiyalarni ishga tushirish
-
-- API konteyner startida avtomatik `alembic upgrade head` ishlaydi.
-- Agar kerak bo'lsa, `.env` yoki compose orqali `RUN_MIGRATIONS=false` qilib o'chirish mumkin.
+API konteyner startida avtomatik `alembic upgrade head` ishlaydi.

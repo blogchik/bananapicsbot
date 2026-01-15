@@ -6,7 +6,9 @@ services:
       - .env
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
   api:
     build:
       context: ./api
@@ -17,21 +19,51 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: ./api
+    command: ["celery", "-A", "app.worker.celery", "worker", "--loglevel", "info", "--concurrency", "4"]
+    env_file:
+      - .env
+    environment:
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      - api
+      - redis
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ./api
+    command: ["celery", "-A", "app.worker.celery", "beat", "--loglevel", "info"]
+    env_file:
+      - .env
+    environment:
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      - celery-worker
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
     restart: unless-stopped
+
   db:
     image: postgres:16
     environment:
