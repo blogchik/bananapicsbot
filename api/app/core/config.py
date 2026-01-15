@@ -65,6 +65,8 @@ class Settings(BaseSettings):
         "https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit"
     )
     wavespeed_timeout_seconds: int = 180
+    generation_poll_interval_seconds: int = 3
+    generation_poll_max_duration_seconds: int = 300  # 5 minutes max polling
 
     # Payments
     stars_enabled: bool = True

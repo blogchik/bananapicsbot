@@ -29,6 +29,7 @@ MEDIA_GROUP_DELAY_SECONDS = 1.0
 MEDIA_GROUP_BUFFERS: dict[tuple[int, str], dict[str, object]] = {}
 
 POLL_INTERVAL_SECONDS = 2
+MAX_POLL_DURATION_SECONDS = 300  # 5 minutes max polling
 SEND_RETRY_ATTEMPTS = 3
 SEND_RETRY_DELAY_SECONDS = 1.5
 MAX_DOCUMENT_CAPTION_LEN = 1024
@@ -1085,7 +1086,23 @@ async def poll_generation_status(
 ) -> None:
     last_label = None
     consecutive_errors = 0
+    import time
+    start_time = time.time()
+    
     while True:
+        # Check timeout
+        elapsed = time.time() - start_time
+        if elapsed > MAX_POLL_DURATION_SECONDS:
+            try:
+                await bot.edit_message_text(
+                    "⏱ Generatsiya vaqti tugadi. Qaytadan urinib ko'ring.",
+                    chat_id=chat_id,
+                    message_id=message_id,
+                )
+            except TelegramBadRequest:
+                pass
+            return
+        
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
             result = await client.refresh_generation(request_id, telegram_id)

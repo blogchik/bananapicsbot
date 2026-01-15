@@ -7,6 +7,7 @@ from typing import Optional
 from uuid import UUID
 
 from celery import shared_task
+from sqlalchemy import select, update
 
 from app.core.config import get_settings
 from app.infrastructure.logging import get_logger
@@ -31,34 +32,309 @@ def run_async(coro):
 
 
 @shared_task(bind=True, max_retries=3)
-def process_generation(self, generation_id: str):
-    """Process image generation task.
+def process_generation(self, generation_request_id: int, chat_id: int, message_id: int):
+    """Process image generation task with polling.
     
     This task is responsible for:
-    1. Calling Wavespeed API
-    2. Waiting for completion
-    3. Updating generation status
-    4. Storing results
+    1. Polling Wavespeed API for status
+    2. Updating generation status in DB
+    3. Sending result to user via Telegram when complete
     """
+    from app.db.session import sync_session_factory
+    from app.db.models import (
+        GenerationRequest, GenerationJob, GenerationResult,
+        GenerationStatus, JobStatus, ModelCatalog
+    )
+    from app.services.wavespeed import WavespeedClient
+    
+    logger.info(
+        "Starting generation polling",
+        generation_id=generation_request_id,
+        chat_id=chat_id,
+        message_id=message_id,
+    )
+    
+    poll_interval = settings.generation_poll_interval_seconds
+    max_duration = settings.generation_poll_max_duration_seconds
+    start_time = time.time()
+    
     try:
-        logger.info("Processing generation", generation_id=generation_id)
+        with sync_session_factory() as session:
+            # Get generation request and job
+            request = session.query(GenerationRequest).filter(
+                GenerationRequest.id == generation_request_id
+            ).first()
+            
+            if not request:
+                logger.error("Generation request not found", generation_id=generation_request_id)
+                return {"error": "Request not found"}
+            
+            job = session.query(GenerationJob).filter(
+                GenerationJob.request_id == request.id
+            ).first()
+            
+            if not job or not job.provider_job_id:
+                logger.error("Job not found", generation_id=generation_request_id)
+                return {"error": "Job not found"}
+            
+            # Get model for caption
+            model = session.query(ModelCatalog).filter(
+                ModelCatalog.id == request.model_id
+            ).first()
+            model_name = model.name if model else "Unknown"
+            
+            provider_job_id = job.provider_job_id
+            user_telegram_id = None
+            if request.user:
+                user_telegram_id = request.user.telegram_id
         
-        # TODO: Implement actual generation processing
-        # This would involve:
-        # 1. Getting generation from DB
-        # 2. Calling Wavespeed API
-        # 3. Polling for status
-        # 4. Updating DB with results
+        # Create Wavespeed client for polling
+        client = WavespeedClient(
+            api_key=settings.wavespeed_api_key,
+            base_url=settings.wavespeed_api_base_url,
+            timeout=settings.wavespeed_timeout_seconds,
+        )
         
-        return {"status": "completed", "generation_id": generation_id}
+        # Polling loop
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed > max_duration:
+                logger.warning(
+                    "Generation polling timeout",
+                    generation_id=generation_request_id,
+                    elapsed=elapsed,
+                )
+                _mark_generation_failed(
+                    generation_request_id,
+                    "Polling timeout - generation took too long"
+                )
+                _notify_user_generation_failed(
+                    chat_id, message_id,
+                    "Generatsiya vaqti tugadi. Qaytadan urinib ko'ring."
+                )
+                return {"status": "timeout", "generation_id": generation_request_id}
+            
+            time.sleep(poll_interval)
+            
+            try:
+                response = run_async(client.get_prediction_result(provider_job_id))
+            except Exception as e:
+                logger.warning(
+                    "Wavespeed poll error",
+                    generation_id=generation_request_id,
+                    error=str(e),
+                )
+                continue
+            
+            status_value = str(response.data.get("status", "")).lower()
+            outputs = _normalize_outputs(response.data.get("outputs", []))
+            
+            if status_value == "completed" or (not status_value and outputs):
+                # Generation completed successfully
+                _complete_generation(generation_request_id, outputs)
+                _notify_user_generation_complete(
+                    chat_id, message_id,
+                    request.prompt, model_name, request.cost, outputs
+                )
+                logger.info(
+                    "Generation completed",
+                    generation_id=generation_request_id,
+                    outputs_count=len(outputs),
+                )
+                return {"status": "completed", "generation_id": generation_request_id}
+            
+            elif status_value == "failed":
+                error_msg = response.message or "Generation failed"
+                _mark_generation_failed(generation_request_id, error_msg)
+                _notify_user_generation_failed(chat_id, message_id, error_msg)
+                logger.warning(
+                    "Generation failed",
+                    generation_id=generation_request_id,
+                    error=error_msg,
+                )
+                return {"status": "failed", "generation_id": generation_request_id}
+            
+            # Still running, continue polling
+            logger.debug(
+                "Generation still running",
+                generation_id=generation_request_id,
+                status=status_value,
+                elapsed=elapsed,
+            )
         
     except Exception as exc:
         logger.error(
             "Generation processing failed",
-            generation_id=generation_id,
+            generation_id=generation_request_id,
             error=str(exc),
         )
+        _mark_generation_failed(generation_request_id, str(exc))
         raise self.retry(exc=exc, countdown=30)
+
+
+def _normalize_outputs(outputs) -> list[str]:
+    """Normalize outputs to list of URLs."""
+    if not outputs:
+        return []
+    if isinstance(outputs, str):
+        return [outputs]
+    return [output for output in outputs if output]
+
+
+def _mark_generation_failed(request_id: int, error_message: str) -> None:
+    """Mark generation as failed in DB."""
+    from app.db.session import sync_session_factory
+    from app.db.models import GenerationRequest, GenerationJob, GenerationStatus, JobStatus
+    
+    try:
+        with sync_session_factory() as session:
+            request = session.query(GenerationRequest).filter(
+                GenerationRequest.id == request_id
+            ).first()
+            if request:
+                request.status = GenerationStatus.failed
+                request.completed_at = datetime.utcnow()
+            
+            job = session.query(GenerationJob).filter(
+                GenerationJob.request_id == request_id
+            ).first()
+            if job:
+                job.status = JobStatus.failed
+                job.completed_at = datetime.utcnow()
+                job.error_message = error_message
+            
+            session.commit()
+    except Exception as e:
+        logger.error("Failed to mark generation as failed", error=str(e))
+
+
+def _complete_generation(request_id: int, outputs: list[str]) -> None:
+    """Complete generation and save results."""
+    from app.db.session import sync_session_factory
+    from app.db.models import (
+        GenerationRequest, GenerationJob, GenerationResult,
+        GenerationStatus, JobStatus
+    )
+    
+    try:
+        with sync_session_factory() as session:
+            request = session.query(GenerationRequest).filter(
+                GenerationRequest.id == request_id
+            ).first()
+            if request:
+                request.status = GenerationStatus.completed
+                request.completed_at = datetime.utcnow()
+            
+            job = session.query(GenerationJob).filter(
+                GenerationJob.request_id == request_id
+            ).first()
+            if job:
+                job.status = JobStatus.completed
+                job.completed_at = datetime.utcnow()
+            
+            # Add results
+            existing = set(
+                session.execute(
+                    select(GenerationResult.image_url).where(
+                        GenerationResult.request_id == request_id
+                    )
+                ).scalars().all()
+            )
+            for output in outputs:
+                if output and output not in existing:
+                    session.add(GenerationResult(
+                        request_id=request_id,
+                        image_url=output
+                    ))
+            
+            session.commit()
+    except Exception as e:
+        logger.error("Failed to complete generation", error=str(e))
+
+
+def _notify_user_generation_complete(
+    chat_id: int,
+    message_id: int,
+    prompt: str,
+    model_name: str,
+    cost: int,
+    outputs: list[str],
+) -> None:
+    """Send generation result to user via Telegram."""
+    if not settings.bot_token:
+        logger.warning("Bot token not configured, skipping notification")
+        return
+    
+    try:
+        # Delete status message
+        run_async(_delete_telegram_message(chat_id, message_id))
+        
+        # Send results
+        for output_url in outputs:
+            caption = (
+                f"✅ Natija tayyor\\n"
+                f"Model: #{model_name.replace(' ', '')}\\n"
+                f"Credit: {cost}\\n"
+                f"Prompt:\\n<blockquote>{_escape_html(prompt[:500])}</blockquote>"
+            )
+            run_async(_send_telegram_document(chat_id, output_url, caption))
+    except Exception as e:
+        logger.error("Failed to send generation result", error=str(e))
+
+
+def _notify_user_generation_failed(
+    chat_id: int,
+    message_id: int,
+    error_message: str,
+) -> None:
+    """Notify user that generation failed."""
+    if not settings.bot_token:
+        return
+    
+    try:
+        text = f"❌ Generatsiya muvaffaqiyatsiz\\nSabab: {error_message}"
+        run_async(_edit_telegram_message(chat_id, message_id, text))
+    except Exception as e:
+        logger.error("Failed to send failure notification", error=str(e))
+
+
+def _escape_html(text: str) -> str:
+    """Escape HTML special characters."""
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+async def _delete_telegram_message(chat_id: int, message_id: int) -> None:
+    """Delete a Telegram message."""
+    url = f"https://api.telegram.org/bot{settings.bot_token}/deleteMessage"
+    async with httpx.AsyncClient() as client:
+        await client.post(url, json={"chat_id": chat_id, "message_id": message_id})
+
+
+async def _edit_telegram_message(chat_id: int, message_id: int, text: str) -> None:
+    """Edit a Telegram message."""
+    url = f"https://api.telegram.org/bot{settings.bot_token}/editMessageText"
+    async with httpx.AsyncClient() as client:
+        await client.post(url, json={
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": text,
+        })
+
+
+async def _send_telegram_document(chat_id: int, document_url: str, caption: str) -> None:
+    """Send a document via Telegram."""
+    url = f"https://api.telegram.org/bot{settings.bot_token}/sendDocument"
+    async with httpx.AsyncClient(timeout=60) as client:
+        await client.post(url, json={
+            "chat_id": chat_id,
+            "document": document_url,
+            "caption": caption,
+            "parse_mode": "HTML",
+        })
 
 
 @shared_task(bind=True)
@@ -518,15 +794,78 @@ def cleanup_expired_generations():
     """Cleanup expired/stuck generations.
     
     This task runs periodically to:
-    1. Find stuck generations (pending > 30 minutes)
+    1. Find stuck generations (pending/running > 10 minutes)
     2. Mark them as failed
-    3. Refund credits if applicable
+    3. Clear Redis locks
     """
+    from app.db.session import sync_session_factory
+    from app.db.models import GenerationRequest, GenerationJob, GenerationStatus, JobStatus
+    from datetime import timedelta
+    import redis
+    
     logger.info("Running generation cleanup")
     
-    # TODO: Implement cleanup logic
+    # Generations stuck for more than 10 minutes
+    cutoff_time = datetime.utcnow() - timedelta(minutes=10)
+    cleaned_count = 0
     
-    return {"cleaned_up": 0}
+    try:
+        with sync_session_factory() as session:
+            # Find stuck generations
+            stuck_statuses = [
+                GenerationStatus.pending,
+                GenerationStatus.configuring,
+                GenerationStatus.queued,
+                GenerationStatus.running,
+            ]
+            
+            stuck_generations = session.query(GenerationRequest).filter(
+                GenerationRequest.status.in_(stuck_statuses),
+                GenerationRequest.created_at < cutoff_time,
+            ).all()
+            
+            for gen in stuck_generations:
+                logger.warning(
+                    "Cleaning up stuck generation",
+                    generation_id=gen.id,
+                    status=gen.status.value,
+                    created_at=gen.created_at.isoformat(),
+                )
+                
+                # Mark as failed
+                gen.status = GenerationStatus.failed
+                gen.completed_at = datetime.utcnow()
+                
+                # Update job status
+                job = session.query(GenerationJob).filter(
+                    GenerationJob.request_id == gen.id
+                ).first()
+                if job:
+                    job.status = JobStatus.failed
+                    job.completed_at = datetime.utcnow()
+                    job.error_message = "Generation timeout - cleaned up by system"
+                
+                cleaned_count += 1
+            
+            session.commit()
+        
+        # Clear Redis locks for stuck generations
+        if cleaned_count > 0:
+            try:
+                redis_client = redis.from_url(settings.redis_url)
+                for gen in stuck_generations:
+                    lock_key = f"gen:active:{gen.user_id}"
+                    redis_client.delete(lock_key)
+                redis_client.close()
+            except Exception as e:
+                logger.warning("Failed to clear Redis locks", error=str(e))
+        
+        logger.info("Generation cleanup completed", cleaned_count=cleaned_count)
+        
+    except Exception as e:
+        logger.error("Generation cleanup failed", error=str(e))
+    
+    return {"cleaned_up": cleaned_count}
 
 
 @shared_task
