@@ -1,3 +1,18 @@
-aiogram==3.4.1
-python-dotenv==1.0.1
-aiohttp==3.9.3
+# Core
+aiogram>=3.15.0
+aiohttp>=3.9.0
+
+# Configuration
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-dotenv>=1.0.0
+
+# Redis (FSM storage, rate limiting, caching)
+redis>=5.0.0
+
+# Logging & Monitoring
+structlog>=24.4.0
+sentry-sdk>=2.19.0
+
+# HTTP Client improvements
+aiofiles>=24.1.0

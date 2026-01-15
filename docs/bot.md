@@ -1,62 +1,129 @@
-# Telegram bot ishga tushirish
+# Telegram bot
+
+Professional image generation bot with multi-instance scaling, Redis FSM storage, and internationalization.
+
+## Architecture
+
+```
+bot/
+├── main.py              # Entry point (polling/webhook)
+├── core/                # Configuration, logging, DI container
+├── infrastructure/      # API client, Redis client, FSM storage
+├── locales/            # Internationalization (uz, ru, en)
+├── middlewares/        # Logging, error handling, i18n, throttling
+├── keyboards/          # Inline keyboard builders
+├── states/             # FSM states
+├── filters/            # Admin and chat type filters
+├── services/           # Business logic layer
+├── handlers/           # Request handlers
+│   ├── commands/       # /start, /profile, /settings, /help
+│   ├── callbacks/      # Inline button callbacks
+│   ├── messages/       # Prompt and media handlers
+│   ├── payments/       # Stars payment handlers
+│   └── admin/          # Admin panel handlers
+└── utils/              # Formatters, validators, helpers
+```
+
+## Features
+
+- **Multi-instance scaling**: Redis FSM storage allows running multiple bot instances
+- **Internationalization**: Supports Uzbek, Russian, and English languages
+- **Structured logging**: JSON logs with structlog, Sentry integration
+- **Rate limiting**: Redis-based sliding window throttling
+- **DI Container**: Singleton pattern for shared resources
+- **Professional error handling**: Centralized error middleware with user-friendly messages
+- **Admin panel**: Full-featured admin with stats, user management, credits, broadcast, refund
 
 ## Talablar
 
 Docker va Docker Compose o'rnatilgan bo'lishi kerak.
 
+## Environment Variables
+
+```env
+# Required
+BOT_TOKEN=your_telegram_bot_token
+
+# Optional
+REDIS_URL=redis://redis:6379/0
+API_BASE_URL=http://api:8000
+ADMIN_IDS=686980246
+USE_WEBHOOK=false
+WEBHOOK_BASE_URL=https://your-domain.com
+WEBHOOK_PATH=/webhook
+WEBHOOK_HOST=0.0.0.0
+WEBHOOK_PORT=8080
+RATE_LIMIT_MESSAGES=20
+RATE_LIMIT_PERIOD=60
+SENTRY_DSN=your_sentry_dsn
+DEFAULT_LANGUAGE=uz
+```
+
 ## Ishga tushirish
 
 1. `.env.example` faylini `.env` ga ko'chiring.
-2. `.env` faylida `BOT_TOKEN` ni to'ldiring.
+2. `.env` faylida kerakli parametrlarni to'ldiring.
 3. Quyidagini ishga tushiring:
 
-```
+```bash
 docker compose up -d --build
 ```
 
-## API servis
+## Modes
 
-- API `http://localhost:8000` manzilda ishlaydi.
-- Root info: `GET /`
-- Healthcheck: `GET /api/v1/health`
-- API info: `GET /api/v1/info`
+### Polling (default)
+```env
+USE_WEBHOOK=false
+```
 
-## Postgres
-
-- DB `localhost:5432` portda ishlaydi.
+### Webhook
+```env
+USE_WEBHOOK=true
+WEBHOOK_BASE_URL=https://your-domain.com
+WEBHOOK_PATH=/webhook
+```
 
 ## Bot menyulari
 
 - Barcha tugmalar inline.
-- Home menyu welcome message bilan chiqadi, faqat `Profile` inline tugmasi bor.
-- Profile menyu: TG info + balans + trial holati, `Balans to'ldirish`, `Referral` va `Home` inline tugmalari bor.
-  - Balans to'ldirish: Telegram Stars (min 70 ⭐), 6 ta preset va custom summa. Kurs ko'rsatiladi, preset tugmalarda Stars → credit ko'rinadi, to'lovdan keyin qabul qilingan Stars va qo'shilgan credit xabarda beriladi.
-- Referral menyu: user uchun maxsus link (masalan `https://t.me/BananaPicBot?start=r_<code>`), referral soni va jami bonus ko'rsatiladi. Yangi referral bo'lganda referrerga xabar boradi. User faqat bitta referrerni oladi va o'ziga referal bo'la olmaydi. Referral faqat yangi userlar uchun ishlaydi.
-- `/start` bosilganda oddiy reply keyboardlar tozalanadi.
-- Admin buyruqlar: `/pay USER_ID CREDITS`, `/refund USER_ID STARS` (faqat `686980246`).
+- Home menyu welcome message bilan chiqadi.
+- Profile menyu: TG info + balans + trial holati.
+- Settings menyu: Til tanlash (uz/ru/en).
+- Referral menyu: maxsus link, referral soni va jami bonus.
+- Admin panel: `/admin` (faqat admin_ids uchun).
+
+## Admin Panel
+
+Admin panel inline buttons orqali ishlaydi:
+
+- **📊 Statistics**: Overview, users, generations, revenue stats
+- **👥 Users**: Search, list, view profile, ban/unban
+- **💰 Add Credits**: Add or remove credits from user
+- **📢 Broadcast**: Send message to all users
+- **💸 Refund**: Refund generation credits
 
 ## Generatsiya flow
 
-- User prompt yoki reference rasm yuboradi (rasmni foto yoki fayl ko'rinishida yuborish mumkin, faqat image; 1-10 ta reference; rasm doim prompt bilan birga yuboriladi).
-- Reference rasm backend orqali Wavespeed media upload qiladi.
-- Menu: Model tanlash (`seedream-v4`, `nano-banana`, `nano-banana-pro`), Seedream uchun `Size`, Nano Banana(lar) uchun `Aspect ratio`, faqat Nano Banana Pro uchun `Resolution`, Generate.
-- Parametrlar ro'yxati `GET /api/v1/models` dagi `model.options` orqali keladi va bot shunga moslashadi.
-- `Generate` bosilganda `/api/v1/generations/submit` ishlaydi.
-- Status avtomatik yangilanadi (har 2 sekundda), faqat 3 holat: navbatda, jarayonda, tayyor.
-- Natija tayyor bo'lsa file ko'rinishidagi natijaga caption biriktiriladi (model hashtag, prompt blockquote, vaqt, credit).
-- Status xabari tayyor bo'lganda o'chiriladi, natija esa prompt xabariga reply bo'lib yuboriladi.
-- Natijalar oddiy rasm va fayl ko'rinishida yuboriladi.
-- User bir vaqtning o'zida faqat 1 ta generatsiya boshlaydi.
-- Aktiv generatsiya mavjud bo'lsa, yangi so'rovda bot kutishni so'raydi.
+1. User prompt yoki reference rasm yuboradi
+2. Bot menu ko'rsatadi: model, size/aspect_ratio/resolution tanlash
+3. Generate bosilganda so'rov yuboriladi
+4. Status avtomatik yangilanadi (polling)
+5. Natija tayyor bo'lsa rasm va file yuboriladi
 
-## To'xtatish
+## API servis
 
-```
-docker compose down
-```
+- API `http://localhost:8000` manzilda ishlaydi.
+- Healthcheck: `GET /api/v1/health`
+- API info: `GET /api/v1/info`
 
 ## Loglar
 
-```
+```bash
 docker compose logs -f bot
+```
+
+## To'xtatish
+
+```bash
+docker compose down
 ```
