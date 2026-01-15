@@ -88,6 +88,9 @@ class Settings(BaseSettings):
     
     # Admin
     admin_telegram_ids: str = ""
+    
+    # Bot token (for Celery broadcast tasks)
+    bot_token: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

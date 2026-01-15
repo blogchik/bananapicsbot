@@ -367,6 +367,108 @@ class AdminKeyboard:
         )
     
     @staticmethod
+    def refund_menu(
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build refund type selection menu."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="🎨 Credit Refund (Generatsiya)",
+                        callback_data=AdminCallback.REFUND_CREDITS,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="⭐ Stars Refund (To'lov)",
+                        callback_data=AdminCallback.REFUND_STARS,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.BACK, None),
+                        callback_data=AdminCallback.MAIN,
+                    )
+                ],
+            ]
+        )
+    
+    @staticmethod
+    def stars_refund_confirm(
+        user_id: int,
+        stars_amount: int,
+        credits_to_deduct: int,
+        current_balance: int,
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build stars refund confirmation."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=f"✅ Tasdiqlash ({stars_amount}⭐ = {credits_to_deduct} cr)",
+                        callback_data=AdminCallback.REFUND_STARS_CONFIRM,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Bekor qilish",
+                        callback_data=AdminCallback.REFUND_STARS_CANCEL,
+                    )
+                ],
+            ]
+        )
+    
+    @staticmethod
+    def stars_refund_transactions(
+        transactions: list[dict],
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build transaction selection for stars refund."""
+        from datetime import datetime
+        
+        buttons: list[list[InlineKeyboardButton]] = []
+        
+        for idx, tx in enumerate(transactions[:10]):  # Limit to 10 transactions
+            amount = tx["amount"]
+            tx_date = tx.get("date", 0)
+            
+            # Format date with time
+            if tx_date:
+                dt = datetime.fromtimestamp(tx_date)
+                date_str = dt.strftime("%d.%m.%Y %H:%M")
+            else:
+                date_str = "???"
+            
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"⭐ {amount} Stars - {date_str}",
+                    callback_data=AdminCallback.refund_stars_tx(idx),
+                )
+            ])
+        
+        # Add "Refund All" button if multiple transactions
+        if len(transactions) > 1:
+            total = sum(tx["amount"] for tx in transactions)
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"🔄 Barchasini qaytarish ({total}⭐)",
+                    callback_data=AdminCallback.REFUND_STARS_ALL,
+                )
+            ])
+        
+        # Back button
+        buttons.append([
+            InlineKeyboardButton(
+                text=_(TranslationKey.BACK, None),
+                callback_data=AdminCallback.REFUND,
+            )
+        ])
+        
+        return InlineKeyboardMarkup(inline_keyboard=buttons)
+    
+    @staticmethod
     def cancel_action(
         _: Callable[[TranslationKey, dict | None], str],
     ) -> InlineKeyboardMarkup:
@@ -428,6 +530,8 @@ class AdminKeyboard:
         
         return InlineKeyboardMarkup(inline_keyboard=rows)
     
+    # ============ Broadcast ============
+    
     @staticmethod
     def broadcast_menu(
         _: Callable[[TranslationKey, dict | None], str],
@@ -457,6 +561,120 @@ class AdminKeyboard:
         )
     
     @staticmethod
+    def broadcast_filter_select(
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build broadcast filter selection."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="👥 All Users",
+                        callback_data="admin:broadcast:filter:all",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="🔥 Active (7 days)",
+                        callback_data="admin:broadcast:filter:active_7d",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="📊 Active (30 days)",
+                        callback_data="admin:broadcast:filter:active_30d",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="💰 With Balance",
+                        callback_data="admin:broadcast:filter:with_balance",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="💳 Paid Users",
+                        callback_data="admin:broadcast:filter:paid_users",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="🆕 New Users (7 days)",
+                        callback_data="admin:broadcast:filter:new_users",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Cancel",
+                        callback_data=AdminCallback.BROADCAST_CANCEL,
+                    )
+                ],
+            ]
+        )
+    
+    @staticmethod
+    def broadcast_button_options(
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build inline button options for broadcast."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="🔘 Add Button",
+                        callback_data="admin:broadcast:add_button",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="⏭ Skip (No Button)",
+                        callback_data="admin:broadcast:skip_button",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Cancel",
+                        callback_data=AdminCallback.BROADCAST_CANCEL,
+                    )
+                ],
+            ]
+        )
+    
+    @staticmethod
+    def broadcast_preview(
+        users_count: int,
+        filter_type: str,
+        has_button: bool,
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build broadcast preview/confirmation."""
+        filter_labels = {
+            "all": "👥 All Users",
+            "active_7d": "🔥 Active (7d)",
+            "active_30d": "📊 Active (30d)",
+            "with_balance": "💰 With Balance",
+            "paid_users": "💳 Paid Users",
+            "new_users": "🆕 New Users",
+        }
+        
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=f"📤 Send to {users_count} users",
+                        callback_data=AdminCallback.BROADCAST_CONFIRM,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Cancel",
+                        callback_data=AdminCallback.BROADCAST_CANCEL,
+                    )
+                ],
+            ]
+        )
+    
+    @staticmethod
     def broadcast_confirm(
         _: Callable[[TranslationKey, dict | None], str],
     ) -> InlineKeyboardMarkup:
@@ -478,26 +696,37 @@ class AdminKeyboard:
     
     @staticmethod
     def broadcast_status(
-        broadcast_id: str,
+        public_id: str,
+        status: str,
         _: Callable[[TranslationKey, dict | None], str],
     ) -> InlineKeyboardMarkup:
         """Build broadcast status button."""
-        return InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="🔄 Refresh",
-                        callback_data=f"admin:broadcast:status:{broadcast_id}",
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=_(TranslationKey.BACK, None),
-                        callback_data=AdminCallback.BROADCAST,
-                    )
-                ],
+        rows = [
+            [
+                InlineKeyboardButton(
+                    text="🔄 Refresh",
+                    callback_data=f"admin:broadcast:status:{public_id}",
+                )
             ]
-        )
+        ]
+        
+        # Add cancel button if still running
+        if status in ("pending", "running"):
+            rows.append([
+                InlineKeyboardButton(
+                    text="⛔ Cancel Broadcast",
+                    callback_data=f"admin:broadcast:cancel:{public_id}",
+                )
+            ])
+        
+        rows.append([
+            InlineKeyboardButton(
+                text=_(TranslationKey.BACK, None),
+                callback_data=AdminCallback.BROADCAST,
+            )
+        ])
+        
+        return InlineKeyboardMarkup(inline_keyboard=rows)
     
     @staticmethod
     def back_to_broadcast(

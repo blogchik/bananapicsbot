@@ -99,8 +99,52 @@ Admin panel inline buttons orqali ishlaydi:
 - **📊 Statistics**: Overview, users, generations, revenue stats
 - **👥 Users**: Search, list, view profile, ban/unban
 - **💰 Add Credits**: Add or remove credits from user
-- **📢 Broadcast**: Send message to all users
-- **💸 Refund**: Refund generation credits
+- **📢 Broadcast**: Send message to filtered users with progress tracking
+- **💸 Refund**: Two types of refunds:
+  - **🎨 Credit Refund**: Refund credits used for generation (select generation to refund)
+  - **⭐ Stars Refund**: Refund Telegram Stars payment via Telegram API and deduct credits from balance
+
+### Broadcast Flow
+
+1. Admin selects "📢 Broadcast" → "📤 New Broadcast"
+2. Admin sends message (text/photo/video/audio/sticker)
+3. Message preview shown
+4. Admin selects user filter:
+   - 👥 All Users
+   - 🔥 Active (7 days)
+   - 📊 Active (30 days)
+   - 💰 With Balance
+   - 💳 Paid Users
+   - 🆕 New Users (7 days)
+5. Admin optionally adds inline button (text + URL)
+6. Preview shown with recipient count
+7. Admin confirms → broadcast starts via Celery workers
+8. Progress shown with real-time updates:
+   - Sent count
+   - Failed count  
+   - Blocked count (users who blocked the bot)
+   - Progress bar with percentage
+9. Admin can cancel running broadcast
+
+### Stars Refund Flow
+
+1. Admin selects "⭐ Stars Refund"
+2. Admin enters user Telegram ID
+3. System shows user balance and recent payments
+4. Admin enters Stars amount to refund
+5. System checks if balance >= credits equivalent
+6. If valid, shows confirmation with: Stars amount, credits to deduct, new balance
+7. On confirm: Calls Telegram refundStarPayment API, deducts credits via API
+8. Shows success/error message
+
+### Stars Refund Error Cases
+
+Admin will see specific error messages for these cases:
+
+- **User never paid with Stars**: "Bu foydalanuvchi hech qachon Stars bilan to'lov qilmagan"
+- **All payments already refunded**: "Barcha to'lovlar allaqachon qaytarilgan"
+- **Telegram refuses refund**: Shows specific Telegram API errors (chargeback, time limit, etc.)
+- **Partial success**: If Stars refunded but credits deduction fails, shows warning to manually deduct
 
 ## Generatsiya flow
 

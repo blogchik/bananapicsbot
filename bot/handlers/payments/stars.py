@@ -214,7 +214,8 @@ async def handle_successful_payment(
         )
         
         credits_added = int(result.get("credits_added", 0))
-        new_balance = int(result.get("new_balance", 0))
+        # API returns "balance", not "new_balance"
+        new_balance = int(result.get("balance", 0))
         
         await message.answer(
             _(TranslationKey.TOPUP_SUCCESS, {

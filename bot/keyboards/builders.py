@@ -131,6 +131,18 @@ class AdminCallback:
     ADD_CREDITS = "admin:credits"
     REFUND = "admin:refund"
     
+    # Refund types
+    REFUND_CREDITS = "admin:refund:credits"
+    REFUND_STARS = "admin:refund:stars"
+    REFUND_STARS_CONFIRM = "admin:refund:stars:confirm"
+    REFUND_STARS_CANCEL = "admin:refund:stars:cancel"
+    REFUND_STARS_ALL = "admin:refund:stars:all"
+    
+    @staticmethod
+    def refund_stars_tx(index: int) -> str:
+        """Create callback for specific transaction refund by index."""
+        return f"admin:refund:stars:tx:{index}"
+    
     # Broadcast
     BROADCAST = "admin:broadcast"
     BROADCAST_NEW = "admin:broadcast:new"

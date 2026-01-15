@@ -29,6 +29,10 @@ class User(Base):
     referred_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"), nullable=True, index=True
     )
+    is_banned: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    last_active_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow
     )
@@ -272,3 +276,73 @@ class PaymentLedger(Base):
     )
 
     user: Mapped[User] = relationship("User")
+
+
+class BroadcastStatus(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    cancelled = "cancelled"
+    failed = "failed"
+
+
+class Broadcast(Base):
+    __tablename__ = "broadcasts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[str] = mapped_column(
+        String(36), unique=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    admin_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    content_type: Mapped[str] = mapped_column(String(50))
+    text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    media_file_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    inline_button_text: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    inline_button_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    filter_type: Mapped[str] = mapped_column(String(50), default="all")
+    filter_params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[BroadcastStatus] = mapped_column(
+        SqlEnum(BroadcastStatus, name="broadcast_status"),
+        default=BroadcastStatus.pending,
+    )
+    total_users: Mapped[int] = mapped_column(Integer, default=0)
+    sent_count: Mapped[int] = mapped_column(Integer, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    blocked_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow
+    )
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    recipients: Mapped[list["BroadcastRecipient"]] = relationship(
+        "BroadcastRecipient", back_populates="broadcast", cascade="all, delete-orphan"
+    )
+
+
+class BroadcastRecipient(Base):
+    __tablename__ = "broadcast_recipients"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    broadcast_id: Mapped[int] = mapped_column(
+        ForeignKey("broadcasts.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    telegram_id: Mapped[int] = mapped_column(BigInteger)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow
+    )
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    broadcast: Mapped[Broadcast] = relationship("Broadcast", back_populates="recipients")

@@ -254,3 +254,138 @@ class AdminService:
             {"date": str(row.date), "count": row.count}
             for row in result.all()
         ]
+    
+    # ============ User Generations ============
+    
+    async def get_user_generations(
+        self,
+        user_id: int,
+        limit: int = 10,
+    ) -> Sequence[Dict[str, Any]]:
+        """Get user's recent generations."""
+        query = (
+            select(GenerationRequest)
+            .where(GenerationRequest.user_id == user_id)
+            .order_by(GenerationRequest.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        generations = result.scalars().all()
+        
+        items = []
+        for gen in generations:
+            # Get model name
+            model_name = "Unknown"
+            if gen.model_id:
+                model_query = select(ModelCatalog).where(ModelCatalog.id == gen.model_id)
+                model_result = await self.session.execute(model_query)
+                model = model_result.scalar_one_or_none()
+                if model:
+                    model_name = model.name
+            
+            items.append({
+                "id": gen.id,
+                "public_id": gen.public_id,
+                "model": model_name,
+                "prompt": gen.prompt[:100] if gen.prompt else "",
+                "status": gen.status.value if gen.status else "unknown",
+                "created_at": gen.created_at.isoformat() if gen.created_at else None,
+            })
+        
+        return items
+    
+    # ============ Refund Generation ============
+    
+    async def refund_generation(
+        self,
+        user_id: int,
+        generation_id: int,
+    ) -> Dict[str, Any]:
+        """Refund a specific generation."""
+        # Find generation
+        query = select(GenerationRequest).where(
+            and_(
+                GenerationRequest.id == generation_id,
+                GenerationRequest.user_id == user_id,
+            )
+        )
+        result = await self.session.execute(query)
+        generation = result.scalar_one_or_none()
+        
+        if not generation:
+            return {"error": True, "message": "Generation not found"}
+        
+        # Find associated ledger entry
+        ledger_query = select(LedgerEntry).where(
+            and_(
+                LedgerEntry.user_id == user_id,
+                LedgerEntry.entry_type == "generation",
+                LedgerEntry.reference_id.contains(str(generation_id)),
+            )
+        )
+        ledger_result = await self.session.execute(ledger_query)
+        ledger_entry = ledger_result.scalar_one_or_none()
+        
+        refund_amount = 0
+        if ledger_entry:
+            refund_amount = abs(ledger_entry.amount)
+        else:
+            # Estimate from model price
+            if generation.model_id:
+                price_query = select(ModelPrice).where(ModelPrice.model_id == generation.model_id)
+                price_result = await self.session.execute(price_query)
+                price = price_result.scalar_one_or_none()
+                if price:
+                    refund_amount = price.credits
+        
+        if refund_amount > 0:
+            # Create refund entry
+            refund_entry = LedgerEntry(
+                user_id=user_id,
+                amount=refund_amount,
+                entry_type="refund",
+                description=f"Refund for generation {generation_id}",
+                reference_id=f"refund_{generation_id}",
+            )
+            self.session.add(refund_entry)
+            await self.session.commit()
+        
+        new_balance = await self.get_user_balance(user_id)
+        
+        return {
+            "credits_refunded": refund_amount,
+            "new_balance": new_balance,
+        }
+    
+    # ============ User Payments ============
+    
+    async def get_user_payments(
+        self,
+        user_id: int,
+        limit: int = 10,
+    ) -> Sequence[Dict[str, Any]]:
+        """Get user's payment history."""
+        from app.db.models import PaymentLedger
+        
+        query = (
+            select(PaymentLedger)
+            .where(PaymentLedger.user_id == user_id)
+            .order_by(PaymentLedger.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        payments = result.scalars().all()
+        
+        items = []
+        for payment in payments:
+            items.append({
+                "id": payment.id,
+                "provider": payment.provider,
+                "currency": payment.currency,
+                "stars_amount": payment.stars_amount,
+                "credits_amount": payment.credits_amount,
+                "telegram_charge_id": payment.telegram_charge_id,
+                "created_at": payment.created_at.isoformat() if payment.created_at else None,
+            })
+        
+        return items

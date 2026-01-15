@@ -52,9 +52,17 @@ app/
 ### User Management
 - `GET /api/v1/admin/users` - userlarni qidirish (query, pagination)
 - `GET /api/v1/admin/users/{telegram_id}` - user tafsilotlari
+- `GET /api/v1/admin/users/count?filter_type=...` - filter bo'yicha user soni
 
 ### Credits
 - `POST /api/v1/admin/credits` - balansni o'zgartirish
+
+### Broadcast
+- `POST /api/v1/admin/broadcasts` - yangi broadcast yaratish
+- `GET /api/v1/admin/broadcasts` - broadcast tarixini ko'rish
+- `GET /api/v1/admin/broadcasts/{public_id}` - broadcast holati
+- `POST /api/v1/admin/broadcasts/{public_id}/start` - broadcastni boshlash
+- `POST /api/v1/admin/broadcasts/{public_id}/cancel` - broadcastni bekor qilish
 
 ## Asosiy Endpointlar
 
@@ -135,7 +143,8 @@ Tasks:
 - `generation_results` - natija URLlar
 - `trial_uses` - trial ishlatilganligi
 - `payments` - to'lovlar
-- `broadcasts` - broadcast xabarlari
+- `broadcasts` - broadcast xabarlari (content, filter, status, counters)
+- `broadcast_recipients` - har bir user uchun yuborish holati
 
 ## Model katalogi
 

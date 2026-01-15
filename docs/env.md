@@ -36,6 +36,7 @@
 - `RATE_LIMIT_RPS`: 1 soniyadagi ruxsat etilgan so'rovlar soni.
 - `RATE_LIMIT_BURST`: Qisqa burst limiti.
 - `RUN_MIGRATIONS`: API startida migratsiyalarni avtomatik ishga tushirish.
+- `BOT_TOKEN`: Bot tokeni (Celery broadcast tasklari uchun - API tomonida).
 
 ## Wavespeed Provider
 

@@ -152,25 +152,61 @@ class RefundOut(BaseModel):
 
 # ============ Broadcast ============
 
+class BroadcastFilterType(str):
+    """Broadcast filter types."""
+    ALL = "all"
+    ACTIVE_7D = "active_7d"
+    ACTIVE_30D = "active_30d"
+    WITH_BALANCE = "with_balance"
+    PAID_USERS = "paid_users"
+    NEW_USERS = "new_users"
+
+
 class BroadcastCreateRequest(BaseModel):
     """Broadcast create request."""
-    content_type: str = Field(..., pattern="^(text|photo|video|document)$")
-    content: str = Field(..., min_length=1)
+    admin_id: int
+    content_type: str = Field(..., pattern="^(text|photo|video|audio|sticker)$")
+    text: Optional[str] = None
     media_file_id: Optional[str] = None
+    inline_button_text: Optional[str] = Field(None, max_length=100)
+    inline_button_url: Optional[str] = Field(None, max_length=500)
+    filter_type: str = Field(default="all")
+    filter_params: Optional[Dict[str, Any]] = None
 
 
 class BroadcastOut(BaseModel):
     """Broadcast output."""
-    id: UUID
+    id: int
+    public_id: str
     admin_id: int
     content_type: str
-    content: str
+    text: Optional[str]
     media_file_id: Optional[str]
+    inline_button_text: Optional[str]
+    inline_button_url: Optional[str]
+    filter_type: str
     status: str
-    total_recipients: int
+    total_users: int
     sent_count: int
     failed_count: int
+    blocked_count: int
     created_at: datetime
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+
+
+class BroadcastStatusOut(BaseModel):
+    """Broadcast status output."""
+    public_id: str
+    status: str
+    total_users: int
+    sent_count: int
+    failed_count: int
+    blocked_count: int
+    progress_percent: float
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
 

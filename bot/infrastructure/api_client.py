@@ -298,11 +298,11 @@ class ApiClient:
         """Add credits to user (admin only)."""
         payload: dict[str, object] = {
             "telegram_id": telegram_id,
-            "credits": credits,
+            "amount": credits,  # Changed from 'credits' to 'amount'
         }
         if description:
-            payload["description"] = description
-        return await self._request("POST", "/api/v1/admin/credits/add", json=payload)
+            payload["reason"] = description  # Changed from 'description' to 'reason'
+        return await self._request("POST", "/api/v1/admin/credits", json=payload)
     
     async def get_admin_stats(self) -> dict:
         """Get admin statistics."""
@@ -319,34 +319,105 @@ class ApiClient:
             f"/api/v1/admin/users?limit={limit}&offset={offset}",
         )
     
-    # Extended admin endpoints
+    # Extended admin endpoints - all use /api/v1/admin/stats now
     async def get_admin_overview_stats(self) -> dict:
         """Get overview statistics for admin panel."""
-        return await self._request("GET", "/api/v1/admin/stats/overview")
+        stats = await self._request("GET", "/api/v1/admin/stats")
+        # Transform to expected format
+        return {
+            "users": {
+                "total": stats.get("total_users", 0),
+                "today": stats.get("new_users_today", 0),
+                "week": stats.get("active_users_7d", 0),
+                "month": stats.get("active_users_30d", 0),
+            },
+            "generations": {
+                "total": stats.get("total_generations", 0),
+                "today": 0,  # Not available in current stats
+                "week": 0,
+            },
+            "revenue": {
+                "total_stars": stats.get("total_deposits", 0),
+                "today_stars": 0,
+                "week_stars": 0,
+            },
+        }
     
     async def get_admin_user_stats(self) -> dict:
         """Get user statistics."""
-        return await self._request("GET", "/api/v1/admin/stats/users")
+        stats = await self._request("GET", "/api/v1/admin/stats")
+        return {
+            "total": stats.get("total_users", 0),
+            "active": stats.get("active_users_7d", 0),
+            "paying": stats.get("completed_payments", 0),
+            "avg_balance": 0,
+            "total_balance": 0,
+        }
     
     async def get_admin_generation_stats(self) -> dict:
         """Get generation statistics."""
-        return await self._request("GET", "/api/v1/admin/stats/generations")
+        stats = await self._request("GET", "/api/v1/admin/stats")
+        return {
+            "total": stats.get("total_generations", 0),
+            "completed": stats.get("completed_generations", 0),
+            "failed": stats.get("failed_generations", 0),
+            "credits_spent": stats.get("total_spent", 0),
+            "by_model": {},
+        }
     
     async def get_admin_revenue_stats(self) -> dict:
         """Get revenue statistics."""
-        return await self._request("GET", "/api/v1/admin/stats/revenue")
+        stats = await self._request("GET", "/api/v1/admin/stats")
+        return {
+            "total_stars": stats.get("total_deposits", 0),
+            "today_stars": 0,
+            "week_stars": 0,
+            "month_stars": stats.get("total_deposits", 0),
+            "total_credits_purchased": 0,
+            "credits_spent": stats.get("total_spent", 0),
+        }
     
     async def search_users(self, query: str) -> list[dict]:
         """Search users by ID or username."""
-        return await self._request(
+        # Use /api/v1/admin/users with query param
+        result = await self._request(
             "GET",
-            f"/api/v1/admin/users/search?q={query}",
+            f"/api/v1/admin/users?query={query}&limit=20",
         )
+        users = result.get("users", [])
+        
+        # Transform to expected format
+        transformed = []
+        for user in users:
+            transformed.append({
+                "telegram_id": user.get("telegram_id"),
+                "username": user.get("username"),
+                "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip() or None,
+                "balance": int(user.get("balance", 0)),
+                "trial_credits": user.get("trial_remaining", 0),
+                "total_generations": user.get("generation_count", 0),
+                "created_at": user.get("created_at", "-"),
+                "last_active": user.get("last_active_at", "-"),
+                "is_banned": user.get("is_banned", False),
+            })
+        return transformed
     
     async def get_user_by_telegram_id(self, telegram_id: int) -> dict | None:
         """Get user by telegram ID."""
         try:
-            return await self._request("GET", f"/api/v1/admin/users/{telegram_id}")
+            result = await self._request("GET", f"/api/v1/admin/users/{telegram_id}")
+            # Transform to expected format for bot
+            return {
+                "telegram_id": result.get("telegram_id"),
+                "username": result.get("username"),
+                "full_name": f"{result.get('first_name', '')} {result.get('last_name', '')}".strip() or "-",
+                "balance": int(result.get("balance", 0)),
+                "trial_credits": result.get("trial_remaining", 0),
+                "total_generations": result.get("generation_count", 0),
+                "created_at": result.get("created_at", "-"),
+                "last_active": result.get("last_active_at", "-"),
+                "is_banned": result.get("is_banned", False),
+            }
         except APIError as e:
             if e.status == 404:
                 return None
@@ -354,17 +425,38 @@ class ApiClient:
     
     async def get_users_page(self, page: int = 0, per_page: int = 20) -> dict:
         """Get paginated users list."""
-        return await self._request(
+        offset = page * per_page
+        result = await self._request(
             "GET",
-            f"/api/v1/admin/users?page={page}&per_page={per_page}",
+            f"/api/v1/admin/users?offset={offset}&limit={per_page}",
         )
+        users = result.get("users", [])
+        total = result.get("total", 0)
+        has_more = (offset + len(users)) < total
+        
+        # Transform users to expected format
+        transformed_users = []
+        for user in users:
+            transformed_users.append({
+                "telegram_id": user.get("telegram_id"),
+                "username": user.get("username"),
+                "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip() or None,
+                "balance": int(user.get("balance", 0)),
+            })
+        
+        return {
+            "users": transformed_users,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "has_more": has_more,
+        }
     
     async def toggle_user_ban(self, telegram_id: int) -> dict:
         """Toggle user ban status."""
-        return await self._request(
-            "POST",
-            f"/api/v1/admin/users/{telegram_id}/toggle-ban",
-        )
+        # This endpoint doesn't exist yet - return mock for now
+        logger.warning("toggle_user_ban endpoint not implemented")
+        return {"error": True, "message": "Not implemented"}
     
     async def adjust_user_credits(
         self,
@@ -372,10 +464,11 @@ class ApiClient:
         amount: int,
         reason: str = "Admin adjustment",
     ) -> dict:
-        """Adjust user credits."""
+        """Adjust user credits (for negative amounts)."""
+        # Use same endpoint as add_credits
         return await self._request(
             "POST",
-            "/api/v1/admin/credits/adjust",
+            "/api/v1/admin/credits",
             json={
                 "telegram_id": telegram_id,
                 "amount": amount,
@@ -406,24 +499,74 @@ class ApiClient:
             json={"telegram_id": telegram_id},
         )
     
-    async def start_broadcast(self, broadcast_data: dict) -> dict:
-        """Start a new broadcast."""
+    # Broadcast endpoints
+    async def create_broadcast(
+        self,
+        admin_id: int,
+        content_type: str,
+        text: str | None = None,
+        media_file_id: str | None = None,
+        inline_button_text: str | None = None,
+        inline_button_url: str | None = None,
+        filter_type: str = "all",
+    ) -> dict:
+        """Create a new broadcast."""
         return await self._request(
             "POST",
-            "/api/v1/admin/broadcast",
-            json=broadcast_data,
+            "/api/v1/admin/broadcasts",
+            json={
+                "admin_id": admin_id,
+                "content_type": content_type,
+                "text": text,
+                "media_file_id": media_file_id,
+                "inline_button_text": inline_button_text,
+                "inline_button_url": inline_button_url,
+                "filter_type": filter_type,
+            },
         )
     
-    async def get_broadcasts(self, limit: int = 10) -> list[dict]:
+    async def start_broadcast(self, public_id: str) -> dict:
+        """Start sending a broadcast."""
+        return await self._request(
+            "POST",
+            f"/api/v1/admin/broadcasts/{public_id}/start",
+        )
+    
+    async def cancel_broadcast(self, public_id: str) -> dict:
+        """Cancel a broadcast."""
+        return await self._request(
+            "POST",
+            f"/api/v1/admin/broadcasts/{public_id}/cancel",
+        )
+    
+    async def get_broadcasts(self, limit: int = 10) -> dict:
         """Get broadcast history."""
         return await self._request(
             "GET",
             f"/api/v1/admin/broadcasts?limit={limit}",
         )
     
-    async def get_broadcast_status(self, broadcast_id: str) -> dict:
+    async def get_broadcast_status(self, public_id: str) -> dict:
         """Get broadcast status."""
         return await self._request(
             "GET",
-            f"/api/v1/admin/broadcasts/{broadcast_id}",
+            f"/api/v1/admin/broadcasts/{public_id}",
+        )
+    
+    async def get_users_count(self, filter_type: str = "all") -> dict:
+        """Get users count by filter."""
+        return await self._request(
+            "GET",
+            f"/api/v1/admin/users/count?filter_type={filter_type}",
+        )
+    
+    async def get_user_payments(
+        self,
+        telegram_id: int,
+        limit: int = 10,
+    ) -> list[dict]:
+        """Get user's payment history."""
+        return await self._request(
+            "GET",
+            f"/api/v1/admin/users/{telegram_id}/payments?limit={limit}",
         )

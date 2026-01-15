@@ -1,5 +1,5 @@
 """Admin endpoints for bot administration."""
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -15,8 +15,14 @@ from app.schemas.admin import (
     UserListOut,
     # Stats
     DashboardStatsOut,
+    # Broadcast
+    BroadcastCreateRequest,
+    BroadcastOut,
+    BroadcastListOut,
+    BroadcastStatusOut,
 )
 from app.services.admin_service import AdminService
+from app.services.broadcast_service import BroadcastService
 from app.infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -122,6 +128,24 @@ async def search_users(
         )
 
 
+@router.get("/users/count")
+async def get_users_count(
+    filter_type: str = Query(default="all"),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get users count by filter for preview."""
+    try:
+        service = BroadcastService(session)
+        count = await service.get_filtered_users_count(filter_type)
+        return {"count": count, "filter_type": filter_type}
+    except Exception as e:
+        logger.exception("Failed to get users count", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
 @router.get("/users/{telegram_id}", response_model=AdminUserOut)
 async def get_user(
     telegram_id: int,
@@ -215,3 +239,240 @@ async def health_check():
     """Admin API health check."""
     return {"status": "ok"}
 
+
+# ============ User Generations ============
+
+@router.get("/users/{telegram_id}/generations")
+async def get_user_generations(
+    telegram_id: int,
+    limit: int = Query(default=10, ge=1, le=50),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get user's recent generations."""
+    try:
+        service = AdminService(session)
+        
+        user = await service.get_user_by_telegram_id(telegram_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        generations = await service.get_user_generations(user.id, limit)
+        return generations
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to get user generations", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+# ============ Refund Generation ============
+
+@router.post("/generations/{generation_id}/refund")
+async def refund_generation(
+    generation_id: int,
+    data: dict,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Refund a specific generation."""
+    try:
+        telegram_id = data.get("telegram_id")
+        if not telegram_id:
+            raise HTTPException(status_code=400, detail="telegram_id required")
+        
+        service = AdminService(session)
+        
+        user = await service.get_user_by_telegram_id(telegram_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        result = await service.refund_generation(user.id, generation_id)
+        
+        if result.get("error"):
+            raise HTTPException(status_code=400, detail=result.get("message", "Refund failed"))
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to refund generation", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+# ============ User Payments ============
+
+@router.get("/users/{telegram_id}/payments")
+async def get_user_payments(
+    telegram_id: int,
+    limit: int = Query(default=10, ge=1, le=50),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get user's payment history."""
+    try:
+        service = AdminService(session)
+        
+        user = await service.get_user_by_telegram_id(telegram_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        payments = await service.get_user_payments(user.id, limit)
+        return payments
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to get user payments", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+# ============ Broadcast Management ============
+
+@router.post("/broadcasts", response_model=BroadcastOut)
+async def create_broadcast(
+    data: BroadcastCreateRequest,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Create a new broadcast (not started yet)."""
+    try:
+        service = BroadcastService(session)
+        broadcast = await service.create_broadcast(
+            admin_id=data.admin_id,
+            content_type=data.content_type,
+            text=data.text,
+            media_file_id=data.media_file_id,
+            inline_button_text=data.inline_button_text,
+            inline_button_url=data.inline_button_url,
+            filter_type=data.filter_type,
+            filter_params=data.filter_params,
+        )
+        return broadcast
+    except Exception as e:
+        logger.exception("Failed to create broadcast", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/broadcasts", response_model=BroadcastListOut)
+async def list_broadcasts(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """List all broadcasts (newest first)."""
+    try:
+        service = BroadcastService(session)
+        broadcasts = await service.list_broadcasts(limit=limit, offset=offset)
+        return BroadcastListOut(broadcasts=broadcasts, total=len(broadcasts))
+    except Exception as e:
+        logger.exception("Failed to list broadcasts", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.get("/broadcasts/{public_id}", response_model=BroadcastStatusOut)
+async def get_broadcast_status(
+    public_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get broadcast status and progress."""
+    try:
+        service = BroadcastService(session)
+        broadcast = await service.get_broadcast_by_public_id(public_id)
+        
+        if not broadcast:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        
+        total = broadcast.total_users or 0
+        sent = broadcast.sent_count or 0
+        progress = (sent / total * 100) if total > 0 else 0.0
+        
+        return BroadcastStatusOut(
+            public_id=broadcast.public_id,
+            status=broadcast.status.value,
+            total_users=total,
+            sent_count=sent,
+            failed_count=broadcast.failed_count or 0,
+            blocked_count=broadcast.blocked_count or 0,
+            progress_percent=round(progress, 1),
+            started_at=broadcast.started_at,
+            completed_at=broadcast.completed_at,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to get broadcast status", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.post("/broadcasts/{public_id}/start")
+async def start_broadcast(
+    public_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Start sending a broadcast."""
+    try:
+        service = BroadcastService(session)
+        broadcast = await service.get_broadcast_by_public_id(public_id)
+        
+        if not broadcast:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        
+        if broadcast.status.value != "pending":
+            raise HTTPException(status_code=400, detail=f"Broadcast is {broadcast.status.value}, cannot start")
+        
+        # Start broadcast via Celery
+        from app.worker.tasks import start_broadcast_task
+        start_broadcast_task.delay(broadcast.id)
+        
+        return {"status": "started", "public_id": public_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to start broadcast", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.post("/broadcasts/{public_id}/cancel")
+async def cancel_broadcast(
+    public_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Cancel a running broadcast."""
+    try:
+        service = BroadcastService(session)
+        broadcast = await service.get_broadcast_by_public_id(public_id)
+        
+        if not broadcast:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+        
+        if broadcast.status.value not in ("pending", "running"):
+            raise HTTPException(status_code=400, detail=f"Broadcast is {broadcast.status.value}, cannot cancel")
+        
+        await service.cancel_broadcast(broadcast.id)
+        
+        return {"status": "cancelled", "public_id": public_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to cancel broadcast", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
