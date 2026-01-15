@@ -57,7 +57,9 @@ async def set_language(
     if call.message:
         await call.message.delete()
     
+    from keyboards import ProfileKeyboard
+    
     await call.message.answer(
         new_translator(TranslationKey.SETTINGS_LANGUAGE_CHANGED, {"language": language_name}),
-        reply_markup=SettingsKeyboard.main(lang_code, new_translator),
+        reply_markup=ProfileKeyboard.main(new_translator),
     )

@@ -25,10 +25,23 @@ async def home_callback(
     if call.message:
         await call.message.delete()
     
+    user = call.from_user
+    name = user.first_name if user else ""
     await call.message.answer(
-        _(TranslationKey.WELCOME, None),
+        _(TranslationKey.WELCOME, {"name": name}),
         reply_markup=HomeKeyboard.main(_),
     )
+
+
+@router.callback_query(F.data == MenuCallback.INFO)
+async def info_callback(
+    call: CallbackQuery,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Handle info menu callback."""
+    await call.answer()
+
+    await call.message.answer(_(TranslationKey.START_INFO, None))
 
 
 @router.callback_query(F.data == MenuCallback.PROFILE)
@@ -99,8 +112,8 @@ async def settings_callback(
     from keyboards import SettingsKeyboard
     
     await call.message.answer(
-        _(TranslationKey.SETTINGS_TITLE, None),
-        reply_markup=SettingsKeyboard.main(language, _),
+        _(TranslationKey.SETTINGS_LANGUAGE, {"language": language}),
+        reply_markup=SettingsKeyboard.language_list(language, _),
     )
 
 

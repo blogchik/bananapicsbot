@@ -2,8 +2,9 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "Welcome to Bananapics bot! 😊\nSend a prompt or add an image to start generating.",
+    "welcome": "👋 Welcome, {name}!\n\n🍌 Nano Banana is a cutting-edge neural network for photo processing and generation!\n\nGeneration examples are in our channel:\n@NanoBanana\n\nSend a photo with a caption or an album with captions to start generating 👇",
     "welcome_back": "Welcome back! 😊",
+    "start_info": "Please send a text prompt, a photo with a caption, or an album with captions to start generation 👇\n\n❗ Send the photo and prompt in one message.",
     "error_generic": "An error occurred. Please try again later.",
     "error_connection": "Server connection error. Please try again later.",
     "back": "⬅️ Back",
@@ -41,6 +42,7 @@ TRANSLATIONS: dict[str, str] = {
     "btn_settings": "⚙️ Settings",
     "btn_help": "❓ Help",
     "btn_language": "🌐 Language",
+    "btn_start": "🔥 Start",
     
     # Generation
     "gen_settings_title": "⚙️ Generation settings",

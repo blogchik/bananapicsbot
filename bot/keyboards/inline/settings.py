@@ -57,7 +57,7 @@ class SettingsKeyboard:
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
-                callback_data=MenuCallback.SETTINGS,
+                callback_data=MenuCallback.PROFILE,
             )
         ])
         

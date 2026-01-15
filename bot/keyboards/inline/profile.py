@@ -3,7 +3,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from typing import Callable
 
-from keyboards.builders import MenuCallback
+from keyboards.builders import MenuCallback, SettingsCallback
 from locales import TranslationKey
 
 
@@ -25,6 +25,12 @@ class ProfileKeyboard:
                     InlineKeyboardButton(
                         text=_(TranslationKey.BTN_REFERRAL, None),
                         callback_data=MenuCallback.REFERRAL,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.BTN_LANGUAGE, None),
+                        callback_data=SettingsCallback.LANGUAGE_MENU,
                     )
                 ],
                 [

@@ -2,8 +2,9 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "Assalomu alaykum! Bananapics botiga xush kelibsiz 😊\nPrompt yuboring yoki rasm qo'shib generatsiya boshlang.",
+    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Nano Banana — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\nGeneratsiya misollari kanalimizda:\n@NanoBanana\n\nGeneratsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
     "welcome_back": "Qaytganingiz bilan! 😊",
+    "start_info": "Iltimos, generatsiyani boshlash uchun matnli prompt, prompt+rasm yoki captionli albom yuboring 👇\n\n❗ Rasm va promptni bitta xabarda yuboring.",
     "error_generic": "Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.",
     "error_connection": "Server bilan ulanishda xatolik. Keyinroq urinib ko'ring.",
     "back": "⬅️ Orqaga",
@@ -41,6 +42,7 @@ TRANSLATIONS: dict[str, str] = {
     "btn_settings": "⚙️ Sozlamalar",
     "btn_help": "❓ Yordam",
     "btn_language": "🌐 Til",
+    "btn_start": "🔥 Pristupit",
     
     # Generation
     "gen_settings_title": "⚙️ Generatsiya sozlamalari",

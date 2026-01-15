@@ -12,6 +12,7 @@ class TranslationKey(str, Enum):
     # Common
     WELCOME = "welcome"
     WELCOME_BACK = "welcome_back"
+    START_INFO = "start_info"
     ERROR_GENERIC = "error_generic"
     ERROR_CONNECTION = "error_connection"
     BACK = "back"
@@ -58,6 +59,7 @@ class TranslationKey(str, Enum):
     BTN_SETTINGS = "btn_settings"
     BTN_HELP = "btn_help"
     BTN_LANGUAGE = "btn_language"
+    BTN_START = "btn_start"
     
     # Generation
     GEN_SETTINGS_TITLE = "gen_settings_title"

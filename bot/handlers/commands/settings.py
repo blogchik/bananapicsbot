@@ -21,6 +21,6 @@ async def settings_handler(
 ) -> None:
     """Handle /settings command."""
     await message.answer(
-        _(TranslationKey.SETTINGS_TITLE, None),
-        reply_markup=SettingsKeyboard.main(language, _),
+        _(TranslationKey.SETTINGS_LANGUAGE, {"language": language}),
+        reply_markup=SettingsKeyboard.language_list(language, _),
     )

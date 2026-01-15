@@ -51,6 +51,6 @@ async def start_handler(
     
     # Send welcome message
     await message.answer(
-        _(TranslationKey.WELCOME, None),
+        _(TranslationKey.WELCOME, {"name": user.first_name or ""}),
         reply_markup=HomeKeyboard.main(_),
     )

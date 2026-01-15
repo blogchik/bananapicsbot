@@ -25,9 +25,11 @@ HELP_TEXT_UZ = """
 <b>Buyruqlar:</b>
 /start - Botni boshlash
 /profile - Profilingiz
-/settings - Sozlamalar
 /referral - Referral dasturi
 /help - Yordam
+
+<b>Tilni o'zgartirish:</b>
+Profil menyusida
 
 <b>Savollar bo'lsa:</b>
 @support_username
@@ -45,9 +47,11 @@ HELP_TEXT_RU = """
 <b>Команды:</b>
 /start - Запуск бота
 /profile - Ваш профиль
-/settings - Настройки
 /referral - Реферальная программа
 /help - Помощь
+
+<b>Смена языка:</b>
+В меню профиля
 
 <b>Вопросы?</b>
 @support_username
@@ -65,9 +69,11 @@ HELP_TEXT_EN = """
 <b>Commands:</b>
 /start - Start the bot
 /profile - Your profile
-/settings - Settings
 /referral - Referral program
 /help - Help
+
+<b>Change language:</b>
+In the profile menu
 
 <b>Questions?</b>
 @support_username
