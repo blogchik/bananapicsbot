@@ -23,10 +23,27 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    referral_code: Mapped[str] = mapped_column(
+        String(16), unique=True, index=True, nullable=False
+    )
+    referred_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow
     )
 
+    referrer: Mapped["User | None"] = relationship(
+        "User",
+        remote_side="User.id",
+        back_populates="referrals",
+        foreign_keys=[referred_by_id],
+    )
+    referrals: Mapped[list["User"]] = relationship(
+        "User",
+        back_populates="referrer",
+        foreign_keys=[referred_by_id],
+    )
     ledger_entries: Mapped[list["LedgerEntry"]] = relationship(
         "LedgerEntry", back_populates="user"
     )
@@ -45,7 +62,7 @@ class LedgerEntry(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     amount: Mapped[int] = mapped_column(Integer)
     entry_type: Mapped[str] = mapped_column(String(50))
-    reference_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    reference_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow
@@ -236,3 +253,22 @@ class TrialUse(Base):
     )
 
     user: Mapped[User] = relationship("User", back_populates="trial_uses")
+
+
+class PaymentLedger(Base):
+    __tablename__ = "payment_ledger"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(50))
+    currency: Mapped[str] = mapped_column(String(10))
+    stars_amount: Mapped[int] = mapped_column(Integer)
+    credits_amount: Mapped[int] = mapped_column(Integer)
+    telegram_charge_id: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    provider_charge_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    invoice_payload: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow
+    )
+
+    user: Mapped[User] = relationship("User")

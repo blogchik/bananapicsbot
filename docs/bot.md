@@ -29,8 +29,11 @@ docker compose up -d --build
 
 - Barcha tugmalar inline.
 - Home menyu welcome message bilan chiqadi, faqat `Profile` inline tugmasi bor.
-- Profile menyu: TG info + balans + trial holati, `Home` inline tugmasi bor.
+- Profile menyu: TG info + balans + trial holati, `Balans to'ldirish`, `Referral` va `Home` inline tugmalari bor.
+  - Balans to'ldirish: Telegram Stars (min 70 ⭐), 6 ta preset va custom summa. Kurs ko'rsatiladi, preset tugmalarda Stars → credit ko'rinadi, to'lovdan keyin qabul qilingan Stars va qo'shilgan credit xabarda beriladi.
+- Referral menyu: user uchun maxsus link (masalan `https://t.me/BananaPicBot?start=r_<code>`), referral soni va jami bonus ko'rsatiladi. Yangi referral bo'lganda referrerga xabar boradi. User faqat bitta referrerni oladi va o'ziga referal bo'la olmaydi. Referral faqat yangi userlar uchun ishlaydi.
 - `/start` bosilganda oddiy reply keyboardlar tozalanadi.
+- Admin buyruqlar: `/pay USER_ID CREDITS`, `/refund USER_ID STARS` (faqat `686980246`).
 
 ## Generatsiya flow
 

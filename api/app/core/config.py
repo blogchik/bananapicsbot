@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     )
     wavespeed_timeout_seconds: int = 180
 
+    stars_enabled: bool = True
+    stars_min_amount: int = 70
+    stars_presets: str = "70,140,210,350,700,1400"
+    stars_exchange_numerator: int = 1000
+    stars_exchange_denominator: int = 70
+    referral_bonus_percent: int = 10
+
     postgres_user: str = "bananapics"
     postgres_password: str = "bananapics"
     postgres_host: str = "db"

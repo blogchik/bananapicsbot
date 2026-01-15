@@ -3,6 +3,7 @@
 - `BOT_TOKEN`: Telegram bot tokeni. `.env` ichida saqlanadi.
 - `API_BASE_URL`: API bazaviy manzili (ko'rsatilmasa `http://api:8000`).
 - `API_TIMEOUT_SECONDS`: Botning API chaqiruv timeouti (sekund).
+- `PAYMENT_PROVIDER_TOKEN`: Telegram payment provider token (Stars uchun bo'sh bo'lishi mumkin).
 - `APP_NAME`: API nomi.
 - `APP_VERSION`: API versiyasi.
 - `API_PREFIX`: API prefiksi (default: `/api/v1`).
@@ -21,6 +22,12 @@
 - `WAVESPEED_NANO_BANANA_PRO_T2I_URL`: Nano Banana Pro text-to-image endpoint.
 - `WAVESPEED_NANO_BANANA_PRO_I2I_URL`: Nano Banana Pro image-to-image endpoint.
 - `WAVESPEED_TIMEOUT_SECONDS`: Wavespeed HTTP timeout (sekund).
+- `STARS_ENABLED`: Telegram Stars orqali to'lovlar yoqilgan/yoqilmagan.
+- `STARS_MIN_AMOUNT`: Minimal Stars miqdori.
+- `STARS_PRESETS`: Stars uchun presetlar (vergul bilan).
+- `STARS_EXCHANGE_NUMERATOR`: Kredit kursi numerator.
+- `STARS_EXCHANGE_DENOMINATOR`: Kredit kursi denominator.
+- `REFERRAL_BONUS_PERCENT`: Referral bonus foizi (round up).
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD`: Redis ulanish sozlamalari.
 - `REDIS_ACTIVE_GENERATION_TTL_SECONDS`: Active generatsiya lock TTL.
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
@@ -32,6 +39,7 @@
 BOT_TOKEN=123456:ABCDEF
 API_BASE_URL=http://api:8000
 API_TIMEOUT_SECONDS=180
+PAYMENT_PROVIDER_TOKEN=
 APP_NAME=Bananapics API
 APP_VERSION=0.1.0
 API_PREFIX=/api/v1
@@ -50,6 +58,12 @@ WAVESPEED_NANO_BANANA_I2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana
 WAVESPEED_NANO_BANANA_PRO_T2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana-pro/text-to-image
 WAVESPEED_NANO_BANANA_PRO_I2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit
 WAVESPEED_TIMEOUT_SECONDS=180
+STARS_ENABLED=true
+STARS_MIN_AMOUNT=70
+STARS_PRESETS=70,140,210,350,700,1400
+STARS_EXCHANGE_NUMERATOR=1000
+STARS_EXCHANGE_DENOMINATOR=70
+REFERRAL_BONUS_PERCENT=10
 REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_DB=0

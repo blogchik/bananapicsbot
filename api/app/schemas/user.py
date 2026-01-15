@@ -13,3 +13,15 @@ class UserOut(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class UserSyncIn(BaseModel):
+    telegram_id: int
+    referral_code: str | None = None
+
+
+class UserSyncOut(UserOut):
+    referral_code: str
+    referral_applied: bool = False
+    referrer_telegram_id: int | None = None
+    bonus_percent: int

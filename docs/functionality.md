@@ -4,13 +4,16 @@
 
 - **Bot:** /start welcome message, inline menyular, reply keyboard tozalanadi.
 - **Profil:** TG ma'lumotlari, balans, trial holati API orqali ko'rsatiladi.
+- **Balans to'ldirish:** Telegram Stars orqali (min 70 ⭐, 6 ta preset + custom). Kurs ko'rsatiladi, preset tugmalarda Stars → credit ko'rinadi, to'lovdan keyin qabul qilingan Stars va qo'shilgan credit xabarda beriladi. To'lovlar ledgerda saqlanadi.
+- **Admin buyruqlar:** faqat admin user (`686980246`) uchun `/pay` bilan kredit qo'shish va `/refund` bilan Stars refund.
+- **Referral:** har bir userda referral link bor. Referral orqali kelgan user to'lov qilsa 10% (round up) bonus referrerga darhol tushadi. Bitta user faqat bitta referrerni oladi va o'ziga referal bo'la olmaydi. Referral faqat yangi userlar uchun ishlaydi. User referral soni va jami bonusni ko'radi (kimlar ekanligi ko'rsatilmaydi). Yangi referral bo'lganda referrerga xabar boradi.
 - **Generatsiya:** prompt va reference rasm(lar) bilan menyu ochiladi, reference rasm foto yoki fayl ko'rinishida yuborilishi mumkin (faqat image, 1-10 ta, doim prompt bilan birga), model/size/aspect ratio/resolution tanlanadi (size faqat `seedream-v4`, aspect ratio `nano-banana` va `nano-banana-pro`, resolution faqat `nano-banana-pro`), status har 2 sekundda avtomatik yangilanadi (navbatda/jarayonda), tayyor bo'lganda status xabari o'chadi va natija prompt xabariga reply bo'ladi.
 - **Natija caption:** model hashtag, prompt blockquote, ketgan vaqt va sarflangan credit ko'rsatiladi (file ko'rinishidagi natijada).
 - **Natija:** prompt va model nomi bilan xabar yuboriladi, rasmlar photo va file ko'rinishida jo'natiladi.
 - **Cheklov:** user bir vaqtda faqat 1 ta generatsiya boshlaydi (Redis lock + DB advisory lock).
 - **Aktiv holat:** aktiv generatsiya bor paytda yangi so'rov yuborilsa, bot kutishni so'raydi va oldingi generatsiya davom etadi.
 - **Backend va saqlash:** FastAPI /api/v1, Postgres + Alembic, CORS, rate limit, request id, global error handling; requestlar `public_id` bilan unique, prompt/size/reference URL + telegram file id, input params, natijalar va joblar saqlanadi.
-- **Model:** `seedream-v4`, `nano-banana`, `nano-banana-pro` (1 credit), text-to-image va image-to-image; `aspect_ratio` nano modellarda yoqilgan, `resolution` faqat `nano-banana-pro`, `size` faqat `seedream-v4`.
+- **Model:** `seedream-v4` (27 credit), `nano-banana` (38 credit), `nano-banana-pro` (140 credit); text-to-image va image-to-image; `aspect_ratio` nano modellarda yoqilgan, `resolution` faqat `nano-banana-pro`, `size` faqat `seedream-v4`.
 - **Model konfiguratsiya:** parametrlar va variantlar `/api/v1/models` javobidagi `model.options` orqali keladi, bot shunga moslashadi.
 
 ## Reja

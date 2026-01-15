@@ -50,8 +50,11 @@ class ApiClient:
                     raise ApiError(resp.status, payload)
                 return await resp.json()
 
-    async def sync_user(self, telegram_id: int) -> dict:
-        return await self._request("POST", "/api/v1/users/sync", json={"telegram_id": telegram_id})
+    async def sync_user(self, telegram_id: int, referral_code: str | None = None) -> dict:
+        payload = {"telegram_id": telegram_id}
+        if referral_code:
+            payload["referral_code"] = referral_code
+        return await self._request("POST", "/api/v1/users/sync", json=payload)
 
     async def get_balance(self, telegram_id: int) -> int:
         data = await self._request("GET", f"/api/v1/users/{telegram_id}/balance")
@@ -116,3 +119,45 @@ class ApiClient:
     async def upload_media(self, file_bytes: bytes, filename: str) -> str:
         data = await self._upload("/api/v1/media/upload", file_bytes, filename)
         return str(data.get("download_url", ""))
+
+    async def get_stars_options(self) -> dict:
+        return await self._request("GET", "/api/v1/payments/stars/options")
+
+    async def get_referral_info(self, telegram_id: int) -> dict:
+        return await self._request("GET", f"/api/v1/referrals/{telegram_id}")
+
+    async def add_admin_credits(
+        self,
+        telegram_id: int,
+        credits: int,
+        description: str | None = None,
+    ) -> dict:
+        payload: dict[str, object] = {
+            "telegram_id": telegram_id,
+            "credits": credits,
+        }
+        if description:
+            payload["description"] = description
+        return await self._request("POST", "/api/v1/admin/credits/add", json=payload)
+
+    async def confirm_stars_payment(
+        self,
+        telegram_id: int,
+        stars_amount: int,
+        currency: str,
+        telegram_charge_id: str,
+        provider_charge_id: str | None,
+        invoice_payload: str | None,
+    ) -> dict:
+        return await self._request(
+            "POST",
+            "/api/v1/payments/stars/confirm",
+            json={
+                "telegram_id": telegram_id,
+                "stars_amount": stars_amount,
+                "currency": currency,
+                "telegram_charge_id": telegram_charge_id,
+                "provider_charge_id": provider_charge_id,
+                "invoice_payload": invoice_payload,
+            },
+        )

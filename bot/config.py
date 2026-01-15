@@ -9,6 +9,7 @@ class Settings:
     bot_token: str
     api_base_url: str
     api_timeout_seconds: int
+    payment_provider_token: str
 
 
 def load_settings() -> Settings:
@@ -16,6 +17,7 @@ def load_settings() -> Settings:
     token = os.getenv("BOT_TOKEN", "").strip()
     api_base_url = os.getenv("API_BASE_URL", "").strip()
     api_timeout_seconds = int(os.getenv("API_TIMEOUT_SECONDS", "180"))
+    payment_provider_token = os.getenv("PAYMENT_PROVIDER_TOKEN", "").strip()
     if not token:
         raise RuntimeError("BOT_TOKEN is not set in environment")
     if not api_base_url:
@@ -24,4 +26,5 @@ def load_settings() -> Settings:
         bot_token=token,
         api_base_url=api_base_url,
         api_timeout_seconds=api_timeout_seconds,
+        payment_provider_token=payment_provider_token,
     )

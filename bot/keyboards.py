@@ -12,7 +12,38 @@ def home_menu() -> InlineKeyboardMarkup:
 def profile_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
+            [InlineKeyboardButton(text="⭐ Balans to'ldirish", callback_data="menu:topup")],
+            [InlineKeyboardButton(text="🤝 Referral", callback_data="menu:referral")],
             [InlineKeyboardButton(text="🏠 Home", callback_data="menu:home")],
+        ]
+    )
+
+
+def topup_menu(presets: list[tuple[int, int]]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    for i in range(0, len(presets), 2):
+        row = []
+        for amount, credits in presets[i : i + 2]:
+            row.append(
+                InlineKeyboardButton(
+                    text=f"{amount} ⭐ → {credits} cr",
+                    callback_data=f"topup:stars:{amount}",
+                )
+            )
+        rows.append(row)
+    rows.append(
+        [InlineKeyboardButton(text="✍️ Boshqa summa", callback_data="topup:custom")]
+    )
+    rows.append(
+        [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="menu:profile")]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def referral_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="menu:profile")],
         ]
     )
 

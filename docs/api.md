@@ -17,9 +17,13 @@
 - `GET /api/v1/health` - healthcheck (uptime, request id).
 - `GET /api/v1/info` - API info.
 - `POST /api/v1/users/sync` - Telegram userni yaratish/sync.
+- `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari (kod, soni, jami bonus).
 - `GET /api/v1/users/{telegram_id}/balance` - user balansi (ledger asosida).
 - `GET /api/v1/users/{telegram_id}/trial` - trial holati.
 - `GET /api/v1/models` - aktiv modellarning ro'yxati va narxlari (`model.options` bilan).
+- `GET /api/v1/payments/stars/options` - Stars to'lov variantlari va kursi.
+- `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash va balansni to'ldirish.
+- `POST /api/v1/admin/credits/add` - user balansiga admin credit qo'shish.
 - `POST /api/v1/generations/submit` - generatsiyani boshlash (Wavespeed job).
 - `GET /api/v1/generations/active?telegram_id=...` - userdagi aktiv generatsiya holati.
 - `GET /api/v1/generations/{id}?telegram_id=...` - generatsiya holati (userga bog'langan).
@@ -35,6 +39,7 @@
 ## Bot integratsiya
 
 - Bot profile menyu uchun `users/sync`, `users/{telegram_id}/balance`, `users/{telegram_id}/trial` endpointlaridan foydalanadi.
+- Referral menyu uchun `referrals/{telegram_id}` ishlatiladi.
 
 ## Rejalashtirilgan backend imkoniyatlar
 
@@ -47,6 +52,26 @@
 
 - User balansi bitta ustun bilan emas, ledger yozuvlari orqali hisoblanadi.
 - `ledger_entries.amount` musbat yoki manfiy bo'lishi mumkin.
+- Stars to'lovlari `payment_ledger` va `ledger_entries` ga yoziladi.
+- Referral bonuslari `ledger_entries` da `referral_bonus` entry_type bilan saqlanadi.
+- Admin qo'shimcha creditlar `ledger_entries` da `admin_credit` entry_type bilan saqlanadi.
+
+## Telegram Stars to'lovlari
+
+- Kurs: 70 ⭐ = 1000 credit (env orqali o'zgartiriladi).
+- `GET /api/v1/payments/stars/options` javobi:
+  - `min_stars`, `preset_stars`, `exchange_numerator`, `exchange_denominator`, `currency`.
+- `POST /api/v1/payments/stars/confirm`:
+  - `telegram_id`, `stars_amount`, `currency`, `telegram_charge_id`, `provider_charge_id`, `invoice_payload`.
+  - Javob: `credits_added`, `balance`.
+
+## Referral
+
+- `POST /api/v1/users/sync` qo'shimcha `referral_code` qabul qiladi (`r_` prefixsiz).
+  - Javob: `referral_code`, `referral_applied`, `referrer_telegram_id`, `bonus_percent`.
+- `GET /api/v1/referrals/{telegram_id}` javobi:
+  - `referral_code`, `referrals_count`, `referral_credits_total`, `bonus_percent`.
+- Referral bonus: to'lov qilgan userda `referred_by_id` bo'lsa, referrerga `bonus_percent` (default 10%, round up) bonus tushadi.
 
 ## Ma'lumotlar modeli
 
@@ -57,6 +82,8 @@
 - `generation_results` - natijaviy rasm va meta.
 - `generation_jobs` - provider bilan ishlash holati.
 - `trial_uses` - trial ishlatilganligi.
+- `payment_ledger` - Stars to'lovlari bo'yicha ledger yozuvlari.
+- `users` - `referral_code`, `referred_by_id` bilan referral bog'lanishlari.
 
 ## Model katalogi
 
@@ -64,7 +91,7 @@
 - `aspect_ratio` `nano-banana` va `nano-banana-pro` uchun yoqilgan, `resolution` faqat `nano-banana-pro`, `size` faqat `seedream-v4`.
 - `model.options` (GET `/api/v1/models`) ichida parametrlar va variantlar keladi: `supports_size`, `supports_aspect_ratio`, `supports_resolution`, `size_options`, `aspect_ratio_options`, `resolution_options`.
 - Model parametr konfiguratsiyasi `api/app/core/model_options.py` da markazlashgan.
-- Narx: barcha modellarda 1 credit / generatsiya.
+- Narx: `seedream-v4` = 27 credit, `nano-banana` = 38 credit, `nano-banana-pro` = 140 credit.
 - Provider: `wavespeed`.
 - `seedream-v4`, `nano-banana`, `nano-banana-pro` text-to-image va image-to-image ni qo'llab-quvvatlaydi.
 

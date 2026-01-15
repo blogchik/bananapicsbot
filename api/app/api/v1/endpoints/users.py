@@ -4,17 +4,33 @@ from sqlalchemy.orm import Session
 from app.deps.db import db_session_dep
 from app.schemas.balance import BalanceOut
 from app.schemas.trial import TrialStatusOut
-from app.schemas.user import UserBase, UserOut
+from app.core.config import get_settings
+from app.schemas.user import UserSyncIn, UserSyncOut
 from app.services.ledger import get_user_balance
 from app.services.users import get_or_create_user, get_user_by_telegram_id
 
 router = APIRouter()
 
 
-@router.post("/users/sync", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def sync_user(payload: UserBase, db: Session = Depends(db_session_dep)) -> UserOut:
-    user = get_or_create_user(db, payload.telegram_id)
-    return UserOut.model_validate(user)
+@router.post("/users/sync", response_model=UserSyncOut, status_code=status.HTTP_200_OK)
+async def sync_user(payload: UserSyncIn, db: Session = Depends(db_session_dep)) -> UserSyncOut:
+    referral_code = payload.referral_code or ""
+    if referral_code.startswith("r_"):
+        referral_code = referral_code[2:]
+    referral_code = referral_code.strip() or None
+    user, referrer, referral_applied = get_or_create_user(
+        db, payload.telegram_id, referral_code
+    )
+    settings = get_settings()
+    return UserSyncOut(
+        id=user.id,
+        telegram_id=user.telegram_id,
+        created_at=user.created_at,
+        referral_code=user.referral_code,
+        referral_applied=referral_applied,
+        referrer_telegram_id=referrer.telegram_id if referral_applied and referrer else None,
+        bonus_percent=settings.referral_bonus_percent,
+    )
 
 
 @router.get("/users/{telegram_id}/balance", response_model=BalanceOut)

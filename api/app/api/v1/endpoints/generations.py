@@ -264,7 +264,7 @@ async def submit_generation(
     redis: Redis = Depends(redis_dep),
 ) -> GenerationSubmitOut:
     settings = get_settings()
-    user = get_or_create_user(db, payload.telegram_id)
+    user, _, _ = get_or_create_user(db, payload.telegram_id)
     db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": user.id})
     model = get_active_model(db, payload.model_id)
     price = get_active_price(db, model.id)

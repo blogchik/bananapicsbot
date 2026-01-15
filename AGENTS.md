@@ -8,6 +8,7 @@ Ushbu loyiha uchun AI agentlar ishlash yo'riqnomasi.
 - Docker Compose orqali ishga tushiriladi.
 - Hozircha minimal: `/start` komandasi uchun welcome message yuboradi.
 - Maqsad: Telegram orqali image generation (text-to-image, image-to-image) va balans/trial tizimi.
+- Referral tizimi: referral link, statistikalar, va referral bonuslar.
 
 ## Repo strukturasi
 
