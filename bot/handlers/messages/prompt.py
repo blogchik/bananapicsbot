@@ -94,7 +94,13 @@ async def handle_prompt_message(
         await message.answer(_(TranslationKey.MODEL_NOT_FOUND, None))
         return
     
+    defaults = await GenerationService.get_generation_defaults(user.id)
     selected_model = models[0]
+    default_model_id = defaults.get("model_id")
+    if isinstance(default_model_id, int):
+        saved_model = GenerationService.find_model(models, default_model_id)
+        if saved_model:
+            selected_model = saved_model
     
     # Delete previous menu if exists
     data = await state.get_data()
@@ -110,6 +116,17 @@ async def handle_prompt_message(
     show_aspect = selected_model.supports_aspect_ratio and bool(selected_model.aspect_ratio_options)
     show_resolution = selected_model.supports_resolution and bool(selected_model.resolution_options)
     
+    size = defaults.get("size") if show_size else None
+    aspect_ratio = defaults.get("aspect_ratio") if show_aspect else None
+    resolution = defaults.get("resolution") if show_resolution else None
+    
+    if size and selected_model.size_options and size not in selected_model.size_options:
+        size = None
+    if aspect_ratio and selected_model.aspect_ratio_options and aspect_ratio not in selected_model.aspect_ratio_options:
+        aspect_ratio = None
+    if resolution and selected_model.resolution_options and resolution not in selected_model.resolution_options:
+        resolution = None
+    
     # Save state
     await state.update_data(
         prompt=prompt,
@@ -118,9 +135,9 @@ async def handle_prompt_message(
         model_key=selected_model.key,
         prompt_message_id=message.message_id,
         price=selected_model.price,
-        size=None,
-        aspect_ratio=None,
-        resolution=None,
+        size=size,
+        aspect_ratio=aspect_ratio,
+        resolution=resolution,
         supports_size=selected_model.supports_size,
         supports_aspect_ratio=selected_model.supports_aspect_ratio,
         supports_resolution=selected_model.supports_resolution,
@@ -131,13 +148,13 @@ async def handle_prompt_message(
     
     # Build menu text
     menu_text = build_generation_text(
-        prompt, selected_model.name, None, None, None,
+        prompt, selected_model.name, size, aspect_ratio, resolution,
         show_size, show_aspect, show_resolution, _,
     )
     
     # Send menu
     menu = GenerationKeyboard.main(
-        _, selected_model.name, None, None, None,
+        _, selected_model.name, size, aspect_ratio, resolution,
         selected_model.price, show_size, show_aspect, show_resolution,
     )
     
@@ -148,3 +165,10 @@ async def handle_prompt_message(
     )
     
     await state.update_data(menu_message_id=msg.message_id)
+    await GenerationService.save_generation_defaults(
+        user.id,
+        selected_model.id,
+        size,
+        aspect_ratio,
+        resolution,
+    )

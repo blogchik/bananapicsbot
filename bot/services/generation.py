@@ -54,6 +54,8 @@ class GenerationConfig:
 class GenerationService:
     """Generation-related business logic."""
     
+    _DEFAULTS_KEY_PREFIX = "gen_defaults"
+    
     @staticmethod
     async def get_models() -> list[NormalizedModel]:
         """Get available models (normalized)."""
@@ -116,6 +118,49 @@ class GenerationService:
             return bool(data.get("has_active"))
         except Exception:
             return False
+
+    @staticmethod
+    async def get_generation_defaults(telegram_id: int) -> dict[str, object]:
+        """Get last selected generation defaults for user."""
+        container = get_container()
+        key = f"{GenerationService._DEFAULTS_KEY_PREFIX}:{telegram_id}"
+        try:
+            data = await container.redis_client.hgetall(key)
+        except Exception:
+            return {}
+        model_id_raw = data.get("model_id")
+        try:
+            model_id = int(model_id_raw) if model_id_raw else None
+        except (TypeError, ValueError):
+            model_id = None
+        size = data.get("size") or None
+        aspect_ratio = data.get("aspect_ratio") or None
+        resolution = data.get("resolution") or None
+        return {
+            "model_id": model_id,
+            "size": size,
+            "aspect_ratio": aspect_ratio,
+            "resolution": resolution,
+        }
+
+    @staticmethod
+    async def save_generation_defaults(
+        telegram_id: int,
+        model_id: int,
+        size: str | None,
+        aspect_ratio: str | None,
+        resolution: str | None,
+    ) -> None:
+        """Persist last selected generation defaults for user."""
+        container = get_container()
+        key = f"{GenerationService._DEFAULTS_KEY_PREFIX}:{telegram_id}"
+        try:
+            await container.redis_client.hset(key, "model_id", str(model_id))
+            await container.redis_client.hset(key, "size", size or "")
+            await container.redis_client.hset(key, "aspect_ratio", aspect_ratio or "")
+            await container.redis_client.hset(key, "resolution", resolution or "")
+        except Exception:
+            logger.warning("Failed to save generation defaults", user_id=telegram_id)
     
     @staticmethod
     async def submit_generation(

@@ -150,6 +150,14 @@ async def select_model(
         aspect_ratio_options=selected.aspect_ratio_options,
         resolution_options=selected.resolution_options,
     )
+
+    await GenerationService.save_generation_defaults(
+        call.from_user.id,
+        selected.id,
+        size,
+        aspect_ratio,
+        resolution,
+    )
     
     text = build_generation_text(
         prompt, selected.name, size, aspect_ratio, resolution,
@@ -207,6 +215,15 @@ async def select_size(
     await state.update_data(size=size)
     
     data = await state.get_data()
+    model_id = data.get("model_id")
+    if model_id:
+        await GenerationService.save_generation_defaults(
+            call.from_user.id,
+            int(model_id),
+            size,
+            data.get("aspect_ratio"),
+            data.get("resolution"),
+        )
     await _update_generation_menu(call, data, _)
 
 
@@ -251,6 +268,15 @@ async def select_ratio(
     await state.update_data(aspect_ratio=aspect_ratio)
     
     data = await state.get_data()
+    model_id = data.get("model_id")
+    if model_id:
+        await GenerationService.save_generation_defaults(
+            call.from_user.id,
+            int(model_id),
+            data.get("size"),
+            aspect_ratio,
+            data.get("resolution"),
+        )
     await _update_generation_menu(call, data, _)
 
 
@@ -295,6 +321,15 @@ async def select_resolution(
     await state.update_data(resolution=resolution)
     
     data = await state.get_data()
+    model_id = data.get("model_id")
+    if model_id:
+        await GenerationService.save_generation_defaults(
+            call.from_user.id,
+            int(model_id),
+            data.get("size"),
+            data.get("aspect_ratio"),
+            resolution,
+        )
     await _update_generation_menu(call, data, _)
 
 
