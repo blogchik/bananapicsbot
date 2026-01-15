@@ -80,8 +80,6 @@ async def profile_callback(
         trial_status = _(TranslationKey.PROFILE_TRIAL_UNAVAILABLE, None)
     
     trial_text = _(TranslationKey.PROFILE_TRIAL, {"status": trial_status})
-    if profile.trial_used_count:
-        trial_text += _(TranslationKey.PROFILE_TRIAL_USED, {"count": profile.trial_used_count})
     
     # Build message
     text = (

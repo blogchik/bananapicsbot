@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Добро пожаловать, {name}!\n\n🍌 Nano Banana — передовая нейросеть для обработки и генерации фото!\n\nПримеры генераций доступны в нашем канале:\n@NanoBanana\n\nОтправьте фото с описанием или альбом из фотографий с описанием, чтобы приступить к генерации 👇",
+    "welcome": "👋 Добро пожаловать, {name}!\n\n🍌 Nano Banana — передовая нейросеть для обработки и генерации фото!\n\nОтправьте фото с описанием или альбом из фотографий с описанием, чтобы приступить к генерации 👇",
     "welcome_back": "С возвращением! 😊",
     "start_info": "Пожалуйста, отправьте текстовый запрос, фото с описанием или альбом из фотографий с описанием, чтобы приступить к генерации 👇\n\n❗ Важно отправлять фото и описание одним сообщением!",
     "error_generic": "Произошла ошибка. Пожалуйста, попробуйте позже.",
@@ -21,7 +21,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Имя: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Баланс: {balance}",
+    "profile_balance": "💰 Баланс: {balance} кредитов",
     "profile_trial": "🎁 Trial: {status}",
     "profile_trial_available": "доступен",
     "profile_trial_unavailable": "нет",
@@ -29,7 +29,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Имя: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "Баланс: {balance} кредитов",
+    "profile_balance": "💰 Баланс: {balance} кредитов",
     "profile_trial": "Пробный период: {status}",
     "profile_trial_available": "доступен",
     "profile_trial_unavailable": "недоступен",
@@ -91,7 +91,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Имя: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Баланс: {balance}",
+    "profile_balance": "💰 Баланс: {balance} кредитов",
     "profile_trial": "🎁 Trial: {status}",
     "profile_trial_available": "доступен",
     "profile_trial_unavailable": "нет",

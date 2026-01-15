@@ -2,13 +2,13 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Nano Banana — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\nGeneratsiya misollari kanalimizda:\n@NanoBanana\n\nGeneratsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
+    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Nano Banana — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\nGeneratsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
     "welcome_back": "Qaytganingiz bilan! 😊",
     "start_info": "Iltimos, generatsiyani boshlash uchun matnli prompt, prompt+rasm yoki captionli albom yuboring 👇\n\n❗ Rasm va promptni bitta xabarda yuboring.",
     "error_generic": "Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.",
     "error_connection": "Server bilan ulanishda xatolik. Keyinroq urinib ko'ring.",
     "back": "⬅️ Orqaga",
-    "home": "🏠 Home",
+    "home": "🏠 Bosh menyu",
     "cancel": "❌ Bekor qilish",
     "confirm": "✅ Tasdiqlash",
     "yes": "Ha",
@@ -21,7 +21,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Ism: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Balans: {balance}",
+    "profile_balance": "💰 Balans: {balance} credit",
     "profile_trial": "🎁 Trial: {status}",
     "profile_trial_available": "mavjud",
     "profile_trial_unavailable": "yo'q",
@@ -29,20 +29,20 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Ism: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "Balans: {balance} credit",
+    "profile_balance": "💰 Balans: {balance} credit",
     "profile_trial": "Trial: {status}",
     "profile_trial_available": "bor",
     "profile_trial_unavailable": "yo'q",
     "profile_trial_used": " (ishlatilgan: {count})",
     
     # Menu buttons
-    "btn_profile": "👤 Profile",
+    "btn_profile": "👤 Profil",
     "btn_topup": "⭐ Balans to'ldirish",
     "btn_referral": "🤝 Referral",
     "btn_settings": "⚙️ Sozlamalar",
     "btn_help": "❓ Yordam",
     "btn_language": "🌐 Til",
-    "btn_start": "🔥 Pristupit",
+    "btn_start": "🔥 Boshlash",
     
     # Generation
     "gen_settings_title": "⚙️ Generatsiya sozlamalari",
@@ -91,7 +91,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Ism: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Balans: {balance}",
+    "profile_balance": "💰 Balans: {balance} credit",
     "profile_trial": "🎁 Trial: {status}",
     "profile_trial_available": "mavjud",
     "profile_trial_unavailable": "yo'q",

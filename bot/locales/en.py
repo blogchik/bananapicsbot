@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Welcome, {name}!\n\n🍌 Nano Banana is a cutting-edge neural network for photo processing and generation!\n\nGeneration examples are in our channel:\n@NanoBanana\n\nSend a photo with a caption or an album with captions to start generating 👇",
+    "welcome": "👋 Welcome, {name}!\n\n🍌 Nano Banana is a cutting-edge neural network for photo processing and generation!\n\nSend a photo with a caption or an album with captions to start generating 👇",
     "welcome_back": "Welcome back! 😊",
     "start_info": "Please send a text prompt, a photo with a caption, or an album with captions to start generation 👇\n\n❗ Send the photo and prompt in one message.",
     "error_generic": "An error occurred. Please try again later.",
@@ -21,7 +21,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Name: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Balance: {balance}",
+    "profile_balance": "💰 Balance: {balance} credits",
     "profile_trial": "🎁 Trial: {status}",
     "profile_trial_available": "available",
     "profile_trial_unavailable": "unavailable",
@@ -29,7 +29,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Name: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "Balance: {balance} credits",
+    "profile_balance": "💰 Balance: {balance} credits",
     "profile_trial": "Trial: {status}",
     "profile_trial_available": "available",
     "profile_trial_unavailable": "unavailable",
@@ -91,7 +91,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_name": "Name: {name}",
     "profile_username": "Username: {username}",
     "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Balance: {balance}",
+    "profile_balance": "💰 Balance: {balance} credits",
     "profile_trial": "🎁 Trial: {status}",
     "profile_trial_available": "available",
     "profile_trial_unavailable": "unavailable",
