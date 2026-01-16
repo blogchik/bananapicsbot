@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Nano Banana — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\nGeneratsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
+    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Banana Pics — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\nGeneratsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
     "welcome_back": "Qaytganingiz bilan! 😊",
     "start_info": "Iltimos, generatsiyani boshlash uchun matnli prompt, prompt+rasm yoki captionli albom yuboring 👇\n\n❗ Rasm va promptni bitta xabarda yuboring.",
     "error_generic": "Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.",

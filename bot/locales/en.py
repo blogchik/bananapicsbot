@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Welcome, {name}!\n\n🍌 Nano Banana is a cutting-edge neural network for photo processing and generation!\n\nSend a photo with a caption or an album with captions to start generating 👇",
+    "welcome": "👋 Welcome, {name}!\n\n🍌 Banana Pics is a cutting-edge neural network for photo processing and generation!\n\nSend a photo with a caption or an album with captions to start generating 👇",
     "welcome_back": "Welcome back! 😊",
     "start_info": "Please send a text prompt, a photo with a caption, or an album with captions to start generation 👇\n\n❗ Send the photo and prompt in one message.",
     "error_generic": "An error occurred. Please try again later.",
