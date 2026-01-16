@@ -76,6 +76,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_status": "⏳ Holat: {status}",
     "gen_trial_used": "Trial ishlatildi",
     "gen_price": "Narx: {price} cr",
+    "gen_retry": "🔁 Qayta urinib ko'rish",
     "gen_max_references": "Maksimal 10 ta reference rasm yuborish mumkin.",
     "gen_image_upload_error": "Rasm yuklashda xatolik. Keyinroq urinib ko'ring.",
     "gen_prompt_not_found": "Prompt topilmadi. Iltimos, qaytadan yuboring.",

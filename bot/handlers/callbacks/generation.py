@@ -384,6 +384,23 @@ async def submit_generation(
         reference_urls=data.get("reference_urls"),
         reference_file_ids=data.get("reference_file_ids"),
     )
+
+    await GenerationService.save_last_request(
+        call.from_user.id,
+        {
+            "prompt": config.prompt,
+            "model_id": config.model_id,
+            "model_name": config.model_name,
+            "model_key": config.model_key,
+            "price": config.price,
+            "size": config.size,
+            "aspect_ratio": config.aspect_ratio,
+            "resolution": config.resolution,
+            "reference_urls": config.reference_urls or [],
+            "reference_file_ids": config.reference_file_ids or [],
+            "prompt_message_id": data.get("prompt_message_id"),
+        },
+    )
     
     try:
         result = await GenerationService.submit_generation(call.from_user.id, config)
@@ -455,6 +472,108 @@ async def submit_generation(
     )
     
     await state.clear()
+
+
+@router.callback_query(F.data == GenerationCallback.RETRY)
+async def retry_generation(
+    call: CallbackQuery,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Retry last generation request."""
+    await call.answer()
+    last = await GenerationService.get_last_request(call.from_user.id)
+    prompt = last.get("prompt")
+    model_id = last.get("model_id")
+    if not prompt or not model_id:
+        await call.message.answer(_(TranslationKey.GEN_PROMPT_NOT_FOUND, None))
+        return
+
+    model_name = last.get("model_name") or "-"
+    model_key = last.get("model_key") or ""
+    price = int(last.get("price") or 0)
+
+    config = GenerationConfig(
+        prompt=str(prompt),
+        model_id=int(model_id),
+        model_name=str(model_name),
+        model_key=str(model_key),
+        price=price,
+        size=last.get("size"),
+        aspect_ratio=last.get("aspect_ratio"),
+        resolution=last.get("resolution"),
+        reference_urls=list(last.get("reference_urls") or []),
+        reference_file_ids=list(last.get("reference_file_ids") or []),
+    )
+
+    try:
+        await call.message.edit_text(_(TranslationKey.GEN_IN_QUEUE, None))
+    except TelegramBadRequest:
+        pass
+
+    try:
+        result = await GenerationService.submit_generation(call.from_user.id, config)
+    except ActiveGenerationError:
+        await call.message.edit_text(_(TranslationKey.GEN_ACTIVE_EXISTS, None))
+        return
+    except InsufficientBalanceError:
+        await call.message.edit_text(
+            _(TranslationKey.INSUFFICIENT_BALANCE, None),
+            reply_markup=ProfileKeyboard.main(_),
+        )
+        return
+    except Exception as e:
+        logger.error("Generation retry failed", error=str(e))
+        await call.message.edit_text(_(TranslationKey.ERROR_GENERIC, None))
+        return
+
+    request = result.get("request", {})
+    request_id = request.get("id")
+    request_status = request.get("status")
+
+    if not request_id:
+        await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
+        return
+
+    if request_status == "completed":
+        try:
+            outputs = await GenerationService.get_results(request_id, call.from_user.id)
+        except Exception:
+            outputs = []
+
+        try:
+            await call.message.edit_text(_(TranslationKey.GEN_COMPLETED, None))
+        except TelegramBadRequest:
+            pass
+
+        if outputs:
+            caption = GenerationService.build_result_caption(
+                config.prompt, config.model_name, request.get("cost"), None, _
+            )
+            await GenerationService.send_results(
+                call.message.bot,
+                call.message.chat.id,
+                outputs,
+                last.get("prompt_message_id"),
+                caption,
+                _,
+            )
+        return
+
+    prompt_message_id = last.get("prompt_message_id") or call.message.message_id
+
+    asyncio.create_task(
+        GenerationService.poll_generation_status(
+            call.message.bot,
+            call.message.chat.id,
+            call.message.message_id,
+            request_id,
+            call.from_user.id,
+            config.prompt,
+            config.model_name,
+            prompt_message_id,
+            _,
+        )
+    )
 
 
 async def _update_generation_menu(

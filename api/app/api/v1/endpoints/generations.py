@@ -177,6 +177,55 @@ def normalize_outputs(outputs: list[str] | str | None) -> list[str]:
     return [output for output in outputs if output]
 
 
+def extract_wavespeed_error(response) -> str | None:
+    data = response.data if isinstance(response.data, dict) else {}
+    candidates = [
+        data.get("error_message"),
+        data.get("error"),
+        data.get("detail"),
+        data.get("message"),
+    ]
+    for value in candidates:
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    message = str(getattr(response, "message", "") or "").strip()
+    if message and message.lower() != "success":
+        return message
+    return None
+
+
+def rollback_generation_cost(db: Session, request: GenerationRequest) -> None:
+    if not request.cost or request.cost <= 0:
+        return
+    refund_id = f"refund_{request.id}"
+    existing = db.execute(
+        select(LedgerEntry).where(
+            LedgerEntry.user_id == request.user_id,
+            LedgerEntry.entry_type == "refund",
+            LedgerEntry.reference_id == refund_id,
+        )
+    ).scalar_one_or_none()
+    if existing:
+        return
+    db.add(
+        LedgerEntry(
+            user_id=request.user_id,
+            amount=int(request.cost),
+            entry_type="refund",
+            reference_id=refund_id,
+            description=f"Refund for generation {request.id}",
+        )
+    )
+
+
+def rollback_trial_use(db: Session, request_id: int) -> None:
+    trial = db.execute(
+        select(TrialUse).where(TrialUse.request_id == request_id)
+    ).scalar_one_or_none()
+    if trial:
+        db.delete(trial)
+
+
 def add_generation_results(
     db: Session, request_id: int, outputs: list[str] | str | None
 ) -> None:
@@ -399,11 +448,15 @@ async def submit_generation(
         )
     except HTTPException:
         request.status = GenerationStatus.failed
+        rollback_generation_cost(db, request)
+        rollback_trial_use(db, request.id)
         db.commit()
         await clear_generation_lock(redis, user.id, request.id)
         raise
     except Exception:
         request.status = GenerationStatus.failed
+        rollback_generation_cost(db, request)
+        rollback_trial_use(db, request.id)
         db.commit()
         await clear_generation_lock(redis, user.id, request.id)
         raise HTTPException(status_code=502, detail="Wavespeed request failed")
@@ -495,11 +548,14 @@ async def refresh_generation(
         job.completed_at = datetime.utcnow()
         await clear_generation_lock(redis, request.user_id, request.id)
     elif status_value == "failed":
+        error_message = extract_wavespeed_error(response)
         request.status = GenerationStatus.failed
         request.completed_at = datetime.utcnow()
         job.status = JobStatus.failed
         job.completed_at = datetime.utcnow()
-        job.error_message = response.message
+        job.error_message = error_message or response.message
+        rollback_generation_cost(db, request)
+        rollback_trial_use(db, request.id)
         await clear_generation_lock(redis, request.user_id, request.id)
     else:
         if status_value in {"created", "queued"}:

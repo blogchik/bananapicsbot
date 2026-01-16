@@ -76,6 +76,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_status": "⏳ Status: {status}",
     "gen_trial_used": "Trial used",
     "gen_price": "Price: {price} cr",
+    "gen_retry": "🔁 Retry",
     "gen_max_references": "Maximum 10 reference images allowed.",
     "gen_image_upload_error": "Image upload error. Try again later.",
     "gen_prompt_not_found": "Prompt not found. Please send again.",

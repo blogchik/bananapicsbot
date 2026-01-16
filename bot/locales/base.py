@@ -89,6 +89,7 @@ class TranslationKey(str, Enum):
     GEN_STATUS = "gen_status"
     GEN_TRIAL_USED = "gen_trial_used"
     GEN_PRICE = "gen_price"
+    GEN_RETRY = "gen_retry"
     GEN_PROMPT_NOT_FOUND = "gen_prompt_not_found"
     GEN_MODEL_FETCH_ERROR = "gen_model_fetch_error"
     GEN_MODEL_NOT_FOUND_ERROR = "gen_model_not_found_error"

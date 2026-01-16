@@ -160,6 +160,8 @@ Admin will see specific error messages for these cases:
    - "⏳ Holat: Navbatda" (queue)
    - "⏳ Holat: Jarayonda" (processing)
    - "✅ Natija tayyor" (completed) + rasm va file yuboriladi
+   - Xatolik bo'lsa, sabab ko'rsatiladi va "Retry" tugmasi chiqadi
+   - Xatolikda kredit/ trial avtomatik qaytariladi
 5. Timeout: 5 minut (300 soniya)
 
 ## Localization

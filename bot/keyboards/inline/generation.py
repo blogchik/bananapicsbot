@@ -223,3 +223,17 @@ class GenerationKeyboard:
         ])
         
         return InlineKeyboardMarkup(inline_keyboard=rows)
+
+    @staticmethod
+    def retry(_: Callable[[TranslationKey, dict | None], str]) -> InlineKeyboardMarkup:
+        """Build retry keyboard for failed generation."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.GEN_RETRY, None),
+                        callback_data=GenerationCallback.RETRY,
+                    )
+                ]
+            ]
+        )

@@ -70,6 +70,7 @@ class GenerationCallback:
     RESOLUTION_MENU = "gen:resolution:menu"
     SUBMIT = "gen:submit"
     BACK = "gen:back"
+    RETRY = "gen:retry"
     
     @staticmethod
     def model_set(model_id: int) -> str:

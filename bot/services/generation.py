@@ -2,6 +2,7 @@
 
 import asyncio
 import html
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -17,6 +18,7 @@ from core.container import get_container
 from core.exceptions import APIError, ActiveGenerationError, InsufficientBalanceError
 from core.logging import get_logger
 from locales import TranslationKey
+from keyboards import GenerationKeyboard
 
 logger = get_logger(__name__)
 
@@ -55,6 +57,8 @@ class GenerationService:
     """Generation-related business logic."""
     
     _DEFAULTS_KEY_PREFIX = "gen_defaults"
+    _LAST_REQUEST_KEY_PREFIX = "gen_last_request"
+    _LAST_REQUEST_TTL_SECONDS = 3600
     
     @staticmethod
     async def get_models() -> list[NormalizedModel]:
@@ -161,6 +165,39 @@ class GenerationService:
             await container.redis_client.hset(key, "resolution", resolution or "")
         except Exception:
             logger.warning("Failed to save generation defaults", user_id=telegram_id)
+
+    @staticmethod
+    async def save_last_request(
+        telegram_id: int,
+        payload: dict[str, object],
+    ) -> None:
+        """Persist last generation request payload for retry."""
+        container = get_container()
+        key = f"{GenerationService._LAST_REQUEST_KEY_PREFIX}:{telegram_id}"
+        try:
+            data = json.dumps(payload)
+            await container.redis_client.set(
+                key, data, expire_seconds=GenerationService._LAST_REQUEST_TTL_SECONDS
+            )
+        except Exception:
+            logger.warning("Failed to save last generation request", user_id=telegram_id)
+
+    @staticmethod
+    async def get_last_request(telegram_id: int) -> dict[str, object]:
+        """Get last generation request payload."""
+        container = get_container()
+        key = f"{GenerationService._LAST_REQUEST_KEY_PREFIX}:{telegram_id}"
+        try:
+            raw = await container.redis_client.get(key)
+        except Exception:
+            return {}
+        if not raw:
+            return {}
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return {}
+        return data if isinstance(data, dict) else {}
     
     @staticmethod
     async def submit_generation(
@@ -481,7 +518,12 @@ class GenerationService:
                         text = _(TranslationKey.GEN_ERROR, {"error": error_message})
                     else:
                         text = _(TranslationKey.GEN_FAILED, None)
-                    await bot.edit_message_text(text, chat_id=chat_id, message_id=message_id)
+                    await bot.edit_message_text(
+                        text,
+                        chat_id=chat_id,
+                        message_id=message_id,
+                        reply_markup=GenerationKeyboard.retry(_),
+                    )
                 except TelegramBadRequest:
                     pass
                 return
