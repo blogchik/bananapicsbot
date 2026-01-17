@@ -167,7 +167,7 @@ Admin will see specific error messages for these cases:
 3. Generate bosilganda so'rov yuboriladi
 4. Status backend Celery poller orqali kuzatilib, natija tayyor bo'lganda botga push qilinadi:
    - "? Holat: Navbatda" (queue)
-   - "? Natija tayyor" (completed) + rasm va file yuboriladi
+   - "? Natija tayyor" (completed) + faqat file yuboriladi (asl format saqlanadi)
    - Xatolik bo'lsa, sabab ko'rsatiladi va "Retry" tugmasi chiqadi
    - Xatolikda kredit/ trial avtomatik qaytariladi
 5. Timeout: 5 minut (300 soniya)

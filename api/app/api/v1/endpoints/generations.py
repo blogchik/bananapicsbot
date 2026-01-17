@@ -1,6 +1,8 @@
 import re
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -22,6 +24,7 @@ from app.db.models import (
     ModelPrice,
     TrialUse,
 )
+from app.infrastructure.logging import get_logger
 from app.schemas.generation import (
     GenerationAccessIn,
     GenerationActiveOut,
@@ -30,11 +33,15 @@ from app.schemas.generation import (
     GenerationSubmitOut,
 )
 from app.services.ledger import get_user_balance
+from app.services.redis_client import get_redis
 from app.services.users import get_or_create_user, get_user_by_telegram_id
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 SIZE_RE = re.compile(r"^(\d{3,4})\*(\d{3,4})$")
+WAVESPEED_BALANCE_CACHE_KEY = "wavespeed:balance"
+WAVESPEED_BALANCE_ALERT_KEY = "wavespeed:balance:alerted"
 
 
 def validate_size(size: str | None) -> None:
@@ -86,10 +93,34 @@ def get_active_model(db: Session, model_id: int) -> ModelCatalog:
     return model
 
 
-def get_active_price(db: Session, model_id: int) -> int:
+def _credits_from_usd(value: Decimal) -> int:
+    return int((value * Decimal("1000")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def _dynamic_price_for_model(model_key: str | None, resolution: str | None) -> int | None:
+    if not model_key:
+        return None
+    key = model_key.lower()
+    if key == "seedream-v4":
+        return _credits_from_usd(Decimal("0.027"))
+    if key == "nano-banana-pro":
+        res = (resolution or "").lower()
+        usd = Decimal("0.24") if res == "4k" else Decimal("0.14")
+        return _credits_from_usd(usd)
+    return None
+
+
+def get_generation_price(
+    db: Session,
+    model: ModelCatalog,
+    resolution: str | None,
+) -> int:
+    dynamic_price = _dynamic_price_for_model(model.key, resolution)
+    if dynamic_price is not None:
+        return dynamic_price
     price = db.execute(
         select(ModelPrice)
-        .where(ModelPrice.model_id == model_id, ModelPrice.is_active.is_(True))
+        .where(ModelPrice.model_id == model.id, ModelPrice.is_active.is_(True))
         .order_by(ModelPrice.created_at.desc())
     ).scalar_one_or_none()
     if not price:
@@ -175,6 +206,116 @@ def extract_wavespeed_error(response) -> str | None:
     if message and message.lower() != "success":
         return message
     return None
+
+
+def extract_wavespeed_balance(data: dict[str, object] | None) -> float | None:
+    if not isinstance(data, dict):
+        return None
+    candidates = [
+        data.get("balance"),
+        data.get("available_balance"),
+        data.get("credits"),
+        data.get("amount"),
+        (data.get("account") or {}).get("balance"),
+    ]
+    for value in candidates:
+        try:
+            if value is None:
+                continue
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+async def get_wavespeed_balance_cached(client, settings) -> float | None:
+    redis = get_redis()
+    try:
+        cached = await redis.get(WAVESPEED_BALANCE_CACHE_KEY)
+        if cached:
+            return float(cached)
+    except Exception as exc:
+        logger.warning("Wavespeed balance cache read failed", error=str(exc))
+
+    try:
+        response = await client.get_balance()
+    except Exception as exc:
+        logger.warning("Wavespeed balance request failed", error=str(exc))
+        return None
+
+    balance = extract_wavespeed_balance(response.data)
+    if balance is None:
+        logger.warning("Wavespeed balance missing in response", data=response.data)
+        return None
+
+    try:
+        await redis.set(
+            WAVESPEED_BALANCE_CACHE_KEY,
+            str(balance),
+            ex=settings.wavespeed_balance_cache_ttl_seconds,
+        )
+    except Exception as exc:
+        logger.warning("Wavespeed balance cache write failed", error=str(exc))
+    return balance
+
+
+async def notify_admins_low_balance(
+    balance: float,
+    threshold: float,
+    settings,
+) -> None:
+    if not settings.bot_token or not settings.admin_ids_list:
+        return
+    redis = get_redis()
+    try:
+        lock = await redis.set(
+            WAVESPEED_BALANCE_ALERT_KEY,
+            "1",
+            ex=settings.wavespeed_balance_alert_ttl_seconds,
+            nx=True,
+        )
+        if not lock:
+            return
+    except Exception:
+        pass
+
+    text = (
+        "Wavespeed balance low. "
+        f"balance={balance:.4f} threshold={threshold:.4f}. "
+        "Generations paused."
+    )
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for admin_id in settings.admin_ids_list:
+            try:
+                await client.post(
+                    f"https://api.telegram.org/bot{settings.bot_token}/sendMessage",
+                    json={"chat_id": admin_id, "text": text},
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Failed to notify admin about low balance",
+                    admin_id=admin_id,
+                    error=str(exc),
+                )
+
+
+async def ensure_wavespeed_balance(settings) -> float | None:
+    client = wavespeed_client()
+    balance = await get_wavespeed_balance_cached(client, settings)
+    if balance is None:
+        return None
+    if balance < settings.wavespeed_min_balance:
+        await notify_admins_low_balance(balance, settings.wavespeed_min_balance, settings)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "provider_balance_low",
+                "message": "Wavespeed balance low",
+                "balance": balance,
+                "threshold": settings.wavespeed_min_balance,
+            },
+        )
+    return balance
 
 
 def rollback_generation_cost(db: Session, request: GenerationRequest) -> None:
@@ -296,9 +437,10 @@ async def submit_generation(
 ) -> GenerationSubmitOut:
     settings = get_settings()
     user, _, _ = get_or_create_user(db, payload.telegram_id)
+    await ensure_wavespeed_balance(settings)
     db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": user.id})
     model = get_active_model(db, payload.model_id)
-    price = get_active_price(db, model.id)
+    price = get_generation_price(db, model, resolution_value)
     size_value = payload.size
     resolution_value = payload.resolution
     if model.key == "seedream-v4" and size_value and not resolution_value:
@@ -349,6 +491,7 @@ async def submit_generation(
             "chat_id": payload.chat_id,
             "message_id": payload.message_id,
             "prompt_message_id": payload.prompt_message_id,
+            "language": payload.language,
         },
     )
     db.add(request)

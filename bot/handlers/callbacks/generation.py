@@ -12,7 +12,11 @@ from locales import TranslationKey
 from services import GenerationService
 from services.generation import GenerationConfig, NormalizedModel
 from states import GenerationStates
-from core.exceptions import ActiveGenerationError, InsufficientBalanceError
+from core.exceptions import (
+    ActiveGenerationError,
+    InsufficientBalanceError,
+    ProviderUnavailableError,
+)
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -214,7 +218,11 @@ async def select_model(
         model_id=selected.id,
         model_name=selected.name,
         model_key=selected.key,
-        price=selected.price,
+        price=GenerationService.calculate_generation_price(
+            selected.key,
+            selected.price,
+            resolution,
+        ),
         size=size,
         aspect_ratio=aspect_ratio,
         resolution=resolution,
@@ -465,8 +473,14 @@ async def select_resolution(
     resolution = None if resolution_value == "default" else resolution_value
     
     await state.update_data(resolution=resolution)
-    
     data = await state.get_data()
+    price = GenerationService.calculate_generation_price(
+        data.get("model_key"),
+        int(data.get("price") or 0),
+        resolution,
+    )
+    await state.update_data(price=price)
+    
     model_id = data.get("model_id")
     if model_id:
         await GenerationService.save_generation_defaults(
@@ -478,25 +492,19 @@ async def select_resolution(
         )
     try:
         resolution_options = data.get("resolution_options") or []
-        preview_url = get_resolution_preview_url()
         if call.message:
-            caption = _(TranslationKey.GEN_RESOLUTION_MENU_TITLE, None)
-            await call.message.bot.edit_message_text(
+            await call.message.bot.edit_message_reply_markup(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=caption,
                 reply_markup=GenerationKeyboard.resolution_list(
                     resolution_options,
                     resolution,
                     _,
                 ),
-                link_preview_options=LinkPreviewOptions(
-                    url=preview_url,
-                    is_disabled=False,
-                    show_above_text=True,
-                ),
             )
-    except TelegramBadRequest:
+    except TelegramBadRequest as exc:
+        if "message is not modified" in str(exc):
+            return
         pass
 
 
@@ -515,7 +523,11 @@ async def back_to_generation(
         size = data.get("size")
         aspect_ratio = data.get("aspect_ratio")
         resolution = data.get("resolution")
-        price = data.get("price", 0)
+        price = GenerationService.calculate_generation_price(
+            data.get("model_key"),
+            int(data.get("price") or 0),
+            resolution,
+        )
         show_size = data.get("supports_size") and bool(data.get("size_options"))
         show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
         show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
@@ -560,6 +572,7 @@ async def back_to_generation(
 async def submit_generation(
     call: CallbackQuery,
     state: FSMContext,
+    language: str,
     _: Callable[[TranslationKey, dict | None], str],
 ) -> None:
     """Submit generation request."""
@@ -570,6 +583,12 @@ async def submit_generation(
     model_id = data.get("model_id")
     model_name = data.get("model_name", "-")
     price = data.get("price", 0)
+    resolution = data.get("resolution")
+    price = GenerationService.calculate_generation_price(
+        data.get("model_key"),
+        int(price or 0),
+        resolution,
+    )
     
     if not prompt or not model_id:
         await call.message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED, None))
@@ -591,6 +610,7 @@ async def submit_generation(
         size=data.get("size") if data.get("supports_size") else None,
         aspect_ratio=data.get("aspect_ratio") if data.get("supports_aspect_ratio") else None,
         resolution=data.get("resolution") if data.get("supports_resolution") else None,
+        language=language,
         reference_urls=data.get("reference_urls"),
         reference_file_ids=data.get("reference_file_ids"),
         chat_id=call.message.chat.id if call.message else None,
@@ -609,6 +629,7 @@ async def submit_generation(
             "size": config.size,
             "aspect_ratio": config.aspect_ratio,
             "resolution": config.resolution,
+            "language": language,
             "reference_urls": config.reference_urls or [],
             "reference_file_ids": config.reference_file_ids or [],
             "prompt_message_id": data.get("prompt_message_id"),
@@ -625,6 +646,9 @@ async def submit_generation(
             _(TranslationKey.INSUFFICIENT_BALANCE, None),
             reply_markup=ProfileKeyboard.main(_),
         )
+        return
+    except ProviderUnavailableError:
+        await call.message.edit_text(_(TranslationKey.GEN_PROVIDER_UNAVAILABLE, None))
         return
     except Exception as e:
         logger.error("Generation submit failed", error=str(e))
@@ -647,6 +671,7 @@ async def submit_generation(
 @router.callback_query(F.data == GenerationCallback.RETRY)
 async def retry_generation(
     call: CallbackQuery,
+    language: str,
     _: Callable[[TranslationKey, dict | None], str],
 ) -> None:
     """Retry last generation request."""
@@ -671,6 +696,7 @@ async def retry_generation(
         size=last.get("size"),
         aspect_ratio=last.get("aspect_ratio"),
         resolution=last.get("resolution"),
+        language=str(last.get("language") or language),
         reference_urls=list(last.get("reference_urls") or []),
         reference_file_ids=list(last.get("reference_file_ids") or []),
         chat_id=call.message.chat.id if call.message else None,
@@ -693,6 +719,9 @@ async def retry_generation(
             _(TranslationKey.INSUFFICIENT_BALANCE, None),
             reply_markup=ProfileKeyboard.main(_),
         )
+        return
+    except ProviderUnavailableError:
+        await call.message.edit_text(_(TranslationKey.GEN_PROVIDER_UNAVAILABLE, None))
         return
     except Exception as e:
         logger.error("Generation retry failed", error=str(e))
@@ -722,6 +751,11 @@ async def _update_generation_menu(
     aspect_ratio = data.get("aspect_ratio")
     resolution = data.get("resolution")
     price = data.get("price", 0)
+    price = GenerationService.calculate_generation_price(
+        data.get("model_key"),
+        int(price or 0),
+        resolution,
+    )
     
     show_size = data.get("supports_size") and bool(data.get("size_options"))
     show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
@@ -737,8 +771,15 @@ async def _update_generation_menu(
         await call.message.edit_text(
             text,
             reply_markup=GenerationKeyboard.main(
-                _, model_name, size, aspect_ratio, resolution,
-                price, show_size, show_aspect, show_resolution,
+                _,
+                model_name,
+                size,
+                aspect_ratio,
+                resolution,
+                int(price),
+                show_size,
+                show_aspect,
+                show_resolution,
             ),
         )
     except TelegramBadRequest:

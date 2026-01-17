@@ -128,7 +128,11 @@ async def handle_prompt_message(
         model_name=selected_model.name,
         model_key=selected_model.key,
         prompt_message_id=message.message_id,
-        price=selected_model.price,
+        price=GenerationService.calculate_generation_price(
+            selected_model.key,
+            selected_model.price,
+            resolution,
+        ),
         size=size,
         aspect_ratio=aspect_ratio,
         resolution=resolution,
@@ -149,7 +153,14 @@ async def handle_prompt_message(
     # Send menu
     menu = GenerationKeyboard.main(
         _, selected_model.name, size, aspect_ratio, resolution,
-        selected_model.price, show_size, show_aspect, show_resolution,
+        GenerationService.calculate_generation_price(
+            selected_model.key,
+            selected_model.price,
+            resolution,
+        ),
+        show_size,
+        show_aspect,
+        show_resolution,
     )
     
     msg = await message.answer(

@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+import asyncio
+import io
 from typing import Any
 
-import httpx
+import requests
+from wavespeed import Client as WavespeedSdkClient
 
 
 @dataclass(frozen=True)
@@ -16,32 +19,55 @@ class WavespeedClient:
         self,
         api_key: str,
         api_base_url: str,
-        seedream_v4_t2i_url: str,
-        seedream_v4_i2i_url: str,
-        nano_banana_t2i_url: str,
-        nano_banana_i2i_url: str,
-        nano_banana_pro_t2i_url: str,
-        nano_banana_pro_i2i_url: str,
         timeout_seconds: int = 30,
     ) -> None:
-        self.api_key = api_key
-        self.api_base_url = api_base_url.rstrip("/")
-        self.seedream_v4_t2i_url = seedream_v4_t2i_url
-        self.seedream_v4_i2i_url = seedream_v4_i2i_url
-        self.nano_banana_t2i_url = nano_banana_t2i_url
-        self.nano_banana_i2i_url = nano_banana_i2i_url
-        self.nano_banana_pro_t2i_url = nano_banana_pro_t2i_url
-        self.nano_banana_pro_i2i_url = nano_banana_pro_i2i_url
-        self.timeout = httpx.Timeout(timeout_seconds)
+        self._timeout_seconds = float(timeout_seconds)
+        base_url = api_base_url.rstrip("/")
+        if base_url.endswith("/api/v3"):
+            base_url = base_url[: -len("/api/v3")]
+        self._client = WavespeedSdkClient(
+            api_key=api_key,
+            base_url=base_url,
+            connection_timeout=self._timeout_seconds,
+        )
 
-    def _auth_headers(self) -> dict[str, str]:
-        return {"Authorization": f"Bearer {self.api_key}"}
+        self._seedream_v4_t2i_model = "bytedance/seedream-v4"
+        self._seedream_v4_i2i_model = "bytedance/seedream-v4/edit"
+        self._nano_banana_t2i_model = "google/nano-banana/text-to-image"
+        self._nano_banana_i2i_model = "google/nano-banana/edit"
+        self._nano_banana_pro_t2i_model = "google/nano-banana-pro/text-to-image"
+        self._nano_banana_pro_i2i_model = "google/nano-banana-pro/edit"
 
-    def _json_headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+    def _response_from_result(self, result: dict[str, Any]) -> WavespeedResponse:
+        data = result.get("data", {})
+        return WavespeedResponse(
+            code=int(result.get("code", 200)),
+            message=str(result.get("message", "")),
+            data=dict(data) if isinstance(data, dict) else {},
+        )
+
+    async def _submit_model(
+        self,
+        model: str,
+        payload: dict[str, Any],
+        enable_sync_mode: bool,
+    ) -> WavespeedResponse:
+        def _call() -> WavespeedResponse:
+            request_id, sync_result = self._client._submit(
+                model,
+                payload,
+                enable_sync_mode=enable_sync_mode,
+                timeout=self._timeout_seconds,
+            )
+            if enable_sync_mode:
+                return self._response_from_result(sync_result or {})
+            return WavespeedResponse(
+                code=200,
+                message="success",
+                data={"id": request_id},
+            )
+
+        return await asyncio.to_thread(_call)
 
     async def submit_seedream_v4_t2i(
         self,
@@ -53,11 +79,14 @@ class WavespeedClient:
         payload: dict[str, Any] = {
             "prompt": prompt,
             "enable_base64_output": enable_base64_output,
-            "enable_sync_mode": enable_sync_mode,
         }
         if size:
             payload["size"] = size
-        return await self._post_json(self.seedream_v4_t2i_url, payload)
+        return await self._submit_model(
+            self._seedream_v4_t2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
 
     async def submit_seedream_v4_i2i(
         self,
@@ -71,11 +100,14 @@ class WavespeedClient:
             "prompt": prompt,
             "images": images,
             "enable_base64_output": enable_base64_output,
-            "enable_sync_mode": enable_sync_mode,
         }
         if size:
             payload["size"] = size
-        return await self._post_json(self.seedream_v4_i2i_url, payload)
+        return await self._submit_model(
+            self._seedream_v4_i2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
 
     async def submit_nano_banana_t2i(
         self,
@@ -87,11 +119,14 @@ class WavespeedClient:
         payload: dict[str, Any] = {
             "prompt": prompt,
             "enable_base64_output": enable_base64_output,
-            "enable_sync_mode": enable_sync_mode,
         }
         if aspect_ratio:
             payload["aspect_ratio"] = aspect_ratio
-        return await self._post_json(self.nano_banana_t2i_url, payload)
+        return await self._submit_model(
+            self._nano_banana_t2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
 
     async def submit_nano_banana_i2i(
         self,
@@ -105,11 +140,14 @@ class WavespeedClient:
             "prompt": prompt,
             "images": images,
             "enable_base64_output": enable_base64_output,
-            "enable_sync_mode": enable_sync_mode,
         }
         if aspect_ratio:
             payload["aspect_ratio"] = aspect_ratio
-        return await self._post_json(self.nano_banana_i2i_url, payload)
+        return await self._submit_model(
+            self._nano_banana_i2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
 
     async def submit_nano_banana_pro_t2i(
         self,
@@ -122,13 +160,16 @@ class WavespeedClient:
         payload: dict[str, Any] = {
             "prompt": prompt,
             "enable_base64_output": enable_base64_output,
-            "enable_sync_mode": enable_sync_mode,
         }
         if aspect_ratio:
             payload["aspect_ratio"] = aspect_ratio
         if resolution:
             payload["resolution"] = resolution
-        return await self._post_json(self.nano_banana_pro_t2i_url, payload)
+        return await self._submit_model(
+            self._nano_banana_pro_t2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
 
     async def submit_nano_banana_pro_i2i(
         self,
@@ -143,17 +184,40 @@ class WavespeedClient:
             "prompt": prompt,
             "images": images,
             "enable_base64_output": enable_base64_output,
-            "enable_sync_mode": enable_sync_mode,
         }
         if aspect_ratio:
             payload["aspect_ratio"] = aspect_ratio
         if resolution:
             payload["resolution"] = resolution
-        return await self._post_json(self.nano_banana_pro_i2i_url, payload)
+        return await self._submit_model(
+            self._nano_banana_pro_i2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
 
     async def get_prediction_result(self, request_id: str) -> WavespeedResponse:
-        url = f"{self.api_base_url}/predictions/{request_id}/result"
-        return await self._get_json(url)
+        def _call() -> WavespeedResponse:
+            result = self._client._get_result(
+                request_id,
+                timeout=self._timeout_seconds,
+            )
+            return self._response_from_result(result)
+
+        return await asyncio.to_thread(_call)
+
+    async def get_balance(self) -> WavespeedResponse:
+        def _call() -> WavespeedResponse:
+            url = f"{self._client.base_url}/api/v3/balance"
+            headers = self._client._get_headers()
+            request_timeout = (
+                min(self._client.connection_timeout, self._timeout_seconds),
+                self._timeout_seconds,
+            )
+            response = requests.get(url, headers=headers, timeout=request_timeout)
+            response.raise_for_status()
+            return self._response_from_result(response.json())
+
+        return await asyncio.to_thread(_call)
 
     async def upload_media_binary(
         self,
@@ -161,42 +225,24 @@ class WavespeedClient:
         filename: str,
         content_type: str | None = None,
     ) -> WavespeedResponse:
-        url = f"{self.api_base_url}/media/upload/binary"
-        files = {
-            "file": (
-                filename,
-                file_bytes,
-                content_type or "application/octet-stream",
+        def _call() -> WavespeedResponse:
+            file_obj = io.BytesIO(file_bytes)
+            try:
+                file_obj.name = filename
+            except Exception:
+                pass
+            download_url = self._client.upload(
+                file_obj,
+                timeout=self._timeout_seconds,
             )
-        }
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, headers=self._auth_headers(), files=files)
-            resp.raise_for_status()
-            data = resp.json()
             return WavespeedResponse(
-                code=int(data.get("code", resp.status_code)),
-                message=str(data.get("message", "")),
-                data=dict(data.get("data", {})),
+                code=200,
+                message="success",
+                data={
+                    "download_url": download_url,
+                    "filename": filename,
+                    "size": len(file_bytes),
+                },
             )
 
-    async def _post_json(self, url: str, payload: dict[str, Any]) -> WavespeedResponse:
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, headers=self._json_headers(), json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return WavespeedResponse(
-                code=int(data.get("code", resp.status_code)),
-                message=str(data.get("message", "")),
-                data=dict(data.get("data", {})),
-            )
-
-    async def _get_json(self, url: str) -> WavespeedResponse:
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(url, headers=self._json_headers())
-            resp.raise_for_status()
-            data = resp.json()
-            return WavespeedResponse(
-                code=int(data.get("code", resp.status_code)),
-                message=str(data.get("message", "")),
-                data=dict(data.get("data", {})),
-            )
+        return await asyncio.to_thread(_call)

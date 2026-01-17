@@ -94,7 +94,7 @@ app/
 - `POST /api/v1/generations/{id}/refresh` - natijani yangilash
 - `GET /api/v1/generations/{id}/results?telegram_id=...` - natija URLlar
 
-**Eslatma:** `generations/submit` payloadida `chat_id`, `message_id`, `prompt_message_id` berilsa, natija botga backend orqali push qilinadi.
+**Eslatma:** `generations/submit` payloadida `chat_id`, `message_id`, `prompt_message_id` berilsa, natija botga backend orqali push qilinadi. `language` (uz/ru/en) yuborilsa, natija captionlari lokalizatsiya qilinadi. Wavespeed balansi yetarli bo'lmasa, API 503 qaytaradi va generatsiya vaqtincha to'xtatiladi.
 
 ### Media
 - `POST /api/v1/media/upload` - Wavespeed media upload
@@ -110,6 +110,7 @@ Cache patterns:
 - Balances: 1 min
 - Admin stats: 1 min
 - Model catalog: 10 min
+- Wavespeed balance: 60s
 
 ## Background Tasks (Celery)
 
@@ -153,7 +154,7 @@ Tasks:
 Mavjud modellar:
 - `seedream-v4` - 27 credit (size parametri)
 - `nano-banana` - 38 credit (aspect_ratio)
-- `nano-banana-pro` - 140 credit (aspect_ratio, resolution)
+- `nano-banana-pro` - 140 credit (1k/2k), 240 credit (4k) (aspect_ratio, resolution)
 
 ## Middlewarelar
 

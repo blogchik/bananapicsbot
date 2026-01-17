@@ -1,15 +1,21 @@
 """Celery tasks."""
 import asyncio
+import html
+import mimetypes
+import os
+import re
 import time
 import httpx
 from datetime import datetime
 from typing import Optional
+from urllib.parse import unquote, urlparse
 
 from celery import shared_task
 from sqlalchemy import select, update
 
 from app.core.config import get_settings
 from app.infrastructure.logging import get_logger
+from app.services.redis_client import get_redis
 
 logger = get_logger(__name__)
 
@@ -18,6 +24,13 @@ settings = get_settings()
 # Rate limiting: 20 messages per second for Telegram
 RATE_LIMIT_MESSAGES_PER_SECOND = 20
 RATE_LIMIT_INTERVAL = 1.0 / RATE_LIMIT_MESSAGES_PER_SECOND  # 0.05 seconds
+SUPPORTED_LANGUAGES = {"uz", "ru", "en"}
+
+try:
+    from bot.locales import TranslationKey, get_text
+except Exception:
+    TranslationKey = None
+    get_text = None
 
 
 def run_async(coro):
@@ -48,7 +61,7 @@ def process_generation(
     from app.db.session import sync_session_factory
     from app.db.models import (
         GenerationRequest, GenerationJob,
-        GenerationStatus, JobStatus, ModelCatalog
+        GenerationStatus, JobStatus, ModelCatalog, User
     )
     from app.services.wavespeed import WavespeedClient
     
@@ -88,6 +101,9 @@ def process_generation(
             chat_id = chat_id or input_params.get("chat_id")
             message_id = message_id or input_params.get("message_id")
             prompt_message_id = prompt_message_id or input_params.get("prompt_message_id")
+            user = session.query(User).filter(User.id == request.user_id).first()
+            telegram_id = user.telegram_id if user else None
+            language = _resolve_language(input_params, telegram_id)
 
             if not chat_id or not message_id:
                 logger.warning(
@@ -107,6 +123,7 @@ def process_generation(
                         request.cost or 0,
                         outputs,
                         prompt_message_id,
+                        language,
                     )
                 return {"status": "completed", "generation_id": generation_request_id}
 
@@ -120,12 +137,6 @@ def process_generation(
         client = WavespeedClient(
             api_key=settings.wavespeed_api_key,
             api_base_url=settings.wavespeed_api_base_url,
-            seedream_v4_t2i_url=settings.wavespeed_seedream_v4_t2i_url,
-            seedream_v4_i2i_url=settings.wavespeed_seedream_v4_i2i_url,
-            nano_banana_t2i_url=settings.wavespeed_nano_banana_t2i_url,
-            nano_banana_i2i_url=settings.wavespeed_nano_banana_i2i_url,
-            nano_banana_pro_t2i_url=settings.wavespeed_nano_banana_pro_t2i_url,
-            nano_banana_pro_i2i_url=settings.wavespeed_nano_banana_pro_i2i_url,
             timeout_seconds=settings.wavespeed_timeout_seconds,
         )
         
@@ -144,7 +155,8 @@ def process_generation(
                 )
                 _notify_user_generation_failed(
                     chat_id, message_id,
-                    "Generatsiya vaqti tugadi. Qaytadan urinib ko'ring."
+                    _build_timeout_message(language),
+                    language,
                 )
                 return {"status": "timeout", "generation_id": generation_request_id}
             
@@ -170,6 +182,7 @@ def process_generation(
                     chat_id, message_id,
                     request.prompt, model_name, request.cost or 0, outputs,
                     prompt_message_id,
+                    language,
                 )
                 logger.info(
                     "Generation completed",
@@ -181,7 +194,7 @@ def process_generation(
             elif status_value == "failed":
                 error_msg = response.message or "Generation failed"
                 _mark_generation_failed(generation_request_id, error_msg)
-                _notify_user_generation_failed(chat_id, message_id, error_msg)
+                _notify_user_generation_failed(chat_id, message_id, error_msg, language)
                 logger.warning(
                     "Generation failed",
                     generation_id=generation_request_id,
@@ -346,6 +359,7 @@ def _notify_user_generation_complete(
     cost: int,
     outputs: list[str],
     prompt_message_id: int | None,
+    language: str,
 ) -> None:
     """Send generation result to user via Telegram."""
     if not settings.bot_token:
@@ -359,11 +373,11 @@ def _notify_user_generation_complete(
         # Send results
         caption_sent = False
         for output_url in outputs:
-            caption = (
-                f"? Natija tayyor\n"
-                f"Model: #{model_name.replace(' ', '')}\n"
-                f"Credit: {cost}\n"
-                f"Prompt:\n<blockquote>{_escape_html(prompt[:500])}</blockquote>"
+            caption = _build_result_caption(
+                language,
+                prompt,
+                model_name,
+                cost,
             )
             caption_value = caption if not caption_sent else None
             run_async(
@@ -383,13 +397,14 @@ def _notify_user_generation_failed(
     chat_id: int,
     message_id: int,
     error_message: str,
+    language: str,
 ) -> None:
     """Notify user that generation failed."""
     if not settings.bot_token:
         return
     
     try:
-        text = f"❌ Generatsiya muvaffaqiyatsiz\\nSabab: {error_message}"
+        text = _build_failure_message(language, error_message)
         run_async(_edit_telegram_message(chat_id, message_id, text))
     except Exception as e:
         logger.error("Failed to send failure notification", error=str(e))
@@ -402,6 +417,83 @@ def _escape_html(text: str) -> str:
         .replace("<", "&lt;")
         .replace(">", "&gt;")
     )
+
+
+def _format_model_hashtag(model_name: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "", model_name.title())
+    if not cleaned:
+        return "#Model"
+    return f"#{cleaned}"
+
+
+def _build_result_caption(
+    language: str,
+    prompt: str,
+    model_name: str,
+    cost: int,
+) -> str:
+    safe_prompt = _escape_html(prompt[:500])
+    hashtag = _format_model_hashtag(model_name)
+    if get_text and TranslationKey:
+        return get_text(
+            TranslationKey.GEN_RESULT_CAPTION,
+            language,
+            {
+                "model": hashtag,
+                "credits": cost,
+                "prompt": safe_prompt,
+            },
+        )
+    return (
+        f"Result ready\n"
+        f"Model: {hashtag}\n"
+        f"Credits: {cost}\n"
+        f"Prompt:\n<blockquote>{safe_prompt}</blockquote>"
+    )
+
+
+def _build_failure_message(language: str, error_message: str) -> str:
+    safe_error = _escape_html(error_message)
+    if get_text and TranslationKey:
+        return get_text(
+            TranslationKey.GEN_ERROR,
+            language,
+            {"error": safe_error},
+        )
+    return f"Generation failed\nReason: {safe_error}"
+
+
+def _build_timeout_message(language: str) -> str:
+    if get_text and TranslationKey:
+        return get_text(TranslationKey.GEN_TIMEOUT, language)
+    return "Generation timeout. Please try again."
+
+
+def _resolve_language(input_params: dict | None, telegram_id: int | None) -> str:
+    lang = None
+    if isinstance(input_params, dict):
+        value = input_params.get("language")
+        if isinstance(value, str) and value in SUPPORTED_LANGUAGES:
+            lang = value
+    if lang:
+        return lang
+    if telegram_id:
+        lang = _get_language_from_redis(telegram_id)
+    return lang or "uz"
+
+
+def _get_language_from_redis(telegram_id: int) -> str | None:
+    async def _fetch() -> str | None:
+        redis = get_redis()
+        try:
+            return await redis.hget("user_languages", str(telegram_id))
+        except Exception:
+            return None
+
+    value = run_async(_fetch())
+    if isinstance(value, str) and value in SUPPORTED_LANGUAGES:
+        return value
+    return None
 
 
 async def _delete_telegram_message(chat_id: int, message_id: int) -> None:
@@ -431,16 +523,75 @@ async def _send_telegram_document(
     """Send a document via Telegram."""
     url = f"https://api.telegram.org/bot{settings.bot_token}/sendDocument"
     async with httpx.AsyncClient(timeout=60) as client:
-        payload = {
+        data = {
             "chat_id": chat_id,
-            "document": document_url,
             "parse_mode": "HTML",
         }
         if caption:
-            payload["caption"] = caption
+            data["caption"] = caption
         if prompt_message_id:
-            payload["reply_to_message_id"] = prompt_message_id
-        await client.post(url, json=payload)
+            data["reply_to_message_id"] = prompt_message_id
+        try:
+            file_bytes, filename, content_type = await _download_output_file(
+                document_url
+            )
+            files = {
+                "document": (
+                    filename,
+                    file_bytes,
+                    content_type or "application/octet-stream",
+                )
+            }
+            await client.post(url, data=data, files=files)
+        except Exception:
+            data["document"] = document_url
+            await client.post(url, data=data)
+
+
+def _extract_filename_from_disposition(value: str | None) -> str | None:
+    if not value:
+        return None
+    match = re.search(r"filename\\*?=([^;]+)", value, flags=re.IGNORECASE)
+    if not match:
+        return None
+    filename = match.group(1).strip().strip("\"'")
+    if filename.lower().startswith("utf-8''"):
+        filename = filename[7:]
+    filename = unquote(filename)
+    return filename or None
+
+
+def _extract_filename_from_url(url: str) -> str | None:
+    path = urlparse(url).path
+    name = unquote(path.rsplit("/", 1)[-1]) if path else ""
+    return name or None
+
+
+def _ensure_extension(filename: str, content_type: str | None) -> str:
+    if not content_type:
+        return filename
+    extension = mimetypes.guess_extension(content_type.split(";", 1)[0].strip())
+    if not extension:
+        return filename
+    if filename.lower().endswith(extension.lower()):
+        return filename
+    return f"{filename}{extension}"
+
+
+async def _download_output_file(url: str) -> tuple[bytes, str, str | None]:
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.get(url)
+        resp.raise_for_status()
+        content_type = resp.headers.get("Content-Type")
+        disposition = resp.headers.get("Content-Disposition")
+        filename = (
+            _extract_filename_from_disposition(disposition)
+            or _extract_filename_from_url(url)
+            or "result"
+        )
+        filename = os.path.basename(filename)
+        filename = _ensure_extension(filename, content_type)
+        return resp.content, filename, content_type
 
 
 @shared_task(bind=True)

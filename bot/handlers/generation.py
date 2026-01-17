@@ -1,14 +1,17 @@
 import asyncio
 from datetime import datetime
 import html
+import mimetypes
+import os
 import re
 from urllib.parse import unquote, urlparse
 from typing import Awaitable, Callable
 
+from aiohttp import ClientSession, ClientTimeout
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, URLInputFile
+from aiogram.types import BufferedInputFile, CallbackQuery, Message, URLInputFile
 
 from api_client import ApiClient, ApiError
 from config import load_settings
@@ -142,6 +145,47 @@ def extract_filename_from_url(url: str) -> str:
     path = urlparse(url).path
     name = unquote(path.rsplit("/", 1)[-1]) if path else ""
     return name or "result"
+
+
+def extract_filename_from_disposition(value: str | None) -> str | None:
+    if not value:
+        return None
+    match = re.search(r"filename\\*?=([^;]+)", value, flags=re.IGNORECASE)
+    if not match:
+        return None
+    filename = match.group(1).strip().strip("\"'")
+    if filename.lower().startswith("utf-8''"):
+        filename = filename[7:]
+    filename = unquote(filename)
+    return filename or None
+
+
+def ensure_extension(filename: str, content_type: str | None) -> str:
+    if not content_type:
+        return filename
+    extension = mimetypes.guess_extension(content_type.split(";", 1)[0].strip())
+    if not extension:
+        return filename
+    if filename.lower().endswith(extension.lower()):
+        return filename
+    return f"{filename}{extension}"
+
+
+async def download_output_file(url: str) -> tuple[bytes, str, str | None]:
+    timeout = ClientTimeout(total=60)
+    async with ClientSession(timeout=timeout) as session:
+        async with session.get(url) as resp:
+            resp.raise_for_status()
+            content_type = resp.headers.get("Content-Type")
+            disposition = resp.headers.get("Content-Disposition")
+            filename = (
+                extract_filename_from_disposition(disposition)
+                or extract_filename_from_url(url)
+                or "result"
+            )
+            filename = os.path.basename(filename)
+            filename = ensure_extension(filename, content_type)
+            return await resp.read(), filename, content_type
 
 
 def get_support_flags(
@@ -1040,27 +1084,34 @@ async def send_outputs(
     caption_pending = True
     document_failed = False
     for url in outputs:
-        sent_photo = await retry_send(
-            lambda: bot.send_photo(
-                chat_id, url, reply_to_message_id=reply_to_message_id
-            )
-        )
         caption_value = caption_text if caption_pending else None
-        filename = extract_filename_from_url(url)
-        sent_document = await retry_send(
-            lambda: bot.send_document(
-                chat_id,
-                URLInputFile(url, filename=filename),
-                reply_to_message_id=reply_to_message_id,
-                caption=caption_value,
-                parse_mode="HTML",
+        try:
+            file_bytes, filename, _ = await download_output_file(url)
+            sent_document = await retry_send(
+                lambda: bot.send_document(
+                    chat_id,
+                    BufferedInputFile(file_bytes, filename=filename),
+                    reply_to_message_id=reply_to_message_id,
+                    caption=caption_value,
+                    parse_mode="HTML",
+                )
             )
-        )
+        except Exception:
+            filename = extract_filename_from_url(url)
+            sent_document = await retry_send(
+                lambda: bot.send_document(
+                    chat_id,
+                    URLInputFile(url, filename=filename),
+                    reply_to_message_id=reply_to_message_id,
+                    caption=caption_value,
+                    parse_mode="HTML",
+                )
+            )
         if not sent_document:
             document_failed = True
         if sent_document and caption_pending:
             caption_pending = False
-        if not sent_photo and not sent_document:
+        if not sent_document:
             await retry_send(
                 lambda: bot.send_message(
                     chat_id, url, reply_to_message_id=reply_to_message_id

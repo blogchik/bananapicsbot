@@ -3,6 +3,8 @@
 import asyncio
 import html
 import json
+import mimetypes
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,11 +13,17 @@ from urllib.parse import unquote, urlparse
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import URLInputFile
+from aiogram.types import BufferedInputFile, URLInputFile
+from aiohttp import ClientSession, ClientTimeout
 
 from core.constants import BotConstants
 from core.container import get_container
-from core.exceptions import APIError, ActiveGenerationError, InsufficientBalanceError
+from core.exceptions import (
+    APIError,
+    ActiveGenerationError,
+    InsufficientBalanceError,
+    ProviderUnavailableError,
+)
 from core.logging import get_logger
 from locales import TranslationKey
 from keyboards import GenerationKeyboard
@@ -53,6 +61,7 @@ class GenerationConfig:
     size: str | None = None
     aspect_ratio: str | None = None
     resolution: str | None = None
+    language: str | None = None
     reference_urls: list[str] | None = None
     reference_file_ids: list[str] | None = None
     chat_id: int | None = None
@@ -67,6 +76,22 @@ class GenerationService:
     _LAST_REQUEST_KEY_PREFIX = "gen_last_request"
     _LAST_REQUEST_TTL_SECONDS = 3600
     
+    @staticmethod
+    def calculate_generation_price(
+        model_key: str | None,
+        base_price: int,
+        resolution: str | None,
+    ) -> int:
+        key = (model_key or "").lower()
+        res = (resolution or "").strip().lower()
+        if res in {"4k", "4096", "4096x4096", "4096*4096"}:
+            res = "4k"
+        if key == "seedream-v4":
+            return 27
+        if key == "nano-banana-pro":
+            return 240 if res == "4k" else 140
+        return base_price
+
     @staticmethod
     async def get_models() -> list[NormalizedModel]:
         """Get available models (normalized)."""
@@ -257,6 +282,7 @@ class GenerationService:
                 size=config.size,
                 aspect_ratio=config.aspect_ratio,
                 resolution=config.resolution,
+                language=config.language,
                 reference_urls=config.reference_urls or [],
                 reference_file_ids=config.reference_file_ids or [],
                 chat_id=config.chat_id,
@@ -270,6 +296,20 @@ class GenerationService:
                 raise ActiveGenerationError(active_id)
             if e.status == 402:
                 raise InsufficientBalanceError()
+            if e.status in {401, 403, 502}:
+                raise ProviderUnavailableError()
+            if e.status == 503:
+                detail = e.data.get("detail") if isinstance(e.data, dict) else None
+                if isinstance(detail, dict):
+                    code = detail.get("code")
+                    if code == "provider_balance_low":
+                        raise ProviderUnavailableError()
+                if isinstance(e.data, dict):
+                    error = e.data.get("error")
+                    message = error.get("message") if isinstance(error, dict) else None
+                    code = message.get("code") if isinstance(message, dict) else None
+                    if code == "provider_balance_low":
+                        raise ProviderUnavailableError()
             raise
     
     @staticmethod
@@ -324,11 +364,9 @@ class GenerationService:
         """Build result caption with prompt."""
         hashtag = GenerationService.format_model_hashtag(model_name)
         credits = cost if cost is not None else 0
-        duration_text = f"{duration_seconds}s" if duration_seconds is not None else "-"
         template = _(TranslationKey.GEN_RESULT_CAPTION, {
             "model": hashtag,
             "credits": credits,
-            "duration": duration_text,
             "prompt": "{PROMPT_PLACEHOLDER}",
         })
         return GenerationService._inject_prompt(template, prompt)
@@ -405,6 +443,47 @@ class GenerationService:
         path = urlparse(url).path
         name = unquote(path.rsplit("/", 1)[-1]) if path else ""
         return name or "result"
+
+    @staticmethod
+    def _extract_filename_from_disposition(value: str | None) -> str | None:
+        if not value:
+            return None
+        match = re.search(r"filename\\*?=([^;]+)", value, flags=re.IGNORECASE)
+        if not match:
+            return None
+        filename = match.group(1).strip().strip("\"'")
+        if filename.lower().startswith("utf-8''"):
+            filename = filename[7:]
+        filename = unquote(filename)
+        return filename or None
+
+    @staticmethod
+    def _ensure_extension(filename: str, content_type: str | None) -> str:
+        if not content_type:
+            return filename
+        extension = mimetypes.guess_extension(content_type.split(";", 1)[0].strip())
+        if not extension:
+            return filename
+        if filename.lower().endswith(extension.lower()):
+            return filename
+        return f"{filename}{extension}"
+
+    @staticmethod
+    async def _download_output_file(url: str) -> tuple[bytes, str]:
+        timeout = ClientTimeout(total=60)
+        async with ClientSession(timeout=timeout) as session:
+            async with session.get(url) as resp:
+                resp.raise_for_status()
+                content_type = resp.headers.get("Content-Type")
+                disposition = resp.headers.get("Content-Disposition")
+                filename = (
+                    GenerationService._extract_filename_from_disposition(disposition)
+                    or GenerationService.extract_filename_from_url(url)
+                    or "result"
+                )
+                filename = os.path.basename(filename)
+                filename = GenerationService._ensure_extension(filename, content_type)
+                return await resp.read(), filename
     
     @staticmethod
     async def send_results(
@@ -420,26 +499,29 @@ class GenerationService:
         document_failed = False
         
         for url in outputs:
-            # Try to send as photo
-            sent_photo = await GenerationService._retry_send(
-                lambda u=url: bot.send_photo(
-                    chat_id, u, reply_to_message_id=reply_to_message_id
-                )
-            )
-            
-            # Send as document with caption
             caption_value = caption_text if caption_pending else None
-            filename = GenerationService.extract_filename_from_url(url)
-            
-            sent_document = await GenerationService._retry_send(
-                lambda u=url, f=filename, c=caption_value: bot.send_document(
-                    chat_id,
-                    URLInputFile(u, filename=f),
-                    reply_to_message_id=reply_to_message_id,
-                    caption=c,
-                    parse_mode="HTML",
+            try:
+                file_bytes, filename = await GenerationService._download_output_file(url)
+                sent_document = await GenerationService._retry_send(
+                    lambda c=caption_value, f=filename, b=file_bytes: bot.send_document(
+                        chat_id,
+                        BufferedInputFile(b, filename=f),
+                        reply_to_message_id=reply_to_message_id,
+                        caption=c,
+                        parse_mode="HTML",
+                    )
                 )
-            )
+            except Exception:
+                filename = GenerationService.extract_filename_from_url(url)
+                sent_document = await GenerationService._retry_send(
+                    lambda u=url, f=filename, c=caption_value: bot.send_document(
+                        chat_id,
+                        URLInputFile(u, filename=f),
+                        reply_to_message_id=reply_to_message_id,
+                        caption=c,
+                        parse_mode="HTML",
+                    )
+                )
             
             if not sent_document:
                 document_failed = True
@@ -447,7 +529,7 @@ class GenerationService:
                 caption_pending = False
             
             # Fallback: send URL as text
-            if not sent_photo and not sent_document:
+            if not sent_document:
                 await GenerationService._retry_send(
                     lambda u=url: bot.send_message(
                         chat_id, u, reply_to_message_id=reply_to_message_id

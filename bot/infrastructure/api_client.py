@@ -200,6 +200,7 @@ class ApiClient:
         size: str | None = None,
         aspect_ratio: str | None = None,
         resolution: str | None = None,
+        language: str | None = None,
         reference_urls: list[str] | None = None,
         reference_file_ids: list[str] | None = None,
         chat_id: int | None = None,
@@ -217,6 +218,8 @@ class ApiClient:
             "reference_urls": reference_urls or [],
             "reference_file_ids": reference_file_ids or [],
         }
+        if language:
+            payload["language"] = language
         if chat_id is not None:
             payload["chat_id"] = chat_id
         if message_id is not None:

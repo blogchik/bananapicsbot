@@ -1,4 +1,3 @@
-import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.deps.wavespeed import wavespeed_client
@@ -23,7 +22,7 @@ async def upload_media(file: UploadFile = File(...)) -> MediaUploadOut:
             filename=file.filename or "upload.bin",
             content_type=file.content_type,
         )
-    except httpx.HTTPStatusError as exc:
+    except Exception as exc:
         raise HTTPException(status_code=502, detail="Wavespeed upload failed") from exc
     download_url = response.data.get("download_url")
     if not download_url:

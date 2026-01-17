@@ -44,27 +44,12 @@ class Settings(BaseSettings):
     db_pool_recycle: int = 3600
 
     # Wavespeed API
-    wavespeed_api_base_url: str = "https://api.wavespeed.ai/api/v3"
+    wavespeed_api_base_url: str = "https://api.wavespeed.ai"
     wavespeed_api_key: str = ""
-    wavespeed_seedream_v4_t2i_url: str = (
-        "https://api.wavespeed.ai/api/v3/bytedance/seedream-v4"
-    )
-    wavespeed_seedream_v4_i2i_url: str = (
-        "https://api.wavespeed.ai/api/v3/bytedance/seedream-v4/edit"
-    )
-    wavespeed_nano_banana_t2i_url: str = (
-        "https://api.wavespeed.ai/api/v3/google/nano-banana/text-to-image"
-    )
-    wavespeed_nano_banana_i2i_url: str = (
-        "https://api.wavespeed.ai/api/v3/google/nano-banana/edit"
-    )
-    wavespeed_nano_banana_pro_t2i_url: str = (
-        "https://api.wavespeed.ai/api/v3/google/nano-banana-pro/text-to-image"
-    )
-    wavespeed_nano_banana_pro_i2i_url: str = (
-        "https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit"
-    )
     wavespeed_timeout_seconds: int = 180
+    wavespeed_min_balance: float = 1.0
+    wavespeed_balance_cache_ttl_seconds: int = 60
+    wavespeed_balance_alert_ttl_seconds: int = 600
     generation_poll_interval_seconds: int = 3
     generation_poll_max_duration_seconds: int = 300  # 5 minutes max polling
 

@@ -57,6 +57,16 @@ class ActiveGenerationError(BotException):
         self.active_request_id = active_request_id
 
 
+class ProviderUnavailableError(BotException):
+    """Raised when generation provider is unavailable."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="Generation provider unavailable",
+            user_message="gen_provider_unavailable",
+        )
+
+
 class RateLimitExceededError(BotException):
     """Raised when rate limit is exceeded."""
     

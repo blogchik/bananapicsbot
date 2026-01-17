@@ -106,6 +106,7 @@ class TranslationKey(str, Enum):
     GEN_INSUFFICIENT_BALANCE = "gen_insufficient_balance"
     GEN_STATUS_CHECK_TEMP_ERROR = "gen_status_check_temp_error"
     GEN_ERROR_GENERIC = "gen_error_generic"
+    GEN_PROVIDER_UNAVAILABLE = "gen_provider_unavailable"
     GEN_STATUS_LABEL_QUEUE = "gen_status_label_queue"
     GEN_STATUS_LABEL_PROCESSING = "gen_status_label_processing"
     GEN_MODEL_MENU_QUALITY = "gen_model_menu_quality"

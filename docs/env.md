@@ -41,15 +41,12 @@
 
 ## Wavespeed Provider
 
-- `WAVESPEED_API_BASE_URL`: Wavespeed provider API bazaviy manzili.
+- `WAVESPEED_API_BASE_URL`: Wavespeed provider API bazaviy manzili (`https://api.wavespeed.ai`).
 - `WAVESPEED_API_KEY`: Wavespeed API kaliti.
-- `WAVESPEED_SEEDREAM_V4_T2I_URL`: Seedream v4 text-to-image endpoint.
-- `WAVESPEED_SEEDREAM_V4_I2I_URL`: Seedream v4 image-to-image endpoint.
-- `WAVESPEED_NANO_BANANA_T2I_URL`: Nano Banana text-to-image endpoint.
-- `WAVESPEED_NANO_BANANA_I2I_URL`: Nano Banana image-to-image endpoint.
-- `WAVESPEED_NANO_BANANA_PRO_T2I_URL`: Nano Banana Pro text-to-image endpoint.
-- `WAVESPEED_NANO_BANANA_PRO_I2I_URL`: Nano Banana Pro image-to-image endpoint.
 - `WAVESPEED_TIMEOUT_SECONDS`: Wavespeed HTTP timeout (sekund).
+- `WAVESPEED_MIN_BALANCE`: Generatsiyalarni to'xtatish uchun minimal Wavespeed balans threshold.
+- `WAVESPEED_BALANCE_CACHE_TTL_SECONDS`: Wavespeed balance cache TTL (sekund).
+- `WAVESPEED_BALANCE_ALERT_TTL_SECONDS`: Admin alert throttle TTL (sekund).
 
 ## Payments
 
@@ -121,15 +118,12 @@ MAX_PARALLEL_GENERATIONS_PER_USER=2
 # ===================
 # Wavespeed Provider
 # ===================
-WAVESPEED_API_BASE_URL=https://api.wavespeed.ai/api/v3
+WAVESPEED_API_BASE_URL=https://api.wavespeed.ai
 WAVESPEED_API_KEY=
-WAVESPEED_SEEDREAM_V4_T2I_URL=https://api.wavespeed.ai/api/v3/bytedance/seedream-v4
-WAVESPEED_SEEDREAM_V4_I2I_URL=https://api.wavespeed.ai/api/v3/bytedance/seedream-v4/edit
-WAVESPEED_NANO_BANANA_T2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana/text-to-image
-WAVESPEED_NANO_BANANA_I2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana/edit
-WAVESPEED_NANO_BANANA_PRO_T2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana-pro/text-to-image
-WAVESPEED_NANO_BANANA_PRO_I2I_URL=https://api.wavespeed.ai/api/v3/google/nano-banana-pro/edit
 WAVESPEED_TIMEOUT_SECONDS=180
+WAVESPEED_MIN_BALANCE=1.0
+WAVESPEED_BALANCE_CACHE_TTL_SECONDS=60
+WAVESPEED_BALANCE_ALERT_TTL_SECONDS=600
 
 # ===================
 # Payments
