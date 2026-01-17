@@ -17,7 +17,7 @@ services:
     environment:
       RUN_MIGRATIONS: "true"
     ports:
-      - "8000:8000"
+      - "8000:9000"
     depends_on:
       db:
         condition: service_healthy
@@ -58,7 +58,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6379:6479"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
