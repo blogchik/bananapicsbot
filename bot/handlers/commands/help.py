@@ -25,6 +25,7 @@ HELP_TEXT_UZ = """
 <b>Buyruqlar:</b>
 /start - Botni boshlash
 /profile - Profilingiz
+/topup - Balans to'ldirish
 /referral - Referral dasturi
 /help - Yordam
 
@@ -47,6 +48,7 @@ HELP_TEXT_RU = """
 <b>Команды:</b>
 /start - Запуск бота
 /profile - Ваш профиль
+/topup - Пополнить баланс
 /referral - Реферальная программа
 /help - Помощь
 
@@ -69,6 +71,7 @@ HELP_TEXT_EN = """
 <b>Commands:</b>
 /start - Start the bot
 /profile - Your profile
+/topup - Top up balance
 /referral - Referral program
 /help - Help
 

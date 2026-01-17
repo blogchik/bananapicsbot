@@ -38,32 +38,36 @@ class GenerationKeyboard:
             ]
         ]
         
+        param_buttons: list[InlineKeyboardButton] = []
         if show_size:
             size_text = _(TranslationKey.GEN_SIZE, {"size": size_label})
-            rows.append([
+            param_buttons.append(
                 InlineKeyboardButton(
                     text=f"📐 {size_text}",
                     callback_data=GenerationCallback.SIZE_MENU,
                 )
-            ])
+            )
         
         if show_aspect_ratio:
             aspect_text = _(TranslationKey.GEN_ASPECT_RATIO, {"ratio": aspect_label})
-            rows.append([
+            param_buttons.append(
                 InlineKeyboardButton(
                     text=f"📏 {aspect_text}",
                     callback_data=GenerationCallback.RATIO_MENU,
                 )
-            ])
+            )
         
         if show_resolution:
             resolution_text = _(TranslationKey.GEN_RESOLUTION, {"resolution": resolution_label})
-            rows.append([
+            param_buttons.append(
                 InlineKeyboardButton(
                     text=f"🖼️ {resolution_text}",
                     callback_data=GenerationCallback.RESOLUTION_MENU,
                 )
-            ])
+            )
+        
+        for i in range(0, len(param_buttons), 2):
+            rows.append(param_buttons[i:i + 2])
         
         start_text = _(TranslationKey.GEN_START_BUTTON, {"price": price})
         rows.append([

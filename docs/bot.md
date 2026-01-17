@@ -96,6 +96,14 @@ WEBHOOK_PATH=/webhook
 - Profile menyu: TG info + balans + trial holati + tilni o'zgartirish.
 - Referral menyu: maxsus link, referral soni va jami bonus.
 - Admin panel: `/admin` (faqat admin_ids uchun).
+- Topup menyu: kurs ko'rsatiladi.
+
+## Buyruqlar
+
+- `/start` - Home
+- `/profile` - Profile
+- `/topup` - Topup
+- `/referral` - Referral
 
 ## Admin Panel
 
@@ -154,7 +162,8 @@ Admin will see specific error messages for these cases:
 ## Generatsiya flow
 
 1. User prompt yoki reference rasm yuboradi
-2. Bot menu ko'rsatadi: model, size/aspect_ratio/resolution tanlash
+2. Bot menu ko'rsatadi: text-to-image yoki image-to-image sarlavhasi + model, size/aspect_ratio/resolution tanlash
+   - Prompt blockquote formatda ko'rsatiladi
 3. Generate bosilganda so'rov yuboriladi
 4. Status avtomatik yangilanadi (polling):
    - "⏳ Holat: Navbatda" (queue)

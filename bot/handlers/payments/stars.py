@@ -45,20 +45,28 @@ async def open_topup_menu(
     denominator = int(options.get("exchange_denominator", 1))
     
     preset_pairs = PaymentService.build_preset_pairs(presets, numerator, denominator)
+    try:
+        avg_price = await PaymentService.get_average_generation_price()
+    except Exception as e:
+        logger.warning("Failed to get average generation price", error=str(e))
+        avg_price = None
     rate_line = _(TranslationKey.TOPUP_EXCHANGE_RATE, {
         "numerator": numerator,
         "denominator": denominator,
     })
-    
-    text = (
-        f"{_(TranslationKey.TOPUP_TITLE, None)}\n"
-        f"{_(TranslationKey.TOPUP_DESCRIPTION, None)}\n"
-        f"{rate_line}\n"
-        f"{_(TranslationKey.TOPUP_SELECT_AMOUNT, None)}"
-    )
+    lines = [
+        _(TranslationKey.TOPUP_TITLE, None),
+        _(TranslationKey.TOPUP_DESCRIPTION, None),
+        rate_line,
+    ]
+    lines.append(_(TranslationKey.TOPUP_SELECT_AMOUNT, None))
+    text = "\n".join(lines)
     
     await state.update_data(stars_options=options)
-    await call.message.answer(text, reply_markup=PaymentKeyboard.topup_menu(preset_pairs, _))
+    await call.message.answer(
+        text,
+        reply_markup=PaymentKeyboard.topup_menu(preset_pairs, avg_price, _),
+    )
 
 
 @router.callback_query(F.data.startswith("topup:stars:"))

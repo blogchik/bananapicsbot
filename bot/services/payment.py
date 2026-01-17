@@ -21,6 +21,29 @@ class PaymentService:
         """Get stars payment options."""
         container = get_container()
         return await container.api_client.get_stars_options()
+
+    @staticmethod
+    async def get_average_generation_price() -> int | None:
+        """Get average model generation price."""
+        container = get_container()
+        models = await container.api_client.get_models()
+        prices: list[int] = []
+        for item in models:
+            model = item.get("model") or {}
+            if not model.get("id"):
+                continue
+            model_prices = item.get("prices") or []
+            if not model_prices:
+                continue
+            try:
+                unit_price = int(model_prices[0].get("unit_price", 0))
+            except (TypeError, ValueError):
+                unit_price = 0
+            if unit_price > 0:
+                prices.append(unit_price)
+        if not prices:
+            return None
+        return int(round(sum(prices) / len(prices)))
     
     @staticmethod
     def calculate_credits(

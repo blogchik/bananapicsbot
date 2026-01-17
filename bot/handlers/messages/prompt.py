@@ -33,27 +33,19 @@ def build_generation_text(
     show_size: bool,
     show_aspect: bool,
     show_resolution: bool,
+    has_reference: bool,
     _: Callable[[TranslationKey, dict | None], str],
 ) -> str:
     """Build generation settings text."""
-    default_label = _(TranslationKey.GEN_DEFAULT, None)
-    size_label = size if size else default_label
-    aspect_label = aspect_ratio if aspect_ratio else default_label
-    resolution_label = resolution if resolution else default_label
-    
+    import html
+
+    escaped_prompt = html.escape(prompt)
+    prompt_text = _(TranslationKey.GEN_PROMPT, {"prompt": f"<blockquote>{escaped_prompt}</blockquote>"})
+    title_key = TranslationKey.GEN_SETTINGS_TITLE_I2I if has_reference else TranslationKey.GEN_SETTINGS_TITLE_T2I
     lines = [
-        _(TranslationKey.GEN_SETTINGS_TITLE, None),
-        _(TranslationKey.GEN_PROMPT, {"prompt": prompt}),
-        _(TranslationKey.GEN_MODEL, {"model": model_name}),
+        _(title_key, None),
+        prompt_text,
     ]
-    
-    if show_size:
-        lines.append(_(TranslationKey.GEN_SIZE, {"size": size_label}))
-    if show_aspect:
-        lines.append(_(TranslationKey.GEN_ASPECT_RATIO, {"ratio": aspect_label}))
-    if show_resolution:
-        lines.append(_(TranslationKey.GEN_RESOLUTION, {"resolution": resolution_label}))
-    
     return "\n".join(lines)
 
 
@@ -104,6 +96,13 @@ async def handle_prompt_message(
     
     # Delete previous menu if exists
     data = await state.get_data()
+    has_reference_media = bool(message.photo or message.document)
+    if not has_reference_media and (data.get("reference_urls") or data.get("reference_file_ids")):
+        await state.update_data(reference_urls=[], reference_file_ids=[])
+        data = {**data, "reference_urls": [], "reference_file_ids": []}
+
+    references = data.get("reference_urls") or []
+    has_reference = bool(references)
     previous_menu_id = data.get("menu_message_id")
     if previous_menu_id:
         try:
@@ -149,7 +148,7 @@ async def handle_prompt_message(
     # Build menu text
     menu_text = build_generation_text(
         prompt, selected_model.name, size, aspect_ratio, resolution,
-        show_size, show_aspect, show_resolution, _,
+        show_size, show_aspect, show_resolution, has_reference, _,
     )
     
     # Send menu

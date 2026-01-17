@@ -61,8 +61,16 @@ class TranslationKey(str, Enum):
     BTN_LANGUAGE = "btn_language"
     BTN_START = "btn_start"
     
+    # Command descriptions
+    CMD_HOME = "cmd_home"
+    CMD_PROFILE = "cmd_profile"
+    CMD_TOPUP = "cmd_topup"
+    CMD_REFERRAL = "cmd_referral"
+    
     # Generation
     GEN_SETTINGS_TITLE = "gen_settings_title"
+    GEN_SETTINGS_TITLE_T2I = "gen_settings_title_t2i"
+    GEN_SETTINGS_TITLE_I2I = "gen_settings_title_i2i"
     GEN_PROMPT = "gen_prompt"
     GEN_MODEL = "gen_model"
     GEN_SIZE = "gen_size"
@@ -106,6 +114,8 @@ class TranslationKey(str, Enum):
     TOPUP_DESCRIPTION = "topup_description"
     TOPUP_EXCHANGE_RATE = "topup_exchange_rate"
     TOPUP_SELECT_AMOUNT = "topup_select_amount"
+    TOPUP_APPROX_GENERATIONS = "topup_approx_generations"
+    TOPUP_PRESET_LABEL = "topup_preset_label"
     TOPUP_CUSTOM = "topup_custom"
     TOPUP_ENTER_AMOUNT = "topup_enter_amount"
     TOPUP_MIN_AMOUNT = "topup_min_amount"

@@ -13,6 +13,7 @@ from typing import AsyncIterator
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
@@ -28,6 +29,7 @@ from middlewares import (
     ThrottlingMiddleware,
     UserContextMiddleware,
 )
+from locales import TranslationKey, get_translator, LocaleManager
 
 
 logger = get_logger(__name__)
@@ -67,6 +69,27 @@ async def setup_middlewares(dp: Dispatcher) -> None:
 async def on_startup(bot: Bot) -> None:
     """Startup callback."""
     settings = get_settings()
+
+    manager = LocaleManager.get_instance()
+    for lang_code in manager.available_languages:
+        _ = get_translator(lang_code)
+        commands = [
+            BotCommand(command="start", description=_(TranslationKey.CMD_HOME, None)),
+            BotCommand(command="profile", description=_(TranslationKey.CMD_PROFILE, None)),
+            BotCommand(command="topup", description=_(TranslationKey.CMD_TOPUP, None)),
+            BotCommand(command="referral", description=_(TranslationKey.CMD_REFERRAL, None)),
+        ]
+        await bot.set_my_commands(commands, language_code=lang_code)
+    default_lang = settings.default_language or "uz"
+    if default_lang in manager.available_languages:
+        _ = get_translator(default_lang)
+        commands = [
+            BotCommand(command="start", description=_(TranslationKey.CMD_HOME, None)),
+            BotCommand(command="profile", description=_(TranslationKey.CMD_PROFILE, None)),
+            BotCommand(command="topup", description=_(TranslationKey.CMD_TOPUP, None)),
+            BotCommand(command="referral", description=_(TranslationKey.CMD_REFERRAL, None)),
+        ]
+        await bot.set_my_commands(commands)
     
     if settings.use_webhook:
         webhook_url = f"{settings.webhook_base_url}{settings.webhook_path}"

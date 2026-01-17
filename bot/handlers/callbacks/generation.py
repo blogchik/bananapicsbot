@@ -37,27 +37,19 @@ def build_generation_text(
     show_size: bool,
     show_aspect: bool,
     show_resolution: bool,
+    has_reference: bool,
     _: Callable[[TranslationKey, dict | None], str],
 ) -> str:
     """Build generation settings text."""
-    default_label = _(TranslationKey.GEN_DEFAULT, None)
-    size_label = size if size else default_label
-    aspect_label = aspect_ratio if aspect_ratio else default_label
-    resolution_label = resolution if resolution else default_label
-    
+    import html
+
+    escaped_prompt = html.escape(prompt)
+    prompt_text = _(TranslationKey.GEN_PROMPT, {"prompt": f"<blockquote>{escaped_prompt}</blockquote>"})
+    title_key = TranslationKey.GEN_SETTINGS_TITLE_I2I if has_reference else TranslationKey.GEN_SETTINGS_TITLE_T2I
     lines = [
-        _(TranslationKey.GEN_SETTINGS_TITLE, None),
-        _(TranslationKey.GEN_PROMPT, {"prompt": prompt}),
-        _(TranslationKey.GEN_MODEL, {"model": model_name}),
+        _(title_key, None),
+        prompt_text,
     ]
-    
-    if show_size:
-        lines.append(_(TranslationKey.GEN_SIZE, {"size": size_label}))
-    if show_aspect:
-        lines.append(_(TranslationKey.GEN_ASPECT_RATIO, {"ratio": aspect_label}))
-    if show_resolution:
-        lines.append(_(TranslationKey.GEN_RESOLUTION, {"resolution": resolution_label}))
-    
     return "\n".join(lines)
 
 
@@ -159,9 +151,10 @@ async def select_model(
         resolution,
     )
     
+    has_reference = bool(data.get("reference_urls"))
     text = build_generation_text(
         prompt, selected.name, size, aspect_ratio, resolution,
-        show_size, show_aspect, show_resolution, _,
+        show_size, show_aspect, show_resolution, has_reference, _,
     )
     
     try:
@@ -593,9 +586,10 @@ async def _update_generation_menu(
     show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
     show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
     
+    has_reference = bool(data.get("reference_urls"))
     text = build_generation_text(
         prompt, model_name, size, aspect_ratio, resolution,
-        show_size, show_aspect, show_resolution, _,
+        show_size, show_aspect, show_resolution, has_reference, _,
     )
     
     try:

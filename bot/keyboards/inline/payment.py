@@ -13,22 +13,26 @@ class PaymentKeyboard:
     @staticmethod
     def topup_menu(
         presets: list[tuple[int, int]],
+        avg_price: int | None,
         _: Callable[[TranslationKey, dict | None], str],
     ) -> InlineKeyboardMarkup:
         """Build top-up menu with preset amounts."""
         rows: list[list[InlineKeyboardButton]] = []
         
-        # Preset amounts in pairs
-        for i in range(0, len(presets), 2):
-            row = []
-            for amount, credits in presets[i:i + 2]:
-                row.append(
-                    InlineKeyboardButton(
-                        text=f"{amount} ⭐ → {credits} cr",
-                        callback_data=TopupCallback.stars(amount),
-                    )
+        # Preset amounts in a single column
+        for amount, credits in presets:
+            gens = (credits // avg_price) if avg_price else 0
+            label = _(TranslationKey.TOPUP_PRESET_LABEL, {
+                "stars": amount,
+                "credits": credits,
+                "gens": gens,
+            })
+            rows.append([
+                InlineKeyboardButton(
+                    text=label,
+                    callback_data=TopupCallback.stars(amount),
                 )
-            rows.append(row)
+            ])
         
         # Custom amount button
         rows.append([
