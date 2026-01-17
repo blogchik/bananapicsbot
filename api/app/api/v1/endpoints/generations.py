@@ -440,12 +440,12 @@ async def submit_generation(
     await ensure_wavespeed_balance(settings)
     db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": user.id})
     model = get_active_model(db, payload.model_id)
-    price = get_generation_price(db, model, resolution_value)
     size_value = payload.size
     resolution_value = payload.resolution
     if model.key == "seedream-v4" and size_value and not resolution_value:
         resolution_value = size_value
         size_value = None
+    price = get_generation_price(db, model, resolution_value)
     validate_model_options(
         model.key,
         size_value,
