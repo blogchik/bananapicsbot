@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from app.core.constants import (
     ASPECT_RATIO_OPTIONS,
     NANO_BANANA_PRO_RESOLUTIONS,
+    GPT_IMAGE_1_5_SIZE_OPTIONS,
     SIZE_OPTIONS,
 )
 
@@ -47,6 +48,14 @@ MODEL_PARAMETER_OPTIONS: dict[str, ModelParameterOptions] = {
         avg_duration_text="1-2 мин",
         aspect_ratio_options=ASPECT_RATIO_OPTIONS,
         resolution_options=NANO_BANANA_PRO_RESOLUTIONS,
+    ),
+    "gpt-image-1.5": ModelParameterOptions(
+        supports_size=True,
+        quality_stars=5,
+        avg_duration_seconds_min=20,
+        avg_duration_seconds_max=60,
+        avg_duration_text="20-60 sec",
+        size_options=GPT_IMAGE_1_5_SIZE_OPTIONS,
     ),
 }
 

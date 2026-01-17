@@ -80,7 +80,7 @@ app/
 - `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari
 
 ### Models
-- `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration)
+- `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration). Model options (size/aspect_ratio/resolution) Wavespeed API dan olinadi va cache qilinadi.
 - `GET /api/v1/sizes` - size variantlari
 
 ### Payments
@@ -95,6 +95,7 @@ app/
 - `GET /api/v1/generations/{id}/results?telegram_id=...` - natija URLlar
 
 **Eslatma:** `generations/submit` payloadida `chat_id`, `message_id`, `prompt_message_id` berilsa, natija botga backend orqali push qilinadi. `language` (uz/ru/en) yuborilsa, natija captionlari lokalizatsiya qilinadi. Wavespeed balansi yetarli bo'lmasa, API 503 qaytaradi va generatsiya vaqtincha to'xtatiladi.
+`gpt-image-1.5` uchun `quality` (low/medium/high) va `input_fidelity` (low/high, edit uchun) optional.
 
 ### Media
 - `POST /api/v1/media/upload` - Wavespeed media upload
@@ -155,6 +156,7 @@ Mavjud modellar:
 - `seedream-v4` - 27 credit (size parametri)
 - `nano-banana` - 38 credit (aspect_ratio)
 - `nano-banana-pro` - 140 credit (1k/2k), 240 credit (4k) (aspect_ratio, resolution)
+- `gpt-image-1.5` - size bo'yicha dinamik narx (t2i/i2i)
 
 ## Middlewarelar
 
@@ -190,7 +192,8 @@ Barcha servislar `app_net` nomli bitta Docker networkda ishlaydi.
 alembic -c /app/alembic.ini revision --autogenerate -m "description"
 
 # Migratsiyalarni ishga tushirish
-alembic -c /app/alembic.ini upgrade head
+alembic -c /app/alembic.ini upgrade heads
 ```
 
 API konteyner startida avtomatik `alembic upgrade head` ishlaydi.
+Multiple head holati paydo bo'lsa, merge migratsiya qo'shiladi (masalan, `0014_merge_heads`).

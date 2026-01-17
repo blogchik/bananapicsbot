@@ -17,6 +17,8 @@ class GenerationSubmitIn(BaseModel):
     size: str | None = None
     aspect_ratio: str | None = None
     resolution: str | None = None
+    quality: str | None = None
+    input_fidelity: str | None = None
     language: str | None = None
     reference_urls: list[str] = Field(default_factory=list)
     reference_file_ids: list[str] = Field(default_factory=list)

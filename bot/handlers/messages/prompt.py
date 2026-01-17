@@ -131,6 +131,7 @@ async def handle_prompt_message(
         price=GenerationService.calculate_generation_price(
             selected_model.key,
             selected_model.price,
+            size,
             resolution,
         ),
         size=size,
@@ -156,6 +157,7 @@ async def handle_prompt_message(
         GenerationService.calculate_generation_price(
             selected_model.key,
             selected_model.price,
+            size,
             resolution,
         ),
         show_size,

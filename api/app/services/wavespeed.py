@@ -37,6 +37,27 @@ class WavespeedClient:
         self._nano_banana_i2i_model = "google/nano-banana/edit"
         self._nano_banana_pro_t2i_model = "google/nano-banana-pro/text-to-image"
         self._nano_banana_pro_i2i_model = "google/nano-banana-pro/edit"
+        self._gpt_image_1_5_t2i_model = "openai/gpt-image-1.5/text-to-image"
+        self._gpt_image_1_5_i2i_model = "openai/gpt-image-1.5/edit"
+
+        self._model_map: dict[str, dict[str, str]] = {
+            "seedream-v4": {
+                "t2i": self._seedream_v4_t2i_model,
+                "i2i": self._seedream_v4_i2i_model,
+            },
+            "nano-banana": {
+                "t2i": self._nano_banana_t2i_model,
+                "i2i": self._nano_banana_i2i_model,
+            },
+            "nano-banana-pro": {
+                "t2i": self._nano_banana_pro_t2i_model,
+                "i2i": self._nano_banana_pro_i2i_model,
+            },
+            "gpt-image-1.5": {
+                "t2i": self._gpt_image_1_5_t2i_model,
+                "i2i": self._gpt_image_1_5_i2i_model,
+            },
+        }
 
     def _response_from_result(self, result: dict[str, Any]) -> WavespeedResponse:
         data = result.get("data", {})
@@ -195,6 +216,60 @@ class WavespeedClient:
             enable_sync_mode=enable_sync_mode,
         )
 
+    async def submit_gpt_image_1_5_t2i(
+        self,
+        prompt: str,
+        size: str | None = None,
+        quality: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = False,
+    ) -> WavespeedResponse:
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "enable_base64_output": enable_base64_output,
+        }
+        if size:
+            payload["size"] = size
+        if quality:
+            payload["quality"] = quality
+        return await self._submit_model(
+            self._gpt_image_1_5_t2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_gpt_image_1_5_i2i(
+        self,
+        prompt: str,
+        images: list[str],
+        size: str | None = None,
+        quality: str | None = None,
+        input_fidelity: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = False,
+    ) -> WavespeedResponse:
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "images": images,
+            "enable_base64_output": enable_base64_output,
+        }
+        if size:
+            payload["size"] = size
+        if quality:
+            payload["quality"] = quality
+        if input_fidelity:
+            payload["input_fidelity"] = input_fidelity
+        return await self._submit_model(
+            self._gpt_image_1_5_i2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    def get_model_identifier(self, model_key: str, mode: str) -> str | None:
+        mode_key = mode.lower()
+        entry = self._model_map.get(model_key, {})
+        return entry.get(mode_key)
+
     async def get_prediction_result(self, request_id: str) -> WavespeedResponse:
         def _call() -> WavespeedResponse:
             result = self._client._get_result(
@@ -216,6 +291,34 @@ class WavespeedClient:
             response = requests.get(url, headers=headers, timeout=request_timeout)
             response.raise_for_status()
             return self._response_from_result(response.json())
+
+        return await asyncio.to_thread(_call)
+
+    async def get_model_info(self, model: str) -> WavespeedResponse:
+        def _call() -> WavespeedResponse:
+            from urllib.parse import quote
+
+            base_url = self._client.base_url
+            encoded = quote(model, safe="")
+            urls = [f"{base_url}/api/v3/models/{encoded}"]
+            if encoded != model:
+                urls.append(f"{base_url}/api/v3/models/{model}")
+            headers = self._client._get_headers()
+            request_timeout = (
+                min(self._client.connection_timeout, self._timeout_seconds),
+                self._timeout_seconds,
+            )
+            last_error: Exception | None = None
+            for url in urls:
+                try:
+                    response = requests.get(url, headers=headers, timeout=request_timeout)
+                    response.raise_for_status()
+                    return self._response_from_result(response.json())
+                except Exception as exc:
+                    last_error = exc
+            if last_error:
+                raise last_error
+            raise RuntimeError("Wavespeed model info request failed")
 
         return await asyncio.to_thread(_call)
 

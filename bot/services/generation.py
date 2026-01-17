@@ -80,6 +80,7 @@ class GenerationService:
     def calculate_generation_price(
         model_key: str | None,
         base_price: int,
+        size: str | None,
         resolution: str | None,
     ) -> int:
         key = (model_key or "").lower()
@@ -90,7 +91,28 @@ class GenerationService:
             return 27
         if key == "nano-banana-pro":
             return 240 if res == "4k" else 140
+        if key == "gpt-image-1.5":
+            price = GenerationService._price_from_size(size or resolution)
+            return price if price is not None else base_price
         return base_price
+
+    @staticmethod
+    def _price_from_size(size: str | None) -> int | None:
+        if not size:
+            return None
+        normalized = size.lower().replace("x", "*")
+        if normalized == "auto":
+            normalized = "1024*1024"
+        match = re.match(r"^(\\d{3,4})\\*(\\d{3,4})$", normalized)
+        if not match:
+            return None
+        size_key = normalized
+        prices = {
+            "1024*1024": 34,
+            "1024*1536": 51,
+            "1536*1024": 51,
+        }
+        return prices.get(size_key) or prices["1024*1024"]
 
     @staticmethod
     async def get_models() -> list[NormalizedModel]:

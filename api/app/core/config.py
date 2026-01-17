@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     wavespeed_min_balance: float = 1.0
     wavespeed_balance_cache_ttl_seconds: int = 60
     wavespeed_balance_alert_ttl_seconds: int = 600
+    wavespeed_model_options_cache_ttl_seconds: int = 600
     generation_poll_interval_seconds: int = 3
     generation_poll_max_duration_seconds: int = 300  # 5 minutes max polling
 

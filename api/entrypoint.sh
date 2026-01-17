@@ -40,6 +40,6 @@ for i in $(seq 1 $TRIES); do
   sleep $SLEEP
 done
 
-alembic -c /app/alembic.ini upgrade head
+alembic -c /app/alembic.ini upgrade heads
 
 exec "$@"

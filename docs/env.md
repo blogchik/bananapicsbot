@@ -47,6 +47,7 @@
 - `WAVESPEED_MIN_BALANCE`: Generatsiyalarni to'xtatish uchun minimal Wavespeed balans threshold.
 - `WAVESPEED_BALANCE_CACHE_TTL_SECONDS`: Wavespeed balance cache TTL (sekund).
 - `WAVESPEED_BALANCE_ALERT_TTL_SECONDS`: Admin alert throttle TTL (sekund).
+- `WAVESPEED_MODEL_OPTIONS_CACHE_TTL_SECONDS`: Wavespeed model options cache TTL (sekund).
 
 ## Payments
 
@@ -124,6 +125,7 @@ WAVESPEED_TIMEOUT_SECONDS=180
 WAVESPEED_MIN_BALANCE=1.0
 WAVESPEED_BALANCE_CACHE_TTL_SECONDS=60
 WAVESPEED_BALANCE_ALERT_TTL_SECONDS=600
+WAVESPEED_MODEL_OPTIONS_CACHE_TTL_SECONDS=600
 
 # ===================
 # Payments

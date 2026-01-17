@@ -221,6 +221,7 @@ async def select_model(
         price=GenerationService.calculate_generation_price(
             selected.key,
             selected.price,
+            size,
             resolution,
         ),
         size=size,
@@ -477,6 +478,7 @@ async def select_resolution(
     price = GenerationService.calculate_generation_price(
         data.get("model_key"),
         int(data.get("price") or 0),
+        data.get("size"),
         resolution,
     )
     await state.update_data(price=price)
@@ -526,6 +528,7 @@ async def back_to_generation(
         price = GenerationService.calculate_generation_price(
             data.get("model_key"),
             int(data.get("price") or 0),
+            size,
             resolution,
         )
         show_size = data.get("supports_size") and bool(data.get("size_options"))
@@ -587,6 +590,7 @@ async def submit_generation(
     price = GenerationService.calculate_generation_price(
         data.get("model_key"),
         int(price or 0),
+        data.get("size"),
         resolution,
     )
     
@@ -754,6 +758,7 @@ async def _update_generation_menu(
     price = GenerationService.calculate_generation_price(
         data.get("model_key"),
         int(price or 0),
+        size,
         resolution,
     )
     

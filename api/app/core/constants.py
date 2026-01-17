@@ -27,3 +27,10 @@ NANO_BANANA_PRO_RESOLUTIONS = [
     "2k",
     "4k",
 ]
+
+GPT_IMAGE_1_5_SIZE_OPTIONS = [
+    "auto",
+    "1024*1024",
+    "1024*1536",
+    "1536*1024",
+]

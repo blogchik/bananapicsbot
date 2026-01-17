@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.deps.db import db_session_dep
 from app.core.constants import SIZE_OPTIONS
 from app.core.config import get_settings
-from app.core.model_options import get_model_parameter_options
+from app.core.model_options import ModelParameterOptions
 from app.deps.wavespeed import wavespeed_client
 from app.db.models import (
     GenerationJob,
@@ -33,13 +33,14 @@ from app.schemas.generation import (
     GenerationSubmitOut,
 )
 from app.services.ledger import get_user_balance
+from app.services.model_options import get_model_parameter_options_from_wavespeed
 from app.services.redis_client import get_redis
 from app.services.users import get_or_create_user, get_user_by_telegram_id
 
 router = APIRouter()
 logger = get_logger(__name__)
 
-SIZE_RE = re.compile(r"^(\d{3,4})\*(\d{3,4})$")
+SIZE_RE = re.compile(r"^(\d{3,4})[x*](\d{3,4})$")
 WAVESPEED_BALANCE_CACHE_KEY = "wavespeed:balance"
 WAVESPEED_BALANCE_ALERT_KEY = "wavespeed:balance:alerted"
 
@@ -47,7 +48,9 @@ WAVESPEED_BALANCE_ALERT_KEY = "wavespeed:balance:alerted"
 def validate_size(size: str | None) -> None:
     if not size:
         return
-    match = SIZE_RE.match(size)
+    if size.lower() == "auto":
+        return
+    match = SIZE_RE.match(size.lower())
     if not match:
         raise HTTPException(status_code=400, detail="Invalid size format")
     width = int(match.group(1))
@@ -57,12 +60,11 @@ def validate_size(size: str | None) -> None:
 
 
 def validate_model_options(
-    model_key: str,
+    options: ModelParameterOptions,
     size: str | None,
     aspect_ratio: str | None,
     resolution: str | None,
 ) -> None:
-    options = get_model_parameter_options(model_key)
     if size and not options.supports_size:
         raise HTTPException(status_code=400, detail="Size not supported")
     if aspect_ratio and not options.supports_aspect_ratio:
@@ -97,7 +99,48 @@ def _credits_from_usd(value: Decimal) -> int:
     return int((value * Decimal("1000")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
-def _dynamic_price_for_model(model_key: str | None, resolution: str | None) -> int | None:
+_GPT_IMAGE_1_5_PRICES: dict[str, dict[str, int]] = {
+    "low": {
+        "1024*1024": 9000,
+        "1024*1536": 13000,
+        "1536*1024": 13000,
+    },
+    "medium": {
+        "1024*1024": 34000,
+        "1024*1536": 51000,
+        "1536*1024": 51000,
+    },
+    "high": {
+        "1024*1024": 133000,
+        "1024*1536": 200000,
+        "1536*1024": 200000,
+    },
+}
+
+
+def _credits_from_price_units(value: int) -> int:
+    return int(
+        (Decimal(value) / Decimal("1000")).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+    )
+
+
+def _normalize_gpt_image_size(size: str | None) -> str:
+    if not size:
+        return "1024*1024"
+    normalized = size.lower().replace("x", "*")
+    if normalized == "auto":
+        return "1024*1024"
+    return normalized
+
+
+def _dynamic_price_for_model(
+    model_key: str | None,
+    size: str | None,
+    resolution: str | None,
+    quality: str | None,
+) -> int | None:
     if not model_key:
         return None
     key = model_key.lower()
@@ -107,15 +150,23 @@ def _dynamic_price_for_model(model_key: str | None, resolution: str | None) -> i
         res = (resolution or "").lower()
         usd = Decimal("0.24") if res == "4k" else Decimal("0.14")
         return _credits_from_usd(usd)
+    if key == "gpt-image-1.5":
+        size_value = _normalize_gpt_image_size(size)
+        quality_value = (quality or "medium").lower()
+        quality_prices = _GPT_IMAGE_1_5_PRICES.get(quality_value) or _GPT_IMAGE_1_5_PRICES["medium"]
+        price_units = quality_prices.get(size_value) or quality_prices["1024*1024"]
+        return _credits_from_price_units(price_units)
     return None
 
 
 def get_generation_price(
     db: Session,
     model: ModelCatalog,
+    size: str | None,
     resolution: str | None,
+    quality: str | None,
 ) -> int:
-    dynamic_price = _dynamic_price_for_model(model.key, resolution)
+    dynamic_price = _dynamic_price_for_model(model.key, size, resolution, quality)
     if dynamic_price is not None:
         return dynamic_price
     price = db.execute(
@@ -379,19 +430,22 @@ async def submit_wavespeed_generation(
     size: str | None,
     aspect_ratio: str | None,
     resolution: str | None,
+    quality: str | None,
+    input_fidelity: str | None,
 ):
     if model_key == "seedream-v4":
+        seedream_size = size or resolution
         if reference_urls:
             return await client.submit_seedream_v4_i2i(
                 prompt=prompt,
                 images=reference_urls,
-                size=size,
+                size=seedream_size,
                 enable_base64_output=False,
                 enable_sync_mode=False,
             )
         return await client.submit_seedream_v4_t2i(
             prompt=prompt,
-            size=size,
+            size=seedream_size,
             enable_base64_output=False,
             enable_sync_mode=False,
         )
@@ -427,6 +481,24 @@ async def submit_wavespeed_generation(
             enable_base64_output=False,
             enable_sync_mode=False,
         )
+    if model_key == "gpt-image-1.5":
+        if reference_urls:
+            return await client.submit_gpt_image_1_5_i2i(
+                prompt=prompt,
+                images=reference_urls,
+                size=size,
+                quality=quality,
+                input_fidelity=input_fidelity,
+                enable_base64_output=False,
+                enable_sync_mode=False,
+            )
+        return await client.submit_gpt_image_1_5_t2i(
+            prompt=prompt,
+            size=size,
+            quality=quality,
+            enable_base64_output=False,
+            enable_sync_mode=False,
+        )
     raise HTTPException(status_code=400, detail="Unsupported model")
 
 
@@ -445,9 +517,16 @@ async def submit_generation(
     if model.key == "seedream-v4" and size_value and not resolution_value:
         resolution_value = size_value
         size_value = None
-    price = get_generation_price(db, model, resolution_value)
+    price = get_generation_price(
+        db,
+        model,
+        size_value,
+        resolution_value,
+        payload.quality,
+    )
+    model_options = await get_model_parameter_options_from_wavespeed(model.key)
     validate_model_options(
-        model.key,
+        model_options,
         size_value,
         payload.aspect_ratio,
         resolution_value,
@@ -486,6 +565,8 @@ async def submit_generation(
             "size": size_value,
             "aspect_ratio": payload.aspect_ratio,
             "resolution": resolution_value,
+            "quality": payload.quality,
+            "input_fidelity": payload.input_fidelity,
             "reference_urls": reference_urls,
             "reference_file_ids": reference_file_ids,
             "chat_id": payload.chat_id,
@@ -537,6 +618,8 @@ async def submit_generation(
             size_value,
             payload.aspect_ratio,
             resolution_value,
+            payload.quality,
+            payload.input_fidelity,
         )
     except HTTPException:
         request.status = GenerationStatus.failed
