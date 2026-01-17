@@ -86,6 +86,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_model_menu_price": "Цена",
     "gen_model_menu_hint": "",
     "gen_aspect_menu_title": "Выберите формат фотографии:",
+    "gen_resolution_menu_title": "Выберите размер фотографии:",
     "gen_status": "⏳ Статус: {status}",
     "gen_trial_used": "Trial использован",
     "gen_price": "Цена: {price} cr",

@@ -115,6 +115,7 @@ class TranslationKey(str, Enum):
     GEN_MODEL_MENU_PRICE = "gen_model_menu_price"
     GEN_MODEL_MENU_HINT = "gen_model_menu_hint"
     GEN_ASPECT_MENU_TITLE = "gen_aspect_menu_title"
+    GEN_RESOLUTION_MENU_TITLE = "gen_resolution_menu_title"
     
     # Payments
     TOPUP_TITLE = "topup_title"

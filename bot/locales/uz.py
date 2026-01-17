@@ -86,6 +86,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_model_menu_price": "Narx",
     "gen_model_menu_hint": "",
     "gen_aspect_menu_title": "Rasm formatini tanlang:",
+    "gen_resolution_menu_title": "Rasm o'lchamini tanlang:",
     "gen_status": "⏳ Holat: {status}",
     "gen_trial_used": "Trial ishlatildi",
     "gen_price": "Narx: {price} cr",

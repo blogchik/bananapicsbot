@@ -134,7 +134,7 @@ async def create_bot_and_dispatcher() -> tuple[Bot, Dispatcher]:
         token=settings.bot_token.get_secret_value(),
         default=DefaultBotProperties(
             parse_mode=ParseMode.HTML,
-            link_preview_is_disabled=True,
+            link_preview_is_disabled=False,
         ),
     )
     

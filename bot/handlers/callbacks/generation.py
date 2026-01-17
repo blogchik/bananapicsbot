@@ -3,9 +3,8 @@
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
+from aiogram.types import CallbackQuery, LinkPreviewOptions
 from typing import Callable
-from pathlib import Path
 
 from keyboards import GenerationKeyboard, ProfileKeyboard
 from keyboards.builders import GenerationCallback
@@ -112,25 +111,25 @@ def model_emoji(model: NormalizedModel) -> str:
     return "✨"
 
 
-def get_ratio_preview_path(ratio: str) -> Path | None:
-    """Get preview image path for aspect ratio."""
-    filename = {
-        "1:1": "ratio_1x1.png",
-        "3:2": "ratio_3x2.png",
-        "2:3": "ratio_2x3.png",
-        "4:3": "ratio_4x3.png",
-        "3:4": "ratio_3x4.png",
-        "5:4": "ratio_5x4.png",
-        "4:5": "ratio_4x5.png",
-        "16:9": "ratio_16x9.png",
-        "9:16": "ratio_9x16.png",
-        "21:9": "ratio_21x9.png",
+def get_ratio_preview_url(ratio: str) -> str | None:
+    """Get preview image URL for aspect ratio."""
+    return {
+        "1:1": "https://img1.teletype.in/files/45/36/4536730e-d817-4526-9a54-0712000ab797.jpeg",
+        "2:3": "https://img2.teletype.in/files/58/33/5833e4d5-ffcd-4406-90cd-57a5b35762ab.jpeg",
+        "3:2": "https://img3.teletype.in/files/6d/ae/6daef1e0-151a-4b67-866a-7ce9639f47f3.jpeg",
+        "3:4": "https://img2.teletype.in/files/dc/e4/dce43e0a-8199-4f5e-82f8-557306ba5ffa.jpeg",
+        "4:3": "https://img2.teletype.in/files/5f/78/5f782960-5e93-4b8e-87d2-f5eb51bd96f2.jpeg",
+        "4:5": "https://img4.teletype.in/files/f4/b0/f4b0cfff-1332-421f-afd0-bb9daf453572.jpeg",
+        "5:4": "https://img3.teletype.in/files/aa/29/aa29c0a7-97a6-4db7-b968-ac715eaaf19d.jpeg",
+        "9:16": "https://img1.teletype.in/files/cc/d8/ccd871ca-e2b1-4457-ab23-437573998b0c.jpeg",
+        "16:9": "https://img4.teletype.in/files/35/d1/35d16a47-cb5d-487e-847a-1a463ac49985.jpeg",
+        "21:9": "https://img1.teletype.in/files/0d/e8/0de8a652-680f-44e9-8e78-fabc90f76ee8.jpeg",
     }.get(ratio)
-    if not filename:
-        return None
-    base_dir = Path(__file__).resolve().parents[2]
-    path = base_dir / "assets" / filename
-    return path if path.exists() else None
+
+
+def get_resolution_preview_url() -> str:
+    """Get preview image URL for resolution selection."""
+    return "https://img3.teletype.in/files/e7/1d/e71d4ab1-fcb5-4d33-90fa-a1c6b9640fd9.png"
 
 
 @router.callback_query(F.data == GenerationCallback.MODEL_MENU)
@@ -329,18 +328,22 @@ async def open_ratio_menu(
     await call.answer()
 
     selected_ratio = data.get("aspect_ratio") or (ratio_options[0] if ratio_options else None)
-    preview_path = get_ratio_preview_path(selected_ratio) if selected_ratio else None
+    preview_url = get_ratio_preview_url(selected_ratio) if selected_ratio else None
     caption = _(TranslationKey.GEN_ASPECT_MENU_TITLE, None)
 
     try:
-        if preview_path and call.message:
+        if preview_url and call.message:
             await call.message.delete()
-            msg = await call.message.bot.send_photo(
+            msg = await call.message.bot.send_message(
                 chat_id=call.message.chat.id,
-                photo=FSInputFile(preview_path),
-                caption=caption,
+                text=caption,
                 reply_markup=GenerationKeyboard.aspect_ratio_list(
                     ratio_options, selected_ratio, _
+                ),
+                link_preview_options=LinkPreviewOptions(
+                    url=preview_url,
+                    is_disabled=False,
+                    show_above_text=True,
                 ),
             )
             await state.update_data(menu_message_id=msg.message_id)
@@ -381,21 +384,22 @@ async def select_ratio(
         )
     try:
         ratio_options = data.get("aspect_ratio_options") or []
-        preview_path = get_ratio_preview_path(aspect_ratio) if aspect_ratio else None
-        if preview_path and call.message and call.message.photo:
+        preview_url = get_ratio_preview_url(aspect_ratio) if aspect_ratio else None
+        if preview_url and call.message:
             caption = _(TranslationKey.GEN_ASPECT_MENU_TITLE, None)
-            media = InputMediaPhoto(
-                media=FSInputFile(preview_path),
-                caption=caption,
-            )
-            await call.message.bot.edit_message_media(
+            await call.message.bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                media=media,
+                text=caption,
                 reply_markup=GenerationKeyboard.aspect_ratio_list(
                     ratio_options,
                     aspect_ratio,
                     _,
+                ),
+                link_preview_options=LinkPreviewOptions(
+                    url=preview_url,
+                    is_disabled=False,
+                    show_above_text=True,
                 ),
             )
         else:
@@ -425,13 +429,25 @@ async def open_resolution_menu(
         return
     
     await call.answer()
-    
+
     try:
-        await call.message.edit_reply_markup(
-            reply_markup=GenerationKeyboard.resolution_list(
-                resolution_options, data.get("resolution"), _
+        preview_url = get_resolution_preview_url()
+        caption = _(TranslationKey.GEN_RESOLUTION_MENU_TITLE, None)
+        if call.message:
+            await call.message.delete()
+            msg = await call.message.bot.send_message(
+                chat_id=call.message.chat.id,
+                text=caption,
+                reply_markup=GenerationKeyboard.resolution_list(
+                    resolution_options, data.get("resolution"), _
+                ),
+                link_preview_options=LinkPreviewOptions(
+                    url=preview_url,
+                    is_disabled=False,
+                    show_above_text=True,
+                ),
             )
-        )
+            await state.update_data(menu_message_id=msg.message_id)
     except TelegramBadRequest:
         pass
 
@@ -461,13 +477,25 @@ async def select_resolution(
             resolution,
         )
     try:
-        await call.message.edit_reply_markup(
-            reply_markup=GenerationKeyboard.resolution_list(
-                data.get("resolution_options") or [],
-                resolution,
-                _,
+        resolution_options = data.get("resolution_options") or []
+        preview_url = get_resolution_preview_url()
+        if call.message:
+            caption = _(TranslationKey.GEN_RESOLUTION_MENU_TITLE, None)
+            await call.message.bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=caption,
+                reply_markup=GenerationKeyboard.resolution_list(
+                    resolution_options,
+                    resolution,
+                    _,
+                ),
+                link_preview_options=LinkPreviewOptions(
+                    url=preview_url,
+                    is_disabled=False,
+                    show_above_text=True,
+                ),
             )
-        )
     except TelegramBadRequest:
         pass
 
@@ -482,7 +510,7 @@ async def back_to_generation(
     await call.answer()
     
     data = await state.get_data()
-    if call.message and call.message.photo:
+    if call.message and call.message.text:
         model_name = data.get("model_name", "-")
         size = data.get("size")
         aspect_ratio = data.get("aspect_ratio")
