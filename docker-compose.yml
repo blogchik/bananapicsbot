@@ -17,7 +17,7 @@ services:
     environment:
       RUN_MIGRATIONS: "true"
     ports:
-      - "8000:9000"
+      - "9000:9000"
     depends_on:
       db:
         condition: service_healthy
