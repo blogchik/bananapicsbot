@@ -4,6 +4,8 @@ services:
       context: ./bot
     env_file:
       - .env
+    networks:
+      - app_net
     restart: unless-stopped
     depends_on:
       api:
@@ -18,6 +20,8 @@ services:
       RUN_MIGRATIONS: "true"
     ports:
       - "9000:9000"
+    networks:
+      - app_net
     depends_on:
       db:
         condition: service_healthy
@@ -38,6 +42,8 @@ services:
       - .env
     environment:
       RUN_MIGRATIONS: "false"
+    networks:
+      - app_net
     depends_on:
       - api
       - redis
@@ -51,6 +57,8 @@ services:
       - .env
     environment:
       RUN_MIGRATIONS: "false"
+    networks:
+      - app_net
     depends_on:
       - celery-worker
     restart: unless-stopped
@@ -62,6 +70,8 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    networks:
+      - app_net
     restart: unless-stopped
 
   db:
@@ -74,6 +84,8 @@ services:
       - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - app_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bananapics} -d ${POSTGRES_DB:-bananapics}"]
       interval: 10s
@@ -84,3 +96,6 @@ services:
 volumes:
   db_data:
   redis_data:
+
+networks:
+  app_net:

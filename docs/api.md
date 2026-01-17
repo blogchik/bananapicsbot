@@ -181,6 +181,8 @@ services:
   bot:           # Telegram bot
 ```
 
+Barcha servislar `app_net` nomli bitta Docker networkda ishlaydi.
+
 ## Alembic
 
 ```bash
