@@ -51,6 +51,9 @@ class GenerationConfig:
     resolution: str | None = None
     reference_urls: list[str] | None = None
     reference_file_ids: list[str] | None = None
+    chat_id: int | None = None
+    message_id: int | None = None
+    prompt_message_id: int | None = None
 
 
 class GenerationService:
@@ -64,7 +67,24 @@ class GenerationService:
     async def get_models() -> list[NormalizedModel]:
         """Get available models (normalized)."""
         container = get_container()
-        raw_models = await container.api_client.get_models()
+        cache_key = "models:active"
+        raw_models: list[dict] | None = None
+        try:
+            cached = await container.redis_client.cache_get(cache_key)
+            if cached:
+                raw_models = json.loads(cached)
+        except Exception:
+            raw_models = None
+        if raw_models is None:
+            raw_models = await container.api_client.get_models()
+            try:
+                await container.redis_client.cache_set(
+                    cache_key,
+                    json.dumps(raw_models),
+                    ttl_seconds=BotConstants.MODELS_CACHE_TTL_SECONDS,
+                )
+            except Exception:
+                logger.warning("Failed to cache models")
         return GenerationService._normalize_models(raw_models)
     
     @staticmethod
@@ -217,6 +237,9 @@ class GenerationService:
                 resolution=config.resolution,
                 reference_urls=config.reference_urls or [],
                 reference_file_ids=config.reference_file_ids or [],
+                chat_id=config.chat_id,
+                message_id=config.message_id,
+                prompt_message_id=config.prompt_message_id,
             )
         except APIError as e:
             if e.status == 409:

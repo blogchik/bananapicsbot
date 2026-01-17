@@ -202,21 +202,31 @@ class ApiClient:
         resolution: str | None = None,
         reference_urls: list[str] | None = None,
         reference_file_ids: list[str] | None = None,
+        chat_id: int | None = None,
+        message_id: int | None = None,
+        prompt_message_id: int | None = None,
     ) -> dict:
         """Submit generation request."""
+        payload: dict[str, object] = {
+            "telegram_id": telegram_id,
+            "model_id": model_id,
+            "prompt": prompt,
+            "size": size,
+            "aspect_ratio": aspect_ratio,
+            "resolution": resolution,
+            "reference_urls": reference_urls or [],
+            "reference_file_ids": reference_file_ids or [],
+        }
+        if chat_id is not None:
+            payload["chat_id"] = chat_id
+        if message_id is not None:
+            payload["message_id"] = message_id
+        if prompt_message_id is not None:
+            payload["prompt_message_id"] = prompt_message_id
         return await self._request(
             "POST",
             "/api/v1/generations/submit",
-            json={
-                "telegram_id": telegram_id,
-                "model_id": model_id,
-                "prompt": prompt,
-                "size": size,
-                "aspect_ratio": aspect_ratio,
-                "resolution": resolution,
-                "reference_urls": reference_urls or [],
-                "reference_file_ids": reference_file_ids or [],
-            },
+            json=payload,
         )
     
     async def refresh_generation(

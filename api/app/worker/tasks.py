@@ -4,7 +4,6 @@ import time
 import httpx
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 
 from celery import shared_task
 from sqlalchemy import select, update
@@ -32,7 +31,13 @@ def run_async(coro):
 
 
 @shared_task(bind=True, max_retries=3)
-def process_generation(self, generation_request_id: int, chat_id: int, message_id: int):
+def process_generation(
+    self,
+    generation_request_id: int,
+    chat_id: int | None,
+    message_id: int | None,
+    prompt_message_id: int | None = None,
+):
     """Process image generation task with polling.
     
     This task is responsible for:
@@ -42,7 +47,7 @@ def process_generation(self, generation_request_id: int, chat_id: int, message_i
     """
     from app.db.session import sync_session_factory
     from app.db.models import (
-        GenerationRequest, GenerationJob, GenerationResult,
+        GenerationRequest, GenerationJob,
         GenerationStatus, JobStatus, ModelCatalog
     )
     from app.services.wavespeed import WavespeedClient
@@ -64,35 +69,64 @@ def process_generation(self, generation_request_id: int, chat_id: int, message_i
             request = session.query(GenerationRequest).filter(
                 GenerationRequest.id == generation_request_id
             ).first()
-            
+
             if not request:
                 logger.error("Generation request not found", generation_id=generation_request_id)
                 return {"error": "Request not found"}
-            
+
             job = session.query(GenerationJob).filter(
                 GenerationJob.request_id == request.id
             ).first()
-            
-            if not job or not job.provider_job_id:
-                logger.error("Job not found", generation_id=generation_request_id)
-                return {"error": "Job not found"}
-            
+
             # Get model for caption
             model = session.query(ModelCatalog).filter(
                 ModelCatalog.id == request.model_id
             ).first()
             model_name = model.name if model else "Unknown"
-            
+
+            input_params = request.input_params or {}
+            chat_id = chat_id or input_params.get("chat_id")
+            message_id = message_id or input_params.get("message_id")
+            prompt_message_id = prompt_message_id or input_params.get("prompt_message_id")
+
+            if not chat_id or not message_id:
+                logger.warning(
+                    "Missing chat/message ids for generation delivery",
+                    generation_id=generation_request_id,
+                )
+                return {"error": "Missing chat/message ids"}
+
+            if request.status == GenerationStatus.completed:
+                outputs = _get_generation_outputs(session, request.id)
+                if outputs:
+                    _notify_user_generation_complete(
+                        chat_id,
+                        message_id,
+                        request.prompt,
+                        model_name,
+                        request.cost or 0,
+                        outputs,
+                        prompt_message_id,
+                    )
+                return {"status": "completed", "generation_id": generation_request_id}
+
+            if not job or not job.provider_job_id:
+                logger.error("Job not found", generation_id=generation_request_id)
+                return {"error": "Job not found"}
+
             provider_job_id = job.provider_job_id
-            user_telegram_id = None
-            if request.user:
-                user_telegram_id = request.user.telegram_id
         
         # Create Wavespeed client for polling
         client = WavespeedClient(
             api_key=settings.wavespeed_api_key,
-            base_url=settings.wavespeed_api_base_url,
-            timeout=settings.wavespeed_timeout_seconds,
+            api_base_url=settings.wavespeed_api_base_url,
+            seedream_v4_t2i_url=settings.wavespeed_seedream_v4_t2i_url,
+            seedream_v4_i2i_url=settings.wavespeed_seedream_v4_i2i_url,
+            nano_banana_t2i_url=settings.wavespeed_nano_banana_t2i_url,
+            nano_banana_i2i_url=settings.wavespeed_nano_banana_i2i_url,
+            nano_banana_pro_t2i_url=settings.wavespeed_nano_banana_pro_t2i_url,
+            nano_banana_pro_i2i_url=settings.wavespeed_nano_banana_pro_i2i_url,
+            timeout_seconds=settings.wavespeed_timeout_seconds,
         )
         
         # Polling loop
@@ -134,7 +168,8 @@ def process_generation(self, generation_request_id: int, chat_id: int, message_i
                 _complete_generation(generation_request_id, outputs)
                 _notify_user_generation_complete(
                     chat_id, message_id,
-                    request.prompt, model_name, request.cost, outputs
+                    request.prompt, model_name, request.cost or 0, outputs,
+                    prompt_message_id,
                 )
                 logger.info(
                     "Generation completed",
@@ -181,6 +216,67 @@ def _normalize_outputs(outputs) -> list[str]:
     return [output for output in outputs if output]
 
 
+def _get_generation_outputs(session, request_id: int) -> list[str]:
+    """Fetch generation outputs from DB."""
+    from app.db.models import GenerationResult
+
+    return [
+        result.image_url
+        for result in session.execute(
+            select(GenerationResult.image_url).where(
+                GenerationResult.request_id == request_id
+            )
+        ).scalars().all()
+        if result
+    ]
+
+
+def _clear_generation_lock(user_id: int) -> None:
+    """Clear Redis lock for active generation."""
+    try:
+        import redis
+
+        redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+        redis_client.delete(f"gen:active:{user_id}")
+        redis_client.close()
+    except Exception as e:
+        logger.warning("Failed to clear generation lock", error=str(e))
+
+
+def _refund_generation_cost(session, request) -> None:
+    """Refund charged credits for failed generation."""
+    from app.db.models import LedgerEntry
+
+    if not request.cost or request.cost <= 0:
+        return
+    refund_id = f"refund_{request.id}"
+    existing = session.query(LedgerEntry).filter(
+        LedgerEntry.user_id == request.user_id,
+        LedgerEntry.entry_type == "refund",
+        LedgerEntry.reference_id == refund_id,
+    ).first()
+    if existing:
+        return
+    session.add(
+        LedgerEntry(
+            user_id=request.user_id,
+            amount=int(request.cost),
+            entry_type="refund",
+            reference_id=refund_id,
+            description=f"Refund for generation {request.id}",
+        )
+    )
+
+
+def _rollback_trial_use(session, request_id: int) -> None:
+    """Rollback trial usage for failed generation."""
+    from app.db.models import TrialUse
+
+    trial = session.query(TrialUse).filter(TrialUse.request_id == request_id).first()
+    if trial:
+        session.delete(trial)
+
+
 def _mark_generation_failed(request_id: int, error_message: str) -> None:
     """Mark generation as failed in DB."""
     from app.db.session import sync_session_factory
@@ -194,6 +290,8 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
             if request:
                 request.status = GenerationStatus.failed
                 request.completed_at = datetime.utcnow()
+                _refund_generation_cost(session, request)
+                _rollback_trial_use(session, request.id)
             
             job = session.query(GenerationJob).filter(
                 GenerationJob.request_id == request_id
@@ -204,6 +302,8 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
                 job.error_message = error_message
             
             session.commit()
+            if request:
+                _clear_generation_lock(request.user_id)
     except Exception as e:
         logger.error("Failed to mark generation as failed", error=str(e))
 
@@ -248,6 +348,8 @@ def _complete_generation(request_id: int, outputs: list[str]) -> None:
                     ))
             
             session.commit()
+            if request:
+                _clear_generation_lock(request.user_id)
     except Exception as e:
         logger.error("Failed to complete generation", error=str(e))
 
@@ -259,25 +361,36 @@ def _notify_user_generation_complete(
     model_name: str,
     cost: int,
     outputs: list[str],
+    prompt_message_id: int | None,
 ) -> None:
     """Send generation result to user via Telegram."""
     if not settings.bot_token:
         logger.warning("Bot token not configured, skipping notification")
         return
-    
+
     try:
         # Delete status message
         run_async(_delete_telegram_message(chat_id, message_id))
-        
+
         # Send results
+        caption_sent = False
         for output_url in outputs:
             caption = (
-                f"✅ Natija tayyor\\n"
-                f"Model: #{model_name.replace(' ', '')}\\n"
-                f"Credit: {cost}\\n"
-                f"Prompt:\\n<blockquote>{_escape_html(prompt[:500])}</blockquote>"
+                f"? Natija tayyor\n"
+                f"Model: #{model_name.replace(' ', '')}\n"
+                f"Credit: {cost}\n"
+                f"Prompt:\n<blockquote>{_escape_html(prompt[:500])}</blockquote>"
             )
-            run_async(_send_telegram_document(chat_id, output_url, caption))
+            caption_value = caption if not caption_sent else None
+            run_async(
+                _send_telegram_document(
+                    chat_id,
+                    output_url,
+                    caption_value,
+                    prompt_message_id,
+                )
+            )
+            caption_sent = True
     except Exception as e:
         logger.error("Failed to send generation result", error=str(e))
 
@@ -325,16 +438,25 @@ async def _edit_telegram_message(chat_id: int, message_id: int, text: str) -> No
         })
 
 
-async def _send_telegram_document(chat_id: int, document_url: str, caption: str) -> None:
+async def _send_telegram_document(
+    chat_id: int,
+    document_url: str,
+    caption: str | None,
+    prompt_message_id: int | None,
+) -> None:
     """Send a document via Telegram."""
     url = f"https://api.telegram.org/bot{settings.bot_token}/sendDocument"
     async with httpx.AsyncClient(timeout=60) as client:
-        await client.post(url, json={
+        payload = {
             "chat_id": chat_id,
             "document": document_url,
-            "caption": caption,
             "parse_mode": "HTML",
-        })
+        }
+        if caption:
+            payload["caption"] = caption
+        if prompt_message_id:
+            payload["reply_to_message_id"] = prompt_message_id
+        await client.post(url, json=payload)
 
 
 @shared_task(bind=True)

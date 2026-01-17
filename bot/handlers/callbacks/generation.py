@@ -1,6 +1,5 @@
 """Generation callback handlers."""
 
-import asyncio
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
@@ -376,6 +375,9 @@ async def submit_generation(
         resolution=data.get("resolution") if data.get("supports_resolution") else None,
         reference_urls=data.get("reference_urls"),
         reference_file_ids=data.get("reference_file_ids"),
+        chat_id=call.message.chat.id if call.message else None,
+        message_id=call.message.message_id if call.message else None,
+        prompt_message_id=data.get("prompt_message_id"),
     )
 
     await GenerationService.save_last_request(
@@ -421,49 +423,6 @@ async def submit_generation(
         return
     
     # Handle already completed
-    if request_status == "completed":
-        try:
-            outputs = await GenerationService.get_results(request_id, call.from_user.id)
-        except Exception:
-            outputs = []
-        
-        try:
-            await call.message.edit_text(_(TranslationKey.GEN_COMPLETED, None))
-        except TelegramBadRequest:
-            pass
-
-        if outputs:
-            caption = GenerationService.build_result_caption(
-                prompt, model_name, request.get("cost"), None, _
-            )
-            await GenerationService.send_results(
-                call.message.bot,
-                call.message.chat.id,
-                outputs,
-                data.get("prompt_message_id"),
-                caption,
-                _,
-            )
-        await state.clear()
-        return
-    
-    # Start polling
-    prompt_message_id = data.get("prompt_message_id") or call.message.message_id
-    
-    asyncio.create_task(
-        GenerationService.poll_generation_status(
-            call.message.bot,
-            call.message.chat.id,
-            call.message.message_id,
-            request_id,
-            call.from_user.id,
-            prompt,
-            model_name,
-            prompt_message_id,
-            _,
-        )
-    )
-    
     await state.clear()
 
 
@@ -496,6 +455,9 @@ async def retry_generation(
         resolution=last.get("resolution"),
         reference_urls=list(last.get("reference_urls") or []),
         reference_file_ids=list(last.get("reference_file_ids") or []),
+        chat_id=call.message.chat.id if call.message else None,
+        message_id=call.message.message_id if call.message else None,
+        prompt_message_id=last.get("prompt_message_id"),
     )
 
     try:
@@ -527,46 +489,7 @@ async def retry_generation(
         await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
         return
 
-    if request_status == "completed":
-        try:
-            outputs = await GenerationService.get_results(request_id, call.from_user.id)
-        except Exception:
-            outputs = []
-
-        try:
-            await call.message.edit_text(_(TranslationKey.GEN_COMPLETED, None))
-        except TelegramBadRequest:
-            pass
-
-        if outputs:
-            caption = GenerationService.build_result_caption(
-                config.prompt, config.model_name, request.get("cost"), None, _
-            )
-            await GenerationService.send_results(
-                call.message.bot,
-                call.message.chat.id,
-                outputs,
-                last.get("prompt_message_id"),
-                caption,
-                _,
-            )
-        return
-
-    prompt_message_id = last.get("prompt_message_id") or call.message.message_id
-
-    asyncio.create_task(
-        GenerationService.poll_generation_status(
-            call.message.bot,
-            call.message.chat.id,
-            call.message.message_id,
-            request_id,
-            call.from_user.id,
-            config.prompt,
-            config.model_name,
-            prompt_message_id,
-            _,
-        )
-    )
+    return
 
 
 async def _update_generation_menu(

@@ -165,10 +165,9 @@ Admin will see specific error messages for these cases:
 2. Bot menu ko'rsatadi: text-to-image yoki image-to-image sarlavhasi + model, size/aspect_ratio/resolution tanlash
    - Prompt blockquote formatda ko'rsatiladi
 3. Generate bosilganda so'rov yuboriladi
-4. Status avtomatik yangilanadi (polling):
-   - "⏳ Holat: Navbatda" (queue)
-   - "⏳ Holat: Jarayonda" (processing)
-   - "✅ Natija tayyor" (completed) + rasm va file yuboriladi
+4. Status backend Celery poller orqali kuzatilib, natija tayyor bo'lganda botga push qilinadi:
+   - "? Holat: Navbatda" (queue)
+   - "? Natija tayyor" (completed) + rasm va file yuboriladi
    - Xatolik bo'lsa, sabab ko'rsatiladi va "Retry" tugmasi chiqadi
    - Xatolikda kredit/ trial avtomatik qaytariladi
 5. Timeout: 5 minut (300 soniya)

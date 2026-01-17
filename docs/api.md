@@ -88,11 +88,13 @@ app/
 - `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash
 
 ### Generations
-- `POST /api/v1/generations/submit` - generatsiyani boshlash
+- `POST /api/v1/generations/submit` - generatsiyani boshlash (backend Celery polling + Telegram push)
 - `GET /api/v1/generations/active?telegram_id=...` - aktiv generatsiya
 - `GET /api/v1/generations/{id}?telegram_id=...` - generatsiya holati
 - `POST /api/v1/generations/{id}/refresh` - natijani yangilash
 - `GET /api/v1/generations/{id}/results?telegram_id=...` - natija URLlar
+
+**Eslatma:** `generations/submit` payloadida `chat_id`, `message_id`, `prompt_message_id` berilsa, natija botga backend orqali push qilinadi.
 
 ### Media
 - `POST /api/v1/media/upload` - Wavespeed media upload
@@ -116,7 +118,7 @@ Workers:
 - `celery-beat` - scheduled tasks
 
 Tasks:
-- `process_generation` - Wavespeed API polling
+- `process_generation` - Wavespeed API polling va natijani Telegramga push qilish
 - `send_broadcast_message` - individual broadcast messages
 - `process_broadcast` - broadcast orchestration
 - `cleanup_expired_generations` - hourly cleanup

@@ -136,11 +136,6 @@ async def set_generation_lock(
     await redis.set(key, str(request_id), ex=ttl_seconds)
 
 
-async def get_generation_lock(redis: Redis, user_id: int) -> str | None:
-    key = f"gen:active:{user_id}"
-    return await redis.get(key)
-
-
 async def clear_generation_lock(
     redis: Redis, user_id: int, request_id: int
 ) -> None:
@@ -333,28 +328,12 @@ async def submit_generation(
 
     if not lock_acquired:
         active_request = get_active_generation(db, user.id)
-        if active_request:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "message": "Another generation is in progress",
-                    "active_request_id": active_request.id,
-                    "status": active_request.status,
-                },
-            )
-        await release_generation_lock(redis, user.id)
-        lock_acquired = await acquire_generation_lock(
-            redis, user.id, settings.redis_active_generation_ttl_seconds
-        )
-        if not lock_acquired:
-            active_id = await get_generation_lock(redis, user.id)
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "message": "Another generation is in progress",
-                    "active_request_id": active_id,
-                },
-            )
+        detail = {
+            "message": "Another generation is in progress",
+            "active_request_id": active_request.id if active_request else None,
+            "status": active_request.status if active_request else None,
+        }
+        raise HTTPException(status_code=409, detail=detail)
 
     active_request = get_active_generation(db, user.id)
     if active_request:
@@ -395,6 +374,9 @@ async def submit_generation(
             "resolution": payload.resolution,
             "reference_urls": reference_urls,
             "reference_file_ids": reference_file_ids,
+            "chat_id": payload.chat_id,
+            "message_id": payload.message_id,
+            "prompt_message_id": payload.prompt_message_id,
         },
     )
     db.add(request)
@@ -482,6 +464,21 @@ async def submit_generation(
         request.status = GenerationStatus.queued
     db.commit()
     db.refresh(request)
+
+    if payload.chat_id and payload.message_id:
+        try:
+            from app.worker.tasks import process_generation
+
+            process_generation.apply_async(
+                args=[
+                    request.id,
+                    payload.chat_id,
+                    payload.message_id,
+                    payload.prompt_message_id,
+                ]
+            )
+        except Exception:
+            pass
 
     return GenerationSubmitOut(
         request=GenerationRequestOut.model_validate(request),
