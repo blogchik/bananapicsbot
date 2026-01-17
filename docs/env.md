@@ -37,6 +37,7 @@
 - `RATE_LIMIT_BURST`: Qisqa burst limiti.
 - `RUN_MIGRATIONS`: API startida migratsiyalarni avtomatik ishga tushirish.
 - `BOT_TOKEN`: Bot tokeni (Celery broadcast tasklari uchun - API tomonida).
+- `MAX_PARALLEL_GENERATIONS_PER_USER`: Bitta user uchun parallel generatsiyalar limiti (default: `2`).
 
 ## Wavespeed Provider
 
@@ -115,6 +116,7 @@ RATE_LIMIT_ENABLED=true
 RATE_LIMIT_RPS=5
 RATE_LIMIT_BURST=10
 RUN_MIGRATIONS=true
+MAX_PARALLEL_GENERATIONS_PER_USER=2
 
 # ===================
 # Wavespeed Provider

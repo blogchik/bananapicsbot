@@ -231,18 +231,6 @@ def _get_generation_outputs(session, request_id: int) -> list[str]:
     ]
 
 
-def _clear_generation_lock(user_id: int) -> None:
-    """Clear Redis lock for active generation."""
-    try:
-        import redis
-
-        redis_client = redis.from_url(settings.redis_url, decode_responses=True)
-        redis_client.delete(f"gen:active:{user_id}")
-        redis_client.close()
-    except Exception as e:
-        logger.warning("Failed to clear generation lock", error=str(e))
-
-
 def _refund_generation_cost(session, request) -> None:
     """Refund charged credits for failed generation."""
     from app.db.models import LedgerEntry
@@ -302,8 +290,6 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
                 job.error_message = error_message
             
             session.commit()
-            if request:
-                _clear_generation_lock(request.user_id)
     except Exception as e:
         logger.error("Failed to mark generation as failed", error=str(e))
 
@@ -348,8 +334,6 @@ def _complete_generation(request_id: int, outputs: list[str]) -> None:
                     ))
             
             session.commit()
-            if request:
-                _clear_generation_lock(request.user_id)
     except Exception as e:
         logger.error("Failed to complete generation", error=str(e))
 
@@ -923,8 +907,6 @@ def cleanup_expired_generations():
     from app.db.session import sync_session_factory
     from app.db.models import GenerationRequest, GenerationJob, GenerationStatus, JobStatus
     from datetime import timedelta
-    import redis
-    
     logger.info("Running generation cleanup")
     
     # Generations stuck for more than 10 minutes
@@ -970,17 +952,6 @@ def cleanup_expired_generations():
                 cleaned_count += 1
             
             session.commit()
-        
-        # Clear Redis locks for stuck generations
-        if cleaned_count > 0:
-            try:
-                redis_client = redis.from_url(settings.redis_url)
-                for gen in stuck_generations:
-                    lock_key = f"gen:active:{gen.user_id}"
-                    redis_client.delete(lock_key)
-                redis_client.close()
-            except Exception as e:
-                logger.warning("Failed to clear Redis locks", error=str(e))
         
         logger.info("Generation cleanup completed", cleaned_count=cleaned_count)
         

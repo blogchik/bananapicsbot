@@ -87,6 +87,9 @@ class Settings(BaseSettings):
     
     # Trial
     trial_generations_limit: int = 3
+
+    # Generations
+    max_parallel_generations_per_user: int = 2
     
     # Admin
     admin_telegram_ids: str = ""

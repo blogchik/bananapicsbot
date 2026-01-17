@@ -48,11 +48,6 @@ async def process_reference_batch(
     lock = USER_REFERENCE_LOCKS.setdefault(user.id, asyncio.Lock())
     
     async with lock:
-        # Check for active generation
-        if await GenerationService.has_active_generation(user.id):
-            await message.answer(_(TranslationKey.GEN_ACTIVE_EXISTS, None))
-            return
-        
         # Check reference limit
         data = await state.get_data()
         references = list(data.get("reference_urls", []))

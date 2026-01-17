@@ -69,11 +69,6 @@ async def handle_prompt_message(
     if len(prompt) > BotConstants.MAX_PROMPT_LENGTH:
         prompt = prompt[:BotConstants.MAX_PROMPT_LENGTH]
     
-    # Check for active generation
-    if await GenerationService.has_active_generation(user.id):
-        await message.answer(_(TranslationKey.GEN_ACTIVE_EXISTS, None))
-        return
-    
     # Get models
     try:
         models = await GenerationService.get_models()

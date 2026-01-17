@@ -2,15 +2,13 @@ import re
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, text
-from redis.asyncio import Redis
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.deps.db import db_session_dep
 from app.core.constants import SIZE_OPTIONS
 from app.core.config import get_settings
 from app.core.model_options import get_model_parameter_options
-from app.deps.redis import redis_dep
 from app.deps.wavespeed import wavespeed_client
 from app.db.models import (
     GenerationJob,
@@ -122,32 +120,22 @@ def get_active_generation(db: Session, user_id: int) -> GenerationRequest | None
     ).scalar_one_or_none()
 
 
-async def acquire_generation_lock(
-    redis: Redis, user_id: int, ttl_seconds: int
-) -> bool:
-    key = f"gen:active:{user_id}"
-    return bool(await redis.set(key, "pending", nx=True, ex=ttl_seconds))
-
-
-async def set_generation_lock(
-    redis: Redis, user_id: int, request_id: int, ttl_seconds: int
-) -> None:
-    key = f"gen:active:{user_id}"
-    await redis.set(key, str(request_id), ex=ttl_seconds)
-
-
-async def clear_generation_lock(
-    redis: Redis, user_id: int, request_id: int
-) -> None:
-    key = f"gen:active:{user_id}"
-    current = await redis.get(key)
-    if current == str(request_id):
-        await redis.delete(key)
-
-
-async def release_generation_lock(redis: Redis, user_id: int) -> None:
-    key = f"gen:active:{user_id}"
-    await redis.delete(key)
+def count_active_generations(db: Session, user_id: int) -> int:
+    active_statuses = [
+        GenerationStatus.pending,
+        GenerationStatus.configuring,
+        GenerationStatus.queued,
+        GenerationStatus.running,
+    ]
+    result = db.execute(
+        select(func.count())
+        .select_from(GenerationRequest)
+        .where(
+            GenerationRequest.user_id == user_id,
+            GenerationRequest.status.in_(active_statuses),
+        )
+    ).scalar_one()
+    return int(result or 0)
 
 
 def get_request_for_user(
@@ -305,7 +293,6 @@ async def submit_wavespeed_generation(
 async def submit_generation(
     payload: GenerationSubmitIn,
     db: Session = Depends(db_session_dep),
-    redis: Redis = Depends(redis_dep),
 ) -> GenerationSubmitOut:
     settings = get_settings()
     user, _, _ = get_or_create_user(db, payload.telegram_id)
@@ -319,44 +306,24 @@ async def submit_generation(
         payload.resolution,
     )
 
-    try:
-        lock_acquired = await acquire_generation_lock(
-            redis, user.id, settings.redis_active_generation_ttl_seconds
-        )
-    except Exception:
-        raise HTTPException(status_code=503, detail="Redis unavailable")
-
-    if not lock_acquired:
-        active_request = get_active_generation(db, user.id)
-        detail = {
-            "message": "Another generation is in progress",
-            "active_request_id": active_request.id if active_request else None,
-            "status": active_request.status if active_request else None,
-        }
-        raise HTTPException(status_code=409, detail=detail)
-
-    active_request = get_active_generation(db, user.id)
-    if active_request:
-        await release_generation_lock(redis, user.id)
+    active_count = count_active_generations(db, user.id)
+    if active_count >= settings.max_parallel_generations_per_user:
         raise HTTPException(
             status_code=409,
             detail={
-                "message": "Another generation is in progress",
-                "active_request_id": active_request.id,
-                "status": active_request.status,
+                "message": "Active generation limit reached",
+                "active_count": active_count,
+                "limit": settings.max_parallel_generations_per_user,
             },
         )
 
     reference_urls = [url for url in payload.reference_urls if url]
     reference_file_ids = [fid for fid in payload.reference_file_ids if fid]
     if reference_urls and not model.supports_image_to_image:
-        await release_generation_lock(redis, user.id)
         raise HTTPException(status_code=400, detail="Model does not support image-to-image")
     if not reference_urls and not model.supports_text_to_image:
-        await release_generation_lock(redis, user.id)
         raise HTTPException(status_code=400, detail="Model does not support text-to-image")
     if len(reference_urls) > 10:
-        await release_generation_lock(redis, user.id)
         raise HTTPException(status_code=400, detail="Too many reference images")
 
     request = GenerationRequest(
@@ -382,10 +349,6 @@ async def submit_generation(
     db.add(request)
     db.flush()
 
-    await set_generation_lock(
-        redis, user.id, request.id, settings.redis_active_generation_ttl_seconds
-    )
-
     for idx, url in enumerate(reference_urls):
         file_id = reference_file_ids[idx] if idx < len(reference_file_ids) else None
         db.add(
@@ -403,7 +366,6 @@ async def submit_generation(
         if balance < price:
             request.status = GenerationStatus.failed
             db.commit()
-            await clear_generation_lock(redis, user.id, request.id)
             raise HTTPException(status_code=402, detail="Insufficient balance")
         db.add(
             LedgerEntry(
@@ -433,14 +395,12 @@ async def submit_generation(
         rollback_generation_cost(db, request)
         rollback_trial_use(db, request.id)
         db.commit()
-        await clear_generation_lock(redis, user.id, request.id)
         raise
     except Exception:
         request.status = GenerationStatus.failed
         rollback_generation_cost(db, request)
         rollback_trial_use(db, request.id)
         db.commit()
-        await clear_generation_lock(redis, user.id, request.id)
         raise HTTPException(status_code=502, detail="Wavespeed request failed")
 
     outputs = normalize_outputs(response.data.get("outputs", []))
@@ -459,7 +419,6 @@ async def submit_generation(
         request.completed_at = datetime.utcnow()
         job.status = JobStatus.completed
         job.completed_at = datetime.utcnow()
-        await clear_generation_lock(redis, user.id, request.id)
     else:
         request.status = GenerationStatus.queued
     db.commit()
@@ -522,7 +481,6 @@ async def refresh_generation(
     request_id: int,
     payload: GenerationAccessIn,
     db: Session = Depends(db_session_dep),
-    redis: Redis = Depends(redis_dep),
 ) -> GenerationRequestOut:
     request = get_request_for_user(db, request_id, payload.telegram_id)
 
@@ -543,7 +501,6 @@ async def refresh_generation(
         request.completed_at = datetime.utcnow()
         job.status = JobStatus.completed
         job.completed_at = datetime.utcnow()
-        await clear_generation_lock(redis, request.user_id, request.id)
     elif status_value == "failed":
         error_message = extract_wavespeed_error(response)
         request.status = GenerationStatus.failed
@@ -553,7 +510,6 @@ async def refresh_generation(
         job.error_message = error_message or response.message
         rollback_generation_cost(db, request)
         rollback_trial_use(db, request.id)
-        await clear_generation_lock(redis, request.user_id, request.id)
     else:
         if status_value in {"created", "queued"}:
             request.status = GenerationStatus.queued
