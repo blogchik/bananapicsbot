@@ -108,6 +108,13 @@ class TranslationKey(str, Enum):
     GEN_ERROR_GENERIC = "gen_error_generic"
     GEN_STATUS_LABEL_QUEUE = "gen_status_label_queue"
     GEN_STATUS_LABEL_PROCESSING = "gen_status_label_processing"
+    GEN_MODEL_MENU_QUALITY = "gen_model_menu_quality"
+    GEN_MODEL_MENU_DURATION = "gen_model_menu_duration"
+    GEN_MODEL_MENU_SECONDS = "gen_model_menu_seconds"
+    GEN_MODEL_MENU_MINUTES = "gen_model_menu_minutes"
+    GEN_MODEL_MENU_PRICE = "gen_model_menu_price"
+    GEN_MODEL_MENU_HINT = "gen_model_menu_hint"
+    GEN_ASPECT_MENU_TITLE = "gen_aspect_menu_title"
     
     # Payments
     TOPUP_TITLE = "topup_title"

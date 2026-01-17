@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Welcome, {name}!\n\n🍌 Banana Pics is a cutting-edge neural network for photo processing and generation!\n\nSend a photo with a caption or an album with captions to start generating 👇",
+    "welcome": "👋 Welcome, {name}!\n\n🍌 <b>Banana Pics</b> is a cutting-edge neural network for photo processing and generation!\n\n<i>Example generations are available in our channel:</i>\n@Banana_Pics\n\nSend a photo with a caption or an album with captions to start generating 👇",
     "welcome_back": "Welcome back! 😊",
     "start_info": "Please send a text prompt, a photo with a caption, or an album with captions to start generation 👇\n\n❗ Send the photo and prompt in one message.",
     "error_generic": "An error occurred. Please try again later.",
@@ -55,7 +55,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_prompt": "Prompt: {prompt}",
     "gen_model": "Model: {model}",
     "gen_size": "Size: {size}",
-    "gen_aspect_ratio": "Aspect ratio: {ratio}",
+    "gen_aspect_ratio": "Format: {ratio}",
     "gen_resolution": "Resolution: {resolution}",
     "gen_default": "Default",
     "gen_start_button": "🚀 Start generation ({price} cr)",
@@ -79,6 +79,13 @@ TRANSLATIONS: dict[str, str] = {
     "gen_send_error": "Error sending result file. Try again later.",
     "gen_status_label_queue": "Queued",
     "gen_status_label_processing": "Processing",
+    "gen_model_menu_quality": "Quality",
+    "gen_model_menu_duration": "Generation time",
+    "gen_model_menu_seconds": "sec",
+    "gen_model_menu_minutes": "min",
+    "gen_model_menu_price": "Price",
+    "gen_model_menu_hint": "",
+    "gen_aspect_menu_title": "Select photo format:",
     "gen_status": "⏳ Status: {status}",
     "gen_trial_used": "Trial used",
     "gen_price": "Price: {price} cr",

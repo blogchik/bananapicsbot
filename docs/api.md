@@ -80,7 +80,7 @@ app/
 - `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari
 
 ### Models
-- `GET /api/v1/models` - aktiv modellar ro'yxati va narxlari
+- `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration)
 - `GET /api/v1/sizes` - size variantlari
 
 ### Payments

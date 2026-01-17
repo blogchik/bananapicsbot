@@ -3,8 +3,9 @@
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
 from typing import Callable
+from pathlib import Path
 
 from keyboards import GenerationKeyboard, ProfileKeyboard
 from keyboards.builders import GenerationCallback
@@ -52,6 +53,86 @@ def build_generation_text(
     return "\n".join(lines)
 
 
+def build_model_menu_text(
+    models: list[NormalizedModel],
+    _: Callable[[TranslationKey, dict | None], str],
+) -> str:
+    """Build model selection info text."""
+    import html
+
+    lines: list[str] = []
+    quality_label = _(TranslationKey.GEN_MODEL_MENU_QUALITY, None)
+    duration_label = _(TranslationKey.GEN_MODEL_MENU_DURATION, None)
+    seconds_label = _(TranslationKey.GEN_MODEL_MENU_SECONDS, None)
+    minutes_label = _(TranslationKey.GEN_MODEL_MENU_MINUTES, None)
+    price_label = _(TranslationKey.GEN_MODEL_MENU_PRICE, None)
+
+    for model in models:
+        emoji = model_emoji(model)
+        safe_name = html.escape(model.name)
+        name_line = f"{emoji} <b>{safe_name}</b>".strip()
+        stars = model.quality_stars if model.quality_stars is not None else 0
+        stars = max(0, min(5, stars))
+        star_text = "★" * stars + "☆" * (5 - stars) if stars else "-"
+        duration_text = "-"
+        if model.avg_duration_seconds_min is not None and model.avg_duration_seconds_max is not None:
+            min_sec = max(0, model.avg_duration_seconds_min)
+            max_sec = max(0, model.avg_duration_seconds_max)
+            if max_sec >= 60:
+                min_min = max(1, min_sec // 60) if min_sec else 1
+                max_min = max(1, (max_sec + 59) // 60)
+                duration_text = f"{min_min}-{max_min} {minutes_label}"
+            else:
+                duration_text = f"{min_sec}-{max_sec} {seconds_label}"
+        elif model.avg_duration_text:
+            duration_text = model.avg_duration_text
+        lines.extend([
+            name_line,
+            f"{quality_label}: {star_text}",
+            f"{duration_label}: {duration_text}",
+            f"{price_label}: {model.price} cr",
+            "",
+        ])
+
+    hint = _(TranslationKey.GEN_MODEL_MENU_HINT, None).strip()
+    if hint:
+        lines.append(hint)
+    return "\n".join(lines).strip()
+
+
+def model_emoji(model: NormalizedModel) -> str:
+    """Get emoji for model."""
+    key = (model.key or "").lower()
+    if key == "nano-banana":
+        return "🍌"
+    if key == "nano-banana-pro":
+        return "🔥"
+    if key == "seedream-v4":
+        return "☁️"
+    return "✨"
+
+
+def get_ratio_preview_path(ratio: str) -> Path | None:
+    """Get preview image path for aspect ratio."""
+    filename = {
+        "1:1": "ratio_1x1.png",
+        "3:2": "ratio_3x2.png",
+        "2:3": "ratio_2x3.png",
+        "4:3": "ratio_4x3.png",
+        "3:4": "ratio_3x4.png",
+        "5:4": "ratio_5x4.png",
+        "4:5": "ratio_4x5.png",
+        "16:9": "ratio_16x9.png",
+        "9:16": "ratio_9x16.png",
+        "21:9": "ratio_21x9.png",
+    }.get(ratio)
+    if not filename:
+        return None
+    base_dir = Path(__file__).resolve().parents[2]
+    path = base_dir / "assets" / filename
+    return path if path.exists() else None
+
+
 @router.callback_query(F.data == GenerationCallback.MODEL_MENU)
 async def open_model_menu(
     call: CallbackQuery,
@@ -77,12 +158,16 @@ async def open_model_menu(
     model_id = data.get("model_id")
     
     try:
-        await call.message.edit_reply_markup(
+        await call.message.edit_text(
+            build_model_menu_text(models, _),
             reply_markup=GenerationKeyboard.model_list(
-                [{"id": m.id, "name": m.name} for m in models],
+                [
+                    {"id": m.id, "name": f"{model_emoji(m)} {m.name}".strip()}
+                    for m in models
+                ],
                 model_id,
                 _,
-            )
+            ),
         )
     except TelegramBadRequest:
         pass
@@ -148,21 +233,19 @@ async def select_model(
         size,
         aspect_ratio,
         resolution,
+        store_resolution=selected.supports_resolution,
     )
-    
-    has_reference = bool(data.get("reference_urls"))
-    text = build_generation_text(
-        prompt, selected.name, size, aspect_ratio, resolution,
-        show_size, show_aspect, show_resolution, has_reference, _,
-    )
-    
+
     try:
-        await call.message.edit_text(
-            text,
-            reply_markup=GenerationKeyboard.main(
-                _, selected.name, size, aspect_ratio, resolution,
-                selected.price, show_size, show_aspect, show_resolution,
-            ),
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.model_list(
+                [
+                    {"id": m.id, "name": f"{model_emoji(m)} {m.name}".strip()}
+                    for m in models
+                ],
+                selected.id,
+                _,
+            )
         )
     except TelegramBadRequest:
         pass
@@ -215,8 +298,18 @@ async def select_size(
             size,
             data.get("aspect_ratio"),
             data.get("resolution"),
+            store_resolution=bool(data.get("supports_resolution")),
         )
-    await _update_generation_menu(call, data, _)
+    try:
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.size_list(
+                data.get("size_options") or [],
+                size,
+                _,
+            )
+        )
+    except TelegramBadRequest:
+        pass
 
 
 @router.callback_query(F.data == GenerationCallback.RATIO_MENU)
@@ -234,13 +327,29 @@ async def open_ratio_menu(
         return
     
     await call.answer()
-    
+
+    selected_ratio = data.get("aspect_ratio") or (ratio_options[0] if ratio_options else None)
+    preview_path = get_ratio_preview_path(selected_ratio) if selected_ratio else None
+    caption = _(TranslationKey.GEN_ASPECT_MENU_TITLE, None)
+
     try:
-        await call.message.edit_reply_markup(
-            reply_markup=GenerationKeyboard.aspect_ratio_list(
-                ratio_options, data.get("aspect_ratio"), _
+        if preview_path and call.message:
+            await call.message.delete()
+            msg = await call.message.bot.send_photo(
+                chat_id=call.message.chat.id,
+                photo=FSInputFile(preview_path),
+                caption=caption,
+                reply_markup=GenerationKeyboard.aspect_ratio_list(
+                    ratio_options, selected_ratio, _
+                ),
             )
-        )
+            await state.update_data(menu_message_id=msg.message_id)
+        else:
+            await call.message.edit_reply_markup(
+                reply_markup=GenerationKeyboard.aspect_ratio_list(
+                    ratio_options, selected_ratio, _
+                )
+            )
     except TelegramBadRequest:
         pass
 
@@ -268,8 +377,37 @@ async def select_ratio(
             data.get("size"),
             aspect_ratio,
             data.get("resolution"),
+            store_resolution=bool(data.get("supports_resolution")),
         )
-    await _update_generation_menu(call, data, _)
+    try:
+        ratio_options = data.get("aspect_ratio_options") or []
+        preview_path = get_ratio_preview_path(aspect_ratio) if aspect_ratio else None
+        if preview_path and call.message and call.message.photo:
+            caption = _(TranslationKey.GEN_ASPECT_MENU_TITLE, None)
+            media = InputMediaPhoto(
+                media=FSInputFile(preview_path),
+                caption=caption,
+            )
+            await call.message.bot.edit_message_media(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                media=media,
+                reply_markup=GenerationKeyboard.aspect_ratio_list(
+                    ratio_options,
+                    aspect_ratio,
+                    _,
+                ),
+            )
+        else:
+            await call.message.edit_reply_markup(
+                reply_markup=GenerationKeyboard.aspect_ratio_list(
+                    ratio_options,
+                    aspect_ratio,
+                    _,
+                )
+            )
+    except TelegramBadRequest:
+        pass
 
 
 @router.callback_query(F.data == GenerationCallback.RESOLUTION_MENU)
@@ -322,7 +460,16 @@ async def select_resolution(
             data.get("aspect_ratio"),
             resolution,
         )
-    await _update_generation_menu(call, data, _)
+    try:
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.resolution_list(
+                data.get("resolution_options") or [],
+                resolution,
+                _,
+            )
+        )
+    except TelegramBadRequest:
+        pass
 
 
 @router.callback_query(F.data == GenerationCallback.BACK)
@@ -335,6 +482,49 @@ async def back_to_generation(
     await call.answer()
     
     data = await state.get_data()
+    if call.message and call.message.photo:
+        model_name = data.get("model_name", "-")
+        size = data.get("size")
+        aspect_ratio = data.get("aspect_ratio")
+        resolution = data.get("resolution")
+        price = data.get("price", 0)
+        show_size = data.get("supports_size") and bool(data.get("size_options"))
+        show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
+        show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
+        has_reference = bool(data.get("reference_urls"))
+        text = build_generation_text(
+            data.get("prompt", ""),
+            model_name,
+            size,
+            aspect_ratio,
+            resolution,
+            show_size,
+            show_aspect,
+            show_resolution,
+            has_reference,
+            _,
+        )
+        try:
+            await call.message.delete()
+        except TelegramBadRequest:
+            pass
+        msg = await call.message.bot.send_message(
+            chat_id=call.message.chat.id,
+            text=text,
+            reply_markup=GenerationKeyboard.main(
+                _,
+                model_name,
+                size,
+                aspect_ratio,
+                resolution,
+                int(price),
+                show_size,
+                show_aspect,
+                show_resolution,
+            ),
+        )
+        await state.update_data(menu_message_id=msg.message_id)
+        return
     await _update_generation_menu(call, data, _)
 
 

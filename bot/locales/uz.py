@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Banana Pics — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\nGeneratsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
+    "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 <b>Banana Pics</b> — foto ishlov berish va generatsiya uchun ilg'or neyron tarmoq!\n\n<i>Generatsiya namunalari kanalimizda mavjud:</i>\n@Banana_Pics\n\n❤️‍🔥 Generatsiyani boshlash uchun prompt bilan foto yoki captionli albom yuboring 👇",
     "welcome_back": "Qaytganingiz bilan! 😊",
     "start_info": "Iltimos, generatsiyani boshlash uchun matnli prompt, prompt+rasm yoki captionli albom yuboring 👇\n\n❗ Rasm va promptni bitta xabarda yuboring.",
     "error_generic": "Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.",
@@ -55,8 +55,8 @@ TRANSLATIONS: dict[str, str] = {
     "gen_prompt": "Prompt: {prompt}",
     "gen_model": "Model: {model}",
     "gen_size": "Size: {size}",
-    "gen_aspect_ratio": "Aspect ratio: {ratio}",
-    "gen_resolution": "Resolution: {resolution}",
+    "gen_aspect_ratio": "Format: {ratio}",
+    "gen_resolution": "O'lcham: {resolution}",
     "gen_default": "Standart",
     "gen_start_button": "🚀 Generatsiyani boshlash ({price} cr)",
     "gen_in_queue": "⏳ Holat: Navbatda",
@@ -79,6 +79,13 @@ TRANSLATIONS: dict[str, str] = {
     "gen_send_error": "Natijani fayl ko'rinishida yuborishda muammo bo'ldi. Keyinroq urinib ko'ring.",
     "gen_status_label_queue": "Navbatda",
     "gen_status_label_processing": "Jarayonda",
+    "gen_model_menu_quality": "Sifat",
+    "gen_model_menu_duration": "Generatsiya vaqti",
+    "gen_model_menu_seconds": "soniya",
+    "gen_model_menu_minutes": "daq",
+    "gen_model_menu_price": "Narx",
+    "gen_model_menu_hint": "",
+    "gen_aspect_menu_title": "Rasm formatini tanlang:",
     "gen_status": "⏳ Holat: {status}",
     "gen_trial_used": "Trial ishlatildi",
     "gen_price": "Narx: {price} cr",

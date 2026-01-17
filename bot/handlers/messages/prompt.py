@@ -165,4 +165,5 @@ async def handle_prompt_message(
         size,
         aspect_ratio,
         resolution,
+        store_resolution=selected_model.supports_resolution,
     )

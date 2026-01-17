@@ -7,6 +7,10 @@ class ModelOptionsOut(BaseModel):
     supports_size: bool = False
     supports_aspect_ratio: bool = False
     supports_resolution: bool = False
+    quality_stars: int | None = None
+    avg_duration_seconds_min: int | None = None
+    avg_duration_seconds_max: int | None = None
+    avg_duration_text: str | None = None
     size_options: list[str] = Field(default_factory=list)
     aspect_ratio_options: list[str] = Field(default_factory=list)
     resolution_options: list[str] = Field(default_factory=list)

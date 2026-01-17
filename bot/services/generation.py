@@ -33,6 +33,10 @@ class NormalizedModel:
     supports_size: bool
     supports_aspect_ratio: bool
     supports_resolution: bool
+    quality_stars: int | None
+    avg_duration_seconds_min: int | None
+    avg_duration_seconds_max: int | None
+    avg_duration_text: str | None
     size_options: list[str]
     aspect_ratio_options: list[str]
     resolution_options: list[str]
@@ -105,6 +109,10 @@ class GenerationService:
             size_options = list(options.get("size_options") or [])
             aspect_ratio_options = list(options.get("aspect_ratio_options") or [])
             resolution_options = list(options.get("resolution_options") or [])
+            quality_stars = options.get("quality_stars")
+            avg_duration_seconds_min = options.get("avg_duration_seconds_min")
+            avg_duration_seconds_max = options.get("avg_duration_seconds_max")
+            avg_duration_text = options.get("avg_duration_text")
             
             supports_size = bool(options.get("supports_size")) or bool(size_options)
             supports_aspect_ratio = bool(options.get("supports_aspect_ratio")) or bool(aspect_ratio_options)
@@ -118,6 +126,18 @@ class GenerationService:
                 supports_size=supports_size,
                 supports_aspect_ratio=supports_aspect_ratio,
                 supports_resolution=supports_resolution,
+                quality_stars=int(quality_stars) if quality_stars is not None else None,
+                avg_duration_seconds_min=(
+                    int(avg_duration_seconds_min)
+                    if avg_duration_seconds_min is not None
+                    else None
+                ),
+                avg_duration_seconds_max=(
+                    int(avg_duration_seconds_max)
+                    if avg_duration_seconds_max is not None
+                    else None
+                ),
+                avg_duration_text=str(avg_duration_text) if avg_duration_text else None,
                 size_options=size_options,
                 aspect_ratio_options=aspect_ratio_options,
                 resolution_options=resolution_options,
@@ -174,6 +194,7 @@ class GenerationService:
         size: str | None,
         aspect_ratio: str | None,
         resolution: str | None,
+        store_resolution: bool = True,
     ) -> None:
         """Persist last selected generation defaults for user."""
         container = get_container()
@@ -182,7 +203,8 @@ class GenerationService:
             await container.redis_client.hset(key, "model_id", str(model_id))
             await container.redis_client.hset(key, "size", size or "")
             await container.redis_client.hset(key, "aspect_ratio", aspect_ratio or "")
-            await container.redis_client.hset(key, "resolution", resolution or "")
+            if store_resolution:
+                await container.redis_client.hset(key, "resolution", resolution or "")
         except Exception:
             logger.warning("Failed to save generation defaults", user_id=telegram_id)
 
