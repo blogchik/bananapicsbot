@@ -58,7 +58,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6479"
+      - "6479:6479"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
