@@ -23,12 +23,12 @@ class ModelParameterOptions:
 
 MODEL_PARAMETER_OPTIONS: dict[str, ModelParameterOptions] = {
     "seedream-v4": ModelParameterOptions(
-        supports_size=True,
+        supports_resolution=True,
         quality_stars=4,
         avg_duration_seconds_min=10,
         avg_duration_seconds_max=30,
         avg_duration_text="10-30 сек",
-        size_options=SIZE_OPTIONS,
+        resolution_options=SIZE_OPTIONS,
     ),
     "nano-banana": ModelParameterOptions(
         supports_aspect_ratio=True,

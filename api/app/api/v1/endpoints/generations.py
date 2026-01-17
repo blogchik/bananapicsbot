@@ -299,11 +299,16 @@ async def submit_generation(
     db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": user.id})
     model = get_active_model(db, payload.model_id)
     price = get_active_price(db, model.id)
+    size_value = payload.size
+    resolution_value = payload.resolution
+    if model.key == "seedream-v4" and size_value and not resolution_value:
+        resolution_value = size_value
+        size_value = None
     validate_model_options(
         model.key,
-        payload.size,
+        size_value,
         payload.aspect_ratio,
-        payload.resolution,
+        resolution_value,
     )
 
     active_count = count_active_generations(db, user.id)
@@ -332,13 +337,13 @@ async def submit_generation(
         prompt=payload.prompt,
         status=GenerationStatus.configuring,
         references_count=len(reference_urls),
-        size=payload.size,
+        size=size_value,
         aspect_ratio=payload.aspect_ratio,
         cost=0,
         input_params={
-            "size": payload.size,
+            "size": size_value,
             "aspect_ratio": payload.aspect_ratio,
-            "resolution": payload.resolution,
+            "resolution": resolution_value,
             "reference_urls": reference_urls,
             "reference_file_ids": reference_file_ids,
             "chat_id": payload.chat_id,
@@ -386,9 +391,9 @@ async def submit_generation(
             model.key,
             payload.prompt,
             reference_urls,
-            payload.size,
+            size_value,
             payload.aspect_ratio,
-            payload.resolution,
+            resolution_value,
         )
     except HTTPException:
         request.status = GenerationStatus.failed

@@ -15,7 +15,7 @@
 - **Cheklov:** user bir vaqtda faqat 1 ta generatsiya boshlaydi (Redis lock + DB advisory lock).
 - **Aktiv holat:** aktiv generatsiya bor paytda yangi so'rov yuborilsa, bot kutishni so'raydi va oldingi generatsiya davom etadi.
 - **Backend va saqlash:** FastAPI /api/v1, Postgres + Alembic, CORS, rate limit, request id, global error handling; requestlar `public_id` bilan unique, prompt/size/reference URL + telegram file id, input params, natijalar va joblar saqlanadi.
-- **Model:** `seedream-v4` (27 credit), `nano-banana` (38 credit), `nano-banana-pro` (140 credit); text-to-image va image-to-image; `aspect_ratio` nano modellarda yoqilgan, `resolution` faqat `nano-banana-pro`, `size` faqat `seedream-v4`.
+- **Model:** `seedream-v4` (27 credit), `nano-banana` (38 credit), `nano-banana-pro` (140 credit); text-to-image va image-to-image; `aspect_ratio` nano modellarda yoqilgan, `resolution` `seedream-v4` va `nano-banana-pro` uchun, `size` alohida menyu sifatida ishlatilmaydi.
 - **Model konfiguratsiya:** parametrlar va variantlar `/api/v1/models` javobidagi `model.options` orqali keladi, bot shunga moslashadi.
 - **Broadcast:** Admin broadcast menyusidan yangi broadcast yaratadi, xabar yuboradi (text/photo/video/audio/sticker), filter tanlaydi (all/active_7d/active_30d/with_balance/paid_users/new_users), ixtiyoriy inline button qo'shadi, preview ko'radi va tasdiqlaydi. Celery worker rate limit bilan yuboradi (20 msg/sec). Progress va statistika real-time ko'rinadi (sent/failed/blocked). Broadcast bekor qilish mumkin.
 
