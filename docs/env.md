@@ -5,7 +5,7 @@
 - `BOT_TOKEN`: Telegram bot tokeni (majburiy).
 - `BOT_MODE`: Bot ishlash rejimi (`polling` yoki `webhook`, default: `polling`).
 - `REDIS_URL`: Redis ulanish URL (default: `redis://redis:6379/0`).
-- `API_BASE_URL`: API bazaviy manzili (default: `http://api:8000`).
+- `API_BASE_URL`: API bazaviy manzili (default: `http://api:9000`).
 - `API_TIMEOUT_SECONDS`: API chaqiruv timeouti sekund (default: `180`).
 - `PAYMENT_PROVIDER_TOKEN`: Telegram payment provider token (Stars uchun bo'sh bo'lishi mumkin).
 - `ADMIN_IDS`: Admin Telegram ID lari, vergul bilan ajratilgan (masalan: `686980246,123456789`).
@@ -77,7 +77,7 @@
 BOT_TOKEN=123456:ABCDEF
 BOT_MODE=polling
 REDIS_URL=redis://redis:6379/0
-API_BASE_URL=http://api:8000
+API_BASE_URL=http://api:9000
 API_TIMEOUT_SECONDS=180
 PAYMENT_PROVIDER_TOKEN=
 
