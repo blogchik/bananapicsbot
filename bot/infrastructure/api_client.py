@@ -271,6 +271,14 @@ class ApiClient:
         """Upload media file."""
         data = await self._upload("/api/v1/media/upload", file_bytes, filename)
         return str(data.get("download_url", ""))
+
+    async def remove_watermark(self, telegram_id: int, image_url: str) -> dict:
+        """Remove watermark from image."""
+        return await self._request(
+            "POST",
+            "/api/v1/tools/watermark-remove",
+            json={"telegram_id": telegram_id, "image_url": image_url},
+        )
     
     # Payment endpoints
     async def get_stars_options(self) -> dict:

@@ -100,6 +100,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_size_not_available": "Размер недоступен для этой модели.",
     "gen_aspect_not_available": "Соотношение сторон недоступно для этой модели.",
     "gen_resolution_not_available": "Разрешение недоступно для этой модели.",
+    "gen_image_only": "Пожалуйста, отправьте файл изображения.",
     "gen_insufficient_balance": "Недостаточно средств.",
     
     # Profile
@@ -255,4 +256,9 @@ TRANSLATIONS: dict[str, str] = {
     "gen_input_fidelity_menu_title": "Выберите точность ввода:",
     "gen_quality_not_available": "Качество недоступно для этой модели.",
     "gen_input_fidelity_not_available": "Input fidelity недоступен для этой модели.",
+    "wm_menu_title": "Что вы хотите сделать с этим изображением?",
+    "wm_remove_button": "Удалить водяной знак ({price} кр)",
+    "wm_processing": "Удаляем водяной знак...",
+    "wm_failed": "Не удалось удалить водяной знак. Попробуйте еще раз.",
+    "wm_success": "Водяной знак удален. Стоимость: {cost} кр.",
 }

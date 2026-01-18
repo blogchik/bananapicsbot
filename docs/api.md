@@ -81,6 +81,7 @@ app/
 
 ### Models
 - `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration). Model options (size/aspect_ratio/resolution) Wavespeed docs sahifalaridan olinadi va cache qilinadi (parallel fetch).
+- `POST /api/v1/tools/watermark-remove` - watermark remover (12 credit), input: `telegram_id`, `image_url`, optional `output_format`
 - `GET /api/v1/sizes` - size variantlari
 
 ### Payments

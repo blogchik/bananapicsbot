@@ -106,6 +106,7 @@ class TranslationKey(str, Enum):
     GEN_SIZE_NOT_AVAILABLE = "gen_size_not_available"
     GEN_ASPECT_NOT_AVAILABLE = "gen_aspect_not_available"
     GEN_RESOLUTION_NOT_AVAILABLE = "gen_resolution_not_available"
+    GEN_IMAGE_ONLY = "gen_image_only"
     GEN_INSUFFICIENT_BALANCE = "gen_insufficient_balance"
     GEN_STATUS_CHECK_TEMP_ERROR = "gen_status_check_temp_error"
     GEN_ERROR_GENERIC = "gen_error_generic"
@@ -124,6 +125,13 @@ class TranslationKey(str, Enum):
     GEN_INPUT_FIDELITY_MENU_TITLE = "gen_input_fidelity_menu_title"
     GEN_QUALITY_NOT_AVAILABLE = "gen_quality_not_available"
     GEN_INPUT_FIDELITY_NOT_AVAILABLE = "gen_input_fidelity_not_available"
+
+    # Watermark tool
+    WM_MENU_TITLE = "wm_menu_title"
+    WM_REMOVE_BUTTON = "wm_remove_button"
+    WM_PROCESSING = "wm_processing"
+    WM_FAILED = "wm_failed"
+    WM_SUCCESS = "wm_success"
     
     # Payments
     TOPUP_TITLE = "topup_title"

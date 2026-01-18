@@ -39,6 +39,7 @@ class WavespeedClient:
         self._nano_banana_pro_i2i_model = "google/nano-banana-pro/edit"
         self._gpt_image_1_5_t2i_model = "openai/gpt-image-1.5/text-to-image"
         self._gpt_image_1_5_i2i_model = "openai/gpt-image-1.5/edit"
+        self._watermark_remover_model = "wavespeed-ai/image-watermark-remover"
 
         self._model_map: dict[str, dict[str, str]] = {
             "seedream-v4": {
@@ -261,6 +262,25 @@ class WavespeedClient:
             payload["input_fidelity"] = input_fidelity
         return await self._submit_model(
             self._gpt_image_1_5_i2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_watermark_remover(
+        self,
+        image: str,
+        output_format: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = True,
+    ) -> WavespeedResponse:
+        payload: dict[str, Any] = {
+            "image": image,
+            "enable_base64_output": enable_base64_output,
+        }
+        if output_format:
+            payload["output_format"] = output_format
+        return await self._submit_model(
+            self._watermark_remover_model,
             payload,
             enable_sync_mode=enable_sync_mode,
         )

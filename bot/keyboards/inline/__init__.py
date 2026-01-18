@@ -7,6 +7,7 @@ from .payment import PaymentKeyboard
 from .settings import SettingsKeyboard
 from .admin import AdminKeyboard
 from .referral import ReferralKeyboard
+from .watermark import WatermarkKeyboard
 
 __all__ = [
     "HomeKeyboard",
@@ -16,4 +17,5 @@ __all__ = [
     "SettingsKeyboard",
     "AdminKeyboard",
     "ReferralKeyboard",
+    "WatermarkKeyboard",
 ]

@@ -100,6 +100,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_size_not_available": "Size not available for this model.",
     "gen_aspect_not_available": "Aspect ratio not available for this model.",
     "gen_resolution_not_available": "Resolution not available for this model.",
+    "gen_image_only": "Please send an image file.",
     "gen_insufficient_balance": "Insufficient balance.",
     
     # Profile
@@ -255,4 +256,9 @@ TRANSLATIONS: dict[str, str] = {
     "gen_input_fidelity_menu_title": "Select input fidelity:",
     "gen_quality_not_available": "Quality not available for this model.",
     "gen_input_fidelity_not_available": "Input fidelity not available for this model.",
+    "wm_menu_title": "What would you like to do with this image?",
+    "wm_remove_button": "Watermark Remover ({price} cr)",
+    "wm_processing": "Removing watermark...",
+    "wm_failed": "Failed to remove watermark. Please try again.",
+    "wm_success": "Watermark removed. Cost: {cost} cr.",
 }

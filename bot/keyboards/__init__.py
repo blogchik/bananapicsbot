@@ -8,6 +8,7 @@ from .inline import (
     SettingsKeyboard,
     AdminKeyboard,
     ReferralKeyboard,
+    WatermarkKeyboard,
 )
 from .builders import CallbackDataBuilder
 
@@ -19,5 +20,6 @@ __all__ = [
     "SettingsKeyboard",
     "AdminKeyboard",
     "ReferralKeyboard",
+    "WatermarkKeyboard",
     "CallbackDataBuilder",
 ]

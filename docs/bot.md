@@ -164,6 +164,7 @@ Admin will see specific error messages for these cases:
 1. User prompt yoki reference rasm yuboradi
 2. Bot menu ko'rsatadi: text-to-image yoki image-to-image sarlavhasi + model, size/aspect_ratio/resolution/quality/input_fidelity tanlash (modelga qarab)
    - Prompt blockquote formatda ko'rsatiladi
+   - Promptsiz rasm yuborilsa, watermark remover taklif qilinadi (caption’da sarflangan kredit ko’rsatiladi)
 3. Generate bosilganda so'rov yuboriladi
 4. Status backend Celery poller orqali kuzatilib, natija tayyor bo'lganda botga push qilinadi:
    - "? Holat: Navbatda" (queue)

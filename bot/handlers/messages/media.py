@@ -8,6 +8,7 @@ from typing import Callable
 
 from locales import TranslationKey
 from services import GenerationService
+from keyboards import WatermarkKeyboard
 from core.constants import BotConstants
 from core.logging import get_logger
 
@@ -93,6 +94,28 @@ async def process_reference_batch(
     # Process as prompt with references
     from .prompt import handle_prompt_message
     await handle_prompt_message(message, state, _)
+
+
+async def show_image_action_menu(
+    message: Message,
+    state: FSMContext,
+    file_id: str,
+    filename: str | None,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Show image actions menu for promptless media."""
+    data = await state.get_data()
+    targets = dict(data.get("watermark_targets") or {})
+    targets[str(message.message_id)] = {
+        "file_id": file_id,
+        "filename": filename or "",
+    }
+    await state.update_data(watermark_targets=targets)
+    await message.answer(
+        _(TranslationKey.WM_MENU_TITLE, None),
+        reply_markup=WatermarkKeyboard.main(_, message.message_id),
+        reply_to_message_id=message.message_id,
+    )
 
 
 async def queue_media_group_item(
@@ -185,10 +208,7 @@ async def handle_reference_photo(
         return
     
     if not message.caption:
-        await message.answer(
-            _(TranslationKey.GEN_PROMPT_WITH_IMAGE, None),
-            reply_to_message_id=message.message_id,
-        )
+        await show_image_action_menu(message, state, photo.file_id, None, _)
         return
     
     await process_reference_batch(message, state, [(photo.file_id, None)], _)
@@ -207,7 +227,7 @@ async def handle_reference_document(
     
     if not is_image_document(message):
         await message.answer(
-            "Faqat rasm fayl yuboring.",
+            _(TranslationKey.GEN_IMAGE_ONLY, None),
             reply_to_message_id=message.message_id,
         )
         return
@@ -217,10 +237,7 @@ async def handle_reference_document(
         return
     
     if not message.caption:
-        await message.answer(
-            _(TranslationKey.GEN_PROMPT_WITH_IMAGE, None),
-            reply_to_message_id=message.message_id,
-        )
+        await show_image_action_menu(message, state, document.file_id, document.file_name, _)
         return
     
     await process_reference_batch(

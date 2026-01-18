@@ -43,6 +43,9 @@ class BotConstants:
         "pending", "configuring", "queued", "created"
     })
 
+    # Tools pricing
+    WATERMARK_REMOVE_COST: Final[int] = 12
+
 
 # Callback data prefixes
 class CallbackPrefix:

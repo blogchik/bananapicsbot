@@ -99,6 +99,16 @@ class GenerationCallback:
         return f"gen:input_fidelity:set:{value}"
 
 
+class WatermarkCallback:
+    """Watermark tool callback data patterns."""
+
+    REMOVE = "wm:remove"
+
+    @staticmethod
+    def remove(message_id: int) -> str:
+        return f"wm:remove:{message_id}"
+
+
 class TopupCallback:
     """Top-up callback data patterns."""
     

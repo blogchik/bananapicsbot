@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     models,
     payments,
     referrals,
+    tools,
     users,
 )
 
@@ -22,4 +23,5 @@ router.include_router(generations.router, tags=["generations"])
 router.include_router(media.router, tags=["media"])
 router.include_router(payments.router, tags=["payments"])
 router.include_router(referrals.router, tags=["referrals"])
+router.include_router(tools.router, tags=["tools"])
 router.include_router(admin.router, tags=["admin"])

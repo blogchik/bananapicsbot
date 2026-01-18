@@ -100,6 +100,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_size_not_available": "Bu modelda size mavjud emas.",
     "gen_aspect_not_available": "Bu modelda aspect ratio mavjud emas.",
     "gen_resolution_not_available": "Bu modelda resolution mavjud emas.",
+    "gen_image_only": "Iltimos, rasm fayl yuboring.",
     "gen_insufficient_balance": "Sizda yetarli balans mavjud emas.",
     
     # Profile
@@ -255,4 +256,9 @@ TRANSLATIONS: dict[str, str] = {
     "gen_input_fidelity_menu_title": "Input fidelity ni tanlang:",
     "gen_quality_not_available": "Bu modelda sifat mavjud emas.",
     "gen_input_fidelity_not_available": "Bu modelda input fidelity mavjud emas.",
+    "wm_menu_title": "Ushbu rasm bilan nimalar qilmoqchisiz?",
+    "wm_remove_button": "Watermark Remover ({price} kr)",
+    "wm_processing": "Watermark olib tashlanmoqda...",
+    "wm_failed": "Watermark olib tashlashda xatolik. Qayta urinib ko'ring.",
+    "wm_success": "Watermark olib tashlandi. Sarf: {cost} kr.",
 }
