@@ -217,6 +217,9 @@ async def select_model(
     resolution = data.get("resolution") if show_resolution else None
     quality = data.get("quality") if show_quality else None
     input_fidelity = data.get("input_fidelity") if show_input_fidelity else None
+
+    if resolution and selected.resolution_options and resolution not in selected.resolution_options:
+        resolution = None
     
     await state.update_data(
         model_id=selected.id,

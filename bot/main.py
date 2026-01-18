@@ -13,7 +13,7 @@ from typing import AsyncIterator
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeDefault
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
@@ -79,7 +79,12 @@ async def on_startup(bot: Bot) -> None:
             BotCommand(command="topup", description=_(TranslationKey.CMD_TOPUP, None)),
             BotCommand(command="referral", description=_(TranslationKey.CMD_REFERRAL, None)),
         ]
-        await bot.set_my_commands(commands, language_code=lang_code)
+        await bot.set_my_commands(
+            commands, language_code=lang_code, scope=BotCommandScopeDefault()
+        )
+        await bot.set_my_commands(
+            commands, language_code=lang_code, scope=BotCommandScopeAllPrivateChats()
+        )
     default_lang = settings.default_language or "uz"
     if default_lang in manager.available_languages:
         _ = get_translator(default_lang)
@@ -89,7 +94,8 @@ async def on_startup(bot: Bot) -> None:
             BotCommand(command="topup", description=_(TranslationKey.CMD_TOPUP, None)),
             BotCommand(command="referral", description=_(TranslationKey.CMD_REFERRAL, None)),
         ]
-        await bot.set_my_commands(commands)
+        await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+        await bot.set_my_commands(commands, scope=BotCommandScopeAllPrivateChats())
     
     if settings.use_webhook:
         webhook_url = f"{settings.webhook_base_url}{settings.webhook_path}"

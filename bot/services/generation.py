@@ -217,10 +217,21 @@ class GenerationService:
             supports_quality = bool(options.get("supports_quality")) or bool(quality_options)
             supports_input_fidelity = bool(options.get("supports_input_fidelity")) or bool(input_fidelity_options)
             
+            key = str(model.get("key") or "").strip()
+            name = model.get("name") or model.get("key") or str(model_id)
+            if not key and name:
+                key = (
+                    str(name)
+                    .strip()
+                    .lower()
+                    .replace("_", "-")
+                    .replace(" ", "-")
+                )
+
             normalized.append(NormalizedModel(
                 id=int(model_id),
-                key=model.get("key", ""),
-                name=model.get("name") or model.get("key") or str(model_id),
+                key=key,
+                name=name,
                 price=price,
                 supports_size=supports_size,
                 supports_aspect_ratio=supports_aspect_ratio,
