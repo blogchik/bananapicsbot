@@ -7,7 +7,7 @@ from typing import Callable
 
 from keyboards import ProfileKeyboard
 from locales import TranslationKey
-from services import UserService
+from services import UserService, GenerationService
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -27,33 +27,28 @@ async def send_profile_message(
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
     
-    # Format user info
-    name = UserService.format_user_name(
-        user.first_name or "",
-        user.last_name,
-        user.username,
-        user.id,
-    )
-    username = f"@{user.username}" if user.username else "-"
-    
-    # Format trial status
-    if profile.trial_available:
-        trial_status = _(TranslationKey.PROFILE_TRIAL_AVAILABLE, None)
-    else:
-        trial_status = _(TranslationKey.PROFILE_TRIAL_UNAVAILABLE, None)
-    
-    trial_text = _(TranslationKey.PROFILE_TRIAL, {"status": trial_status})
+    approx_text = ""
+    try:
+        models = await GenerationService.get_models()
+        prices = [model.price for model in models if model.price > 0]
+        if prices:
+            min_price = min(prices)
+            approx_count = int(profile.balance // min_price)
+            approx_text = _(TranslationKey.PROFILE_GENERATIONS_ESTIMATE, {"count": approx_count})
+    except Exception:
+        approx_text = ""
+
+    telegram_id_text = _(TranslationKey.PROFILE_ID_LABEL, None) + f": <code>{user.id}</code>"
+    balance_text = _(TranslationKey.PROFILE_BALANCE, {"balance": profile.balance})
     
     # Build message
-    text = (
-        f"{_(TranslationKey.PROFILE_TITLE, None)}\n"
-        f"{_(TranslationKey.PROFILE_INFO, None)}\n"
-        f"{_(TranslationKey.PROFILE_NAME, {'name': name})}\n"
-        f"{_(TranslationKey.PROFILE_USERNAME, {'username': username})}\n"
-        f"{_(TranslationKey.PROFILE_TELEGRAM_ID, {'telegram_id': user.id})}\n\n"
-        f"{_(TranslationKey.PROFILE_BALANCE, {'balance': profile.balance})}\n"
-        f"{trial_text}"
-    )
+    lines = [
+        telegram_id_text,
+        balance_text,
+    ]
+    if approx_text:
+        lines.append(approx_text)
+    text = "\n".join(lines)
     
     await message.answer(text, reply_markup=ProfileKeyboard.main(_))
 
