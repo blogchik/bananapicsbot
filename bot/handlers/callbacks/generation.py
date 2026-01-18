@@ -23,12 +23,14 @@ logger = get_logger(__name__)
 router = Router(name="generation_callbacks")
 
 
-def get_support_flags(model: NormalizedModel) -> tuple[bool, bool, bool]:
+def get_support_flags(model: NormalizedModel) -> tuple[bool, bool, bool, bool, bool]:
     """Get display flags for model options."""
     show_size = model.supports_size and bool(model.size_options)
     show_aspect = model.supports_aspect_ratio and bool(model.aspect_ratio_options)
     show_resolution = model.supports_resolution and bool(model.resolution_options)
-    return show_size, show_aspect, show_resolution
+    show_quality = model.supports_quality and bool(model.quality_options)
+    show_input_fidelity = model.supports_input_fidelity and bool(model.input_fidelity_options)
+    return show_size, show_aspect, show_resolution, show_quality, show_input_fidelity
 
 
 def build_generation_text(
@@ -207,12 +209,14 @@ async def select_model(
         await call.message.answer(_(TranslationKey.MODEL_NOT_FOUND, None))
         return
     
-    show_size, show_aspect, show_resolution = get_support_flags(selected)
+    show_size, show_aspect, show_resolution, show_quality, show_input_fidelity = get_support_flags(selected)
     
     # Reset options when model changes
     size = data.get("size") if show_size else None
     aspect_ratio = data.get("aspect_ratio") if show_aspect else None
     resolution = data.get("resolution") if show_resolution else None
+    quality = data.get("quality") if show_quality else None
+    input_fidelity = data.get("input_fidelity") if show_input_fidelity else None
     
     await state.update_data(
         model_id=selected.id,
@@ -223,16 +227,24 @@ async def select_model(
             selected.price,
             size,
             resolution,
+            quality,
+            is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
         ),
         size=size,
         aspect_ratio=aspect_ratio,
         resolution=resolution,
+        quality=quality,
+        input_fidelity=input_fidelity,
         supports_size=selected.supports_size,
         supports_aspect_ratio=selected.supports_aspect_ratio,
         supports_resolution=selected.supports_resolution,
+        supports_quality=selected.supports_quality,
+        supports_input_fidelity=selected.supports_input_fidelity,
         size_options=selected.size_options,
         aspect_ratio_options=selected.aspect_ratio_options,
         resolution_options=selected.resolution_options,
+        quality_options=selected.quality_options,
+        input_fidelity_options=selected.input_fidelity_options,
     )
 
     await GenerationService.save_generation_defaults(
@@ -241,6 +253,8 @@ async def select_model(
         size,
         aspect_ratio,
         resolution,
+        quality,
+        input_fidelity,
         store_resolution=selected.supports_resolution,
     )
 
@@ -270,7 +284,7 @@ async def open_size_menu(
     size_options = data.get("size_options") or []
     
     if not size_options:
-        await call.answer("Bu modelda size mavjud emas.", show_alert=True)
+        await call.answer(_(TranslationKey.GEN_SIZE_NOT_AVAILABLE, None), show_alert=True)
         return
     
     await call.answer()
@@ -306,6 +320,8 @@ async def select_size(
             size,
             data.get("aspect_ratio"),
             data.get("resolution"),
+            data.get("quality"),
+            data.get("input_fidelity"),
             store_resolution=bool(data.get("supports_resolution")),
         )
     try:
@@ -331,7 +347,7 @@ async def open_ratio_menu(
     ratio_options = data.get("aspect_ratio_options") or []
     
     if not ratio_options:
-        await call.answer("Bu modelda aspect ratio mavjud emas.", show_alert=True)
+        await call.answer(_(TranslationKey.GEN_ASPECT_NOT_AVAILABLE, None), show_alert=True)
         return
     
     await call.answer()
@@ -389,6 +405,8 @@ async def select_ratio(
             data.get("size"),
             aspect_ratio,
             data.get("resolution"),
+            data.get("quality"),
+            data.get("input_fidelity"),
             store_resolution=bool(data.get("supports_resolution")),
         )
     try:
@@ -434,7 +452,7 @@ async def open_resolution_menu(
     resolution_options = data.get("resolution_options") or []
     
     if not resolution_options:
-        await call.answer("Bu modelda resolution mavjud emas.", show_alert=True)
+        await call.answer(_(TranslationKey.GEN_RESOLUTION_NOT_AVAILABLE, None), show_alert=True)
         return
     
     await call.answer()
@@ -480,6 +498,8 @@ async def select_resolution(
         int(data.get("price") or 0),
         data.get("size"),
         resolution,
+        data.get("quality"),
+        is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
     await state.update_data(price=price)
     
@@ -491,6 +511,8 @@ async def select_resolution(
             data.get("size"),
             data.get("aspect_ratio"),
             resolution,
+            data.get("quality"),
+            data.get("input_fidelity"),
         )
     try:
         resolution_options = data.get("resolution_options") or []
@@ -510,6 +532,150 @@ async def select_resolution(
         pass
 
 
+@router.callback_query(F.data == GenerationCallback.QUALITY_MENU)
+async def open_quality_menu(
+    call: CallbackQuery,
+    state: FSMContext,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Open quality selection menu."""
+    data = await state.get_data()
+    quality_options = data.get("quality_options") or []
+    
+    if not quality_options:
+        await call.answer(_(TranslationKey.GEN_QUALITY_NOT_AVAILABLE, None), show_alert=True)
+        return
+    
+    await call.answer()
+    
+    try:
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.quality_list(
+                quality_options,
+                data.get("quality"),
+                _,
+            )
+        )
+    except TelegramBadRequest:
+        pass
+
+
+@router.callback_query(F.data.startswith("gen:quality:set:"))
+async def select_quality(
+    call: CallbackQuery,
+    state: FSMContext,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Handle quality selection."""
+    await call.answer()
+    
+    quality_value = call.data.split(":", 3)[3]
+    quality = None if quality_value == "default" else quality_value
+    
+    await state.update_data(quality=quality)
+    data = await state.get_data()
+    price = GenerationService.calculate_generation_price(
+        data.get("model_key"),
+        int(data.get("price") or 0),
+        data.get("size"),
+        data.get("resolution"),
+        quality,
+        is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
+    )
+    await state.update_data(price=price)
+    
+    model_id = data.get("model_id")
+    if model_id:
+        await GenerationService.save_generation_defaults(
+            call.from_user.id,
+            int(model_id),
+            data.get("size"),
+            data.get("aspect_ratio"),
+            data.get("resolution"),
+            quality,
+            data.get("input_fidelity"),
+            store_resolution=bool(data.get("supports_resolution")),
+        )
+    try:
+        quality_options = data.get("quality_options") or []
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.quality_list(
+                quality_options,
+                quality,
+                _,
+            )
+        )
+    except TelegramBadRequest:
+        pass
+
+
+@router.callback_query(F.data == GenerationCallback.INPUT_FIDELITY_MENU)
+async def open_input_fidelity_menu(
+    call: CallbackQuery,
+    state: FSMContext,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Open input fidelity selection menu."""
+    data = await state.get_data()
+    fidelity_options = data.get("input_fidelity_options") or []
+    
+    if not fidelity_options:
+        await call.answer(_(TranslationKey.GEN_INPUT_FIDELITY_NOT_AVAILABLE, None), show_alert=True)
+        return
+    
+    await call.answer()
+    
+    try:
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.input_fidelity_list(
+                fidelity_options,
+                data.get("input_fidelity"),
+                _,
+            )
+        )
+    except TelegramBadRequest:
+        pass
+
+
+@router.callback_query(F.data.startswith("gen:input_fidelity:set:"))
+async def select_input_fidelity(
+    call: CallbackQuery,
+    state: FSMContext,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Handle input fidelity selection."""
+    await call.answer()
+    
+    fidelity_value = call.data.split(":", 3)[3]
+    input_fidelity = None if fidelity_value == "default" else fidelity_value
+    
+    await state.update_data(input_fidelity=input_fidelity)
+    data = await state.get_data()
+    model_id = data.get("model_id")
+    if model_id:
+        await GenerationService.save_generation_defaults(
+            call.from_user.id,
+            int(model_id),
+            data.get("size"),
+            data.get("aspect_ratio"),
+            data.get("resolution"),
+            data.get("quality"),
+            input_fidelity,
+            store_resolution=bool(data.get("supports_resolution")),
+        )
+    try:
+        fidelity_options = data.get("input_fidelity_options") or []
+        await call.message.edit_reply_markup(
+            reply_markup=GenerationKeyboard.input_fidelity_list(
+                fidelity_options,
+                input_fidelity,
+                _,
+            )
+        )
+    except TelegramBadRequest:
+        pass
+
+
 @router.callback_query(F.data == GenerationCallback.BACK)
 async def back_to_generation(
     call: CallbackQuery,
@@ -525,16 +691,24 @@ async def back_to_generation(
         size = data.get("size")
         aspect_ratio = data.get("aspect_ratio")
         resolution = data.get("resolution")
+        quality = data.get("quality")
+        input_fidelity = data.get("input_fidelity")
         price = GenerationService.calculate_generation_price(
             data.get("model_key"),
             int(data.get("price") or 0),
             size,
             resolution,
+            data.get("quality"),
+            is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
         )
         show_size = data.get("supports_size") and bool(data.get("size_options"))
         show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
         show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
-        has_reference = bool(data.get("reference_urls"))
+        show_quality = data.get("supports_quality") and bool(data.get("quality_options"))
+        show_input_fidelity = data.get("supports_input_fidelity") and bool(
+            data.get("input_fidelity_options")
+        )
+        has_reference = bool(data.get("reference_urls") or data.get("reference_file_ids"))
         text = build_generation_text(
             data.get("prompt", ""),
             model_name,
@@ -560,10 +734,14 @@ async def back_to_generation(
                 size,
                 aspect_ratio,
                 resolution,
+                quality,
+                input_fidelity,
                 int(price),
                 show_size,
                 show_aspect,
                 show_resolution,
+                show_quality,
+                show_input_fidelity,
             ),
         )
         await state.update_data(menu_message_id=msg.message_id)
@@ -592,6 +770,8 @@ async def submit_generation(
         int(price or 0),
         data.get("size"),
         resolution,
+        data.get("quality"),
+        is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
     
     if not prompt or not model_id:
@@ -614,6 +794,8 @@ async def submit_generation(
         size=data.get("size") if data.get("supports_size") else None,
         aspect_ratio=data.get("aspect_ratio") if data.get("supports_aspect_ratio") else None,
         resolution=data.get("resolution") if data.get("supports_resolution") else None,
+        quality=data.get("quality") if data.get("supports_quality") else None,
+        input_fidelity=data.get("input_fidelity") if data.get("supports_input_fidelity") else None,
         language=language,
         reference_urls=data.get("reference_urls"),
         reference_file_ids=data.get("reference_file_ids"),
@@ -633,6 +815,8 @@ async def submit_generation(
             "size": config.size,
             "aspect_ratio": config.aspect_ratio,
             "resolution": config.resolution,
+            "quality": config.quality,
+            "input_fidelity": config.input_fidelity,
             "language": language,
             "reference_urls": config.reference_urls or [],
             "reference_file_ids": config.reference_file_ids or [],
@@ -700,6 +884,8 @@ async def retry_generation(
         size=last.get("size"),
         aspect_ratio=last.get("aspect_ratio"),
         resolution=last.get("resolution"),
+        quality=last.get("quality"),
+        input_fidelity=last.get("input_fidelity"),
         language=str(last.get("language") or language),
         reference_urls=list(last.get("reference_urls") or []),
         reference_file_ids=list(last.get("reference_file_ids") or []),
@@ -754,19 +940,27 @@ async def _update_generation_menu(
     size = data.get("size")
     aspect_ratio = data.get("aspect_ratio")
     resolution = data.get("resolution")
+    quality = data.get("quality")
+    input_fidelity = data.get("input_fidelity")
     price = data.get("price", 0)
     price = GenerationService.calculate_generation_price(
         data.get("model_key"),
         int(price or 0),
         size,
         resolution,
+        data.get("quality"),
+        is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
     
     show_size = data.get("supports_size") and bool(data.get("size_options"))
     show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
     show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
+    show_quality = data.get("supports_quality") and bool(data.get("quality_options"))
+    show_input_fidelity = data.get("supports_input_fidelity") and bool(
+        data.get("input_fidelity_options")
+    )
     
-    has_reference = bool(data.get("reference_urls"))
+    has_reference = bool(data.get("reference_urls") or data.get("reference_file_ids"))
     text = build_generation_text(
         prompt, model_name, size, aspect_ratio, resolution,
         show_size, show_aspect, show_resolution, has_reference, _,
@@ -781,10 +975,14 @@ async def _update_generation_menu(
                 size,
                 aspect_ratio,
                 resolution,
+                quality,
+                input_fidelity,
                 int(price),
                 show_size,
                 show_aspect,
                 show_resolution,
+                show_quality,
+                show_input_fidelity,
             ),
         )
     except TelegramBadRequest:

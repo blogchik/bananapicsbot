@@ -68,6 +68,8 @@ class GenerationCallback:
     SIZE_MENU = "gen:size:menu"
     RATIO_MENU = "gen:ratio:menu"
     RESOLUTION_MENU = "gen:resolution:menu"
+    QUALITY_MENU = "gen:quality:menu"
+    INPUT_FIDELITY_MENU = "gen:input_fidelity:menu"
     SUBMIT = "gen:submit"
     BACK = "gen:back"
     RETRY = "gen:retry"
@@ -87,6 +89,14 @@ class GenerationCallback:
     @staticmethod
     def resolution_set(resolution: str) -> str:
         return f"gen:resolution:set:{resolution}"
+
+    @staticmethod
+    def quality_set(quality: str) -> str:
+        return f"gen:quality:set:{quality}"
+
+    @staticmethod
+    def input_fidelity_set(value: str) -> str:
+        return f"gen:input_fidelity:set:{value}"
 
 
 class TopupCallback:

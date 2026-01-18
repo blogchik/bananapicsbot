@@ -99,6 +99,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_model_not_found_error": "Model not found.",
     "gen_size_not_available": "Size not available for this model.",
     "gen_aspect_not_available": "Aspect ratio not available for this model.",
+    "gen_resolution_not_available": "Resolution not available for this model.",
     "gen_insufficient_balance": "Insufficient balance.",
     
     # Profile
@@ -247,4 +248,11 @@ TRANSLATIONS: dict[str, str] = {
     "admin_broadcast_sent": "✅ Sent: {count}",
     "admin_broadcast_failed": "❌ Failed: {count}",
     "admin_broadcast_pending": "⏳ Pending: {count}",
+
+    "gen_quality": "Quality: {quality}",
+    "gen_input_fidelity": "Input fidelity: {value}",
+    "gen_quality_menu_title": "Select image quality:",
+    "gen_input_fidelity_menu_title": "Select input fidelity:",
+    "gen_quality_not_available": "Quality not available for this model.",
+    "gen_input_fidelity_not_available": "Input fidelity not available for this model.",
 }

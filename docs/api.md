@@ -80,7 +80,7 @@ app/
 - `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari
 
 ### Models
-- `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration). Model options (size/aspect_ratio/resolution) Wavespeed API dan olinadi va cache qilinadi.
+- `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration). Model options (size/aspect_ratio/resolution) Wavespeed docs sahifalaridan olinadi va cache qilinadi (parallel fetch).
 - `GET /api/v1/sizes` - size variantlari
 
 ### Payments
@@ -156,7 +156,9 @@ Mavjud modellar:
 - `seedream-v4` - 27 credit (size parametri)
 - `nano-banana` - 38 credit (aspect_ratio)
 - `nano-banana-pro` - 140 credit (1k/2k), 240 credit (4k) (aspect_ratio, resolution)
-- `gpt-image-1.5` - size bo'yicha dinamik narx (t2i/i2i)
+- `gpt-image-1.5` - size/quality bo'yicha dinamik narx:
+  - t2i: low 0.009/0.013, medium 0.034/0.051, high 0.133/0.200 (1024*1024 / 1024*1536,1536*1024)
+  - i2i: low 0.009/0.034/0.013 (1024*1024 / 1024*1536 / 1536*1024), medium 0.034/0.051, high 0.133/0.200
 
 ## Middlewarelar
 

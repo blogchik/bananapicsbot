@@ -99,6 +99,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_model_not_found_error": "Модель не найдена.",
     "gen_size_not_available": "Размер недоступен для этой модели.",
     "gen_aspect_not_available": "Соотношение сторон недоступно для этой модели.",
+    "gen_resolution_not_available": "Разрешение недоступно для этой модели.",
     "gen_insufficient_balance": "Недостаточно средств.",
     
     # Profile
@@ -247,4 +248,11 @@ TRANSLATIONS: dict[str, str] = {
     "admin_broadcast_sent": "✅ Отправлено: {count}",
     "admin_broadcast_failed": "❌ Ошибок: {count}",
     "admin_broadcast_pending": "⏳ Ожидает: {count}",
+
+    "gen_quality": "Качество: {quality}",
+    "gen_input_fidelity": "Точность ввода: {value}",
+    "gen_quality_menu_title": "Выберите качество изображения:",
+    "gen_input_fidelity_menu_title": "Выберите точность ввода:",
+    "gen_quality_not_available": "Качество недоступно для этой модели.",
+    "gen_input_fidelity_not_available": "Input fidelity недоступен для этой модели.",
 }

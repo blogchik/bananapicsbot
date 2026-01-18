@@ -41,6 +41,8 @@ class NormalizedModel:
     supports_size: bool
     supports_aspect_ratio: bool
     supports_resolution: bool
+    supports_quality: bool
+    supports_input_fidelity: bool
     quality_stars: int | None
     avg_duration_seconds_min: int | None
     avg_duration_seconds_max: int | None
@@ -48,6 +50,8 @@ class NormalizedModel:
     size_options: list[str]
     aspect_ratio_options: list[str]
     resolution_options: list[str]
+    quality_options: list[str]
+    input_fidelity_options: list[str]
 
 
 @dataclass
@@ -61,6 +65,8 @@ class GenerationConfig:
     size: str | None = None
     aspect_ratio: str | None = None
     resolution: str | None = None
+    quality: str | None = None
+    input_fidelity: str | None = None
     language: str | None = None
     reference_urls: list[str] | None = None
     reference_file_ids: list[str] | None = None
@@ -82,8 +88,10 @@ class GenerationService:
         base_price: int,
         size: str | None,
         resolution: str | None,
+        quality: str | None,
+        is_image_to_image: bool = False,
     ) -> int:
-        key = (model_key or "").lower()
+        key = (model_key or "").strip().lower().replace("_", "-").replace(" ", "-")
         res = (resolution or "").strip().lower()
         if res in {"4k", "4096", "4096x4096", "4096*4096"}:
             res = "4k"
@@ -92,14 +100,22 @@ class GenerationService:
         if key == "nano-banana-pro":
             return 240 if res == "4k" else 140
         if key == "gpt-image-1.5":
-            price = GenerationService._price_from_size(size or resolution)
+            price = GenerationService._price_from_size(
+                size or resolution,
+                quality,
+                is_image_to_image=is_image_to_image,
+            )
             return price if price is not None else base_price
         return base_price
 
     @staticmethod
-    def _price_from_size(size: str | None) -> int | None:
+    def _price_from_size(
+        size: str | None,
+        quality: str | None,
+        is_image_to_image: bool = False,
+    ) -> int | None:
         if not size:
-            return None
+            size = "auto"
         normalized = size.lower().replace("x", "*")
         if normalized == "auto":
             normalized = "1024*1024"
@@ -107,12 +123,44 @@ class GenerationService:
         if not match:
             return None
         size_key = normalized
-        prices = {
-            "1024*1024": 34,
-            "1024*1536": 51,
-            "1536*1024": 51,
+        quality_key = (quality or "medium").lower()
+        t2i_prices = {
+            "low": {
+                "1024*1024": 9,
+                "1024*1536": 13,
+                "1536*1024": 13,
+            },
+            "medium": {
+                "1024*1024": 34,
+                "1024*1536": 51,
+                "1536*1024": 51,
+            },
+            "high": {
+                "1024*1024": 133,
+                "1024*1536": 200,
+                "1536*1024": 200,
+            },
         }
-        return prices.get(size_key) or prices["1024*1024"]
+        i2i_prices = {
+            "low": {
+                "1024*1024": 9,
+                "1024*1536": 34,
+                "1536*1024": 13,
+            },
+            "medium": {
+                "1024*1024": 34,
+                "1024*1536": 51,
+                "1536*1024": 51,
+            },
+            "high": {
+                "1024*1024": 133,
+                "1024*1536": 200,
+                "1536*1024": 200,
+            },
+        }
+        prices = i2i_prices if is_image_to_image else t2i_prices
+        bucket = prices.get(quality_key) or prices["medium"]
+        return bucket.get(size_key) or bucket["1024*1024"]
 
     @staticmethod
     async def get_models() -> list[NormalizedModel]:
@@ -156,6 +204,8 @@ class GenerationService:
             size_options = list(options.get("size_options") or [])
             aspect_ratio_options = list(options.get("aspect_ratio_options") or [])
             resolution_options = list(options.get("resolution_options") or [])
+            quality_options = list(options.get("quality_options") or [])
+            input_fidelity_options = list(options.get("input_fidelity_options") or [])
             quality_stars = options.get("quality_stars")
             avg_duration_seconds_min = options.get("avg_duration_seconds_min")
             avg_duration_seconds_max = options.get("avg_duration_seconds_max")
@@ -164,6 +214,8 @@ class GenerationService:
             supports_size = bool(options.get("supports_size")) or bool(size_options)
             supports_aspect_ratio = bool(options.get("supports_aspect_ratio")) or bool(aspect_ratio_options)
             supports_resolution = bool(options.get("supports_resolution")) or bool(resolution_options)
+            supports_quality = bool(options.get("supports_quality")) or bool(quality_options)
+            supports_input_fidelity = bool(options.get("supports_input_fidelity")) or bool(input_fidelity_options)
             
             normalized.append(NormalizedModel(
                 id=int(model_id),
@@ -173,6 +225,8 @@ class GenerationService:
                 supports_size=supports_size,
                 supports_aspect_ratio=supports_aspect_ratio,
                 supports_resolution=supports_resolution,
+                supports_quality=supports_quality,
+                supports_input_fidelity=supports_input_fidelity,
                 quality_stars=int(quality_stars) if quality_stars is not None else None,
                 avg_duration_seconds_min=(
                     int(avg_duration_seconds_min)
@@ -188,6 +242,8 @@ class GenerationService:
                 size_options=size_options,
                 aspect_ratio_options=aspect_ratio_options,
                 resolution_options=resolution_options,
+                quality_options=quality_options,
+                input_fidelity_options=input_fidelity_options,
             ))
         
         return normalized
@@ -227,11 +283,15 @@ class GenerationService:
         size = data.get("size") or None
         aspect_ratio = data.get("aspect_ratio") or None
         resolution = data.get("resolution") or None
+        quality = data.get("quality") or None
+        input_fidelity = data.get("input_fidelity") or None
         return {
             "model_id": model_id,
             "size": size,
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,
+            "quality": quality,
+            "input_fidelity": input_fidelity,
         }
 
     @staticmethod
@@ -241,6 +301,8 @@ class GenerationService:
         size: str | None,
         aspect_ratio: str | None,
         resolution: str | None,
+        quality: str | None,
+        input_fidelity: str | None,
         store_resolution: bool = True,
     ) -> None:
         """Persist last selected generation defaults for user."""
@@ -252,6 +314,8 @@ class GenerationService:
             await container.redis_client.hset(key, "aspect_ratio", aspect_ratio or "")
             if store_resolution:
                 await container.redis_client.hset(key, "resolution", resolution or "")
+            await container.redis_client.hset(key, "quality", quality or "")
+            await container.redis_client.hset(key, "input_fidelity", input_fidelity or "")
         except Exception:
             logger.warning("Failed to save generation defaults", user_id=telegram_id)
 
@@ -304,6 +368,8 @@ class GenerationService:
                 size=config.size,
                 aspect_ratio=config.aspect_ratio,
                 resolution=config.resolution,
+                quality=config.quality,
+                input_fidelity=config.input_fidelity,
                 language=config.language,
                 reference_urls=config.reference_urls or [],
                 reference_file_ids=config.reference_file_ids or [],

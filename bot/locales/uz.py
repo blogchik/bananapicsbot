@@ -99,6 +99,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_model_not_found_error": "Hozircha model topilmadi.",
     "gen_size_not_available": "Bu modelda size mavjud emas.",
     "gen_aspect_not_available": "Bu modelda aspect ratio mavjud emas.",
+    "gen_resolution_not_available": "Bu modelda resolution mavjud emas.",
     "gen_insufficient_balance": "Sizda yetarli balans mavjud emas.",
     
     # Profile
@@ -247,4 +248,11 @@ TRANSLATIONS: dict[str, str] = {
     "admin_broadcast_sent": "✅ Yuborildi: {count}",
     "admin_broadcast_failed": "❌ Xato: {count}",
     "admin_broadcast_pending": "⏳ Kutilmoqda: {count}",
+
+    "gen_quality": "Sifat: {quality}",
+    "gen_input_fidelity": "Input fidelity: {value}",
+    "gen_quality_menu_title": "Rasm sifatini tanlang:",
+    "gen_input_fidelity_menu_title": "Input fidelity ni tanlang:",
+    "gen_quality_not_available": "Bu modelda sifat mavjud emas.",
+    "gen_input_fidelity_not_available": "Bu modelda input fidelity mavjud emas.",
 }

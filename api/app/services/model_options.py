@@ -1,5 +1,7 @@
+import asyncio
 import json
 import re
+from urllib.parse import urlsplit
 from dataclasses import asdict
 from typing import Any
 
@@ -13,16 +15,48 @@ from app.services.redis_client import get_redis
 
 logger = get_logger(__name__)
 
-MODEL_OPTIONS_CACHE_KEY = "wavespeed:model-options:{model_id}"
+MODEL_OPTIONS_CACHE_KEY = "wavespeed:model-options:v2:{model_id}"
 
-GPT_IMAGE_DOCS: dict[str, dict[str, str]] = {
-    "t2i": {
-        "url": "https://wavespeed.ai/docs/docs-api/openai/openai-gpt-image-1.5-text-to-image",
-        "model_uuid": "openai/gpt-image-1.5/text-to-image",
+MODEL_DOCS: dict[str, dict[str, dict[str, str]]] = {
+    "seedream-v4": {
+        "t2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/bytedance/bytedance-seedream-v4",
+            "model_uuid": "bytedance/seedream-v4",
+        },
+        "i2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/bytedance/bytedance-seedream-v4-edit",
+            "model_uuid": "bytedance/seedream-v4/edit",
+        },
     },
-    "i2i": {
-        "url": "https://wavespeed.ai/docs/docs-api/openai/openai-gpt-image-1.5-edit",
-        "model_uuid": "openai/gpt-image-1.5/edit",
+    "nano-banana": {
+        "t2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/google/google-nano-banana-text-to-image",
+            "model_uuid": "google/nano-banana/text-to-image",
+        },
+        "i2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/google/google-nano-banana-edit",
+            "model_uuid": "google/nano-banana/edit",
+        },
+    },
+    "nano-banana-pro": {
+        "t2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/google/google-nano-banana-pro-text-to-image",
+            "model_uuid": "google/nano-banana-pro/text-to-image",
+        },
+        "i2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/google/google-nano-banana-pro-edit",
+            "model_uuid": "google/nano-banana-pro/edit",
+        },
+    },
+    "gpt-image-1.5": {
+        "t2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/openai/openai-gpt-image-1.5-text-to-image",
+            "model_uuid": "openai/gpt-image-1.5/text-to-image",
+        },
+        "i2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/openai/openai-gpt-image-1.5-edit",
+            "model_uuid": "openai/gpt-image-1.5/edit",
+        },
     },
 }
 
@@ -104,7 +138,13 @@ def _extract_from_inputs(inputs: Any, field: str) -> list[str]:
 
 
 def _extract_options_map(data: dict[str, Any]) -> dict[str, list[str]]:
-    options_map = {"size": [], "aspect_ratio": [], "resolution": []}
+    options_map = {
+        "size": [],
+        "aspect_ratio": [],
+        "resolution": [],
+        "quality": [],
+        "input_fidelity": [],
+    }
     if not isinstance(data, dict):
         return options_map
 
@@ -116,6 +156,12 @@ def _extract_options_map(data: dict[str, Any]) -> dict[str, list[str]]:
         options_map["resolution"] = options_map["resolution"] or _extract_from_schema(
             data.get(key), "resolution"
         )
+        options_map["quality"] = options_map["quality"] or _extract_from_schema(
+            data.get(key), "quality"
+        )
+        options_map["input_fidelity"] = options_map["input_fidelity"] or _extract_from_schema(
+            data.get(key), "input_fidelity"
+        )
 
     inputs = data.get("inputs") or data.get("parameters") or data.get("params")
     options_map["size"] = options_map["size"] or _extract_from_inputs(inputs, "size")
@@ -124,6 +170,12 @@ def _extract_options_map(data: dict[str, Any]) -> dict[str, list[str]]:
     )
     options_map["resolution"] = options_map["resolution"] or _extract_from_inputs(
         inputs, "resolution"
+    )
+    options_map["quality"] = options_map["quality"] or _extract_from_inputs(
+        inputs, "quality"
+    )
+    options_map["input_fidelity"] = options_map["input_fidelity"] or _extract_from_inputs(
+        inputs, "input_fidelity"
     )
 
     options_map["size"] = options_map["size"] or _normalize_option_list(
@@ -134,6 +186,12 @@ def _extract_options_map(data: dict[str, Any]) -> dict[str, list[str]]:
     )
     options_map["resolution"] = options_map["resolution"] or _normalize_option_list(
         data.get("resolution_options")
+    )
+    options_map["quality"] = options_map["quality"] or _normalize_option_list(
+        data.get("quality_options")
+    )
+    options_map["input_fidelity"] = options_map["input_fidelity"] or _normalize_option_list(
+        data.get("input_fidelity_options")
     )
 
     return options_map
@@ -146,10 +204,14 @@ def _merge_options(
     size_options = options_map.get("size") or []
     aspect_ratio_options = options_map.get("aspect_ratio") or []
     resolution_options = options_map.get("resolution") or []
+    quality_options = options_map.get("quality") or []
+    input_fidelity_options = options_map.get("input_fidelity") or []
     return ModelParameterOptions(
         supports_size=bool(size_options) or base.supports_size,
         supports_aspect_ratio=bool(aspect_ratio_options) or base.supports_aspect_ratio,
         supports_resolution=bool(resolution_options) or base.supports_resolution,
+        supports_quality=bool(quality_options) or base.supports_quality,
+        supports_input_fidelity=bool(input_fidelity_options) or base.supports_input_fidelity,
         quality_stars=base.quality_stars,
         avg_duration_seconds_min=base.avg_duration_seconds_min,
         avg_duration_seconds_max=base.avg_duration_seconds_max,
@@ -157,12 +219,14 @@ def _merge_options(
         size_options=size_options or base.size_options,
         aspect_ratio_options=aspect_ratio_options or base.aspect_ratio_options,
         resolution_options=resolution_options or base.resolution_options,
+        quality_options=quality_options or base.quality_options,
+        input_fidelity_options=input_fidelity_options or base.input_fidelity_options,
     )
 
 
 def _merge_option_maps(primary: dict[str, list[str]], secondary: dict[str, list[str]]) -> dict[str, list[str]]:
     merged: dict[str, list[str]] = {}
-    for key in {"size", "aspect_ratio", "resolution"}:
+    for key in {"size", "aspect_ratio", "resolution", "quality", "input_fidelity"}:
         values = list(primary.get(key) or [])
         for item in secondary.get(key) or []:
             if item not in values:
@@ -176,19 +240,26 @@ async def _fetch_doc_model_payload(url: str, model_uuid: str) -> dict[str, Any] 
         response = await client.get(url)
         response.raise_for_status()
         scripts = re.findall(r'<script src="([^"]+)"', response.text)
+        path = urlsplit(url).path
+        if "/docs/" in path:
+            page_path = path.split("/docs/", 1)[1].strip("/")
+        else:
+            page_path = path.strip("/")
+        target = f"pages/{page_path}"
         script_url = next(
-            (src for src in scripts if "openai-gpt-image-1.5" in src),
+            (src for src in scripts if target in src),
             None,
-        )
+        ) or next((src for src in scripts if page_path in src), None)
         if not script_url:
             return None
         if script_url.startswith("/"):
             script_url = f"https://wavespeed.ai{script_url}"
         js_response = await client.get(script_url)
         js_response.raise_for_status()
-        payloads = re.findall(r"JSON.parse\\('([^']+)'\\)", js_response.text)
+        payloads = re.findall(r"JSON.parse\\('((?:\\'|[^'])+)'\\)", js_response.text)
         for raw in payloads:
             raw_unescaped = raw.encode("utf-8").decode("unicode_escape")
+            raw_unescaped = raw_unescaped.replace("\\'", "'")
             try:
                 data = json.loads(raw_unescaped)
             except json.JSONDecodeError:
@@ -196,6 +267,30 @@ async def _fetch_doc_model_payload(url: str, model_uuid: str) -> dict[str, Any] 
             if isinstance(data, dict) and data.get("model_uuid") == model_uuid:
                 return data
     return None
+
+
+async def get_wavespeed_doc_payload(
+    model_key: str | None,
+    mode: str,
+) -> dict[str, Any] | None:
+    if not model_key:
+        return None
+    docs = MODEL_DOCS.get(model_key)
+    if not docs:
+        return None
+    entry = docs.get(mode)
+    if not entry:
+        return None
+    try:
+        return await _fetch_doc_model_payload(entry["url"], entry["model_uuid"])
+    except Exception as exc:
+        logger.warning(
+            "Wavespeed doc payload fetch failed",
+            model_key=model_key,
+            mode=mode,
+            error=str(exc),
+        )
+        return None
 
 
 async def get_model_parameter_options_from_wavespeed(
@@ -219,31 +314,36 @@ async def get_model_parameter_options_from_wavespeed(
     except Exception as exc:
         logger.warning("Model options cache read failed", error=str(exc))
 
-    if model_key == "gpt-image-1.5":
-        options_map: dict[str, list[str]] = {"size": [], "aspect_ratio": [], "resolution": []}
-        try:
-            t2i_payload = await _fetch_doc_model_payload(
-                GPT_IMAGE_DOCS["t2i"]["url"],
-                GPT_IMAGE_DOCS["t2i"]["model_uuid"],
-            )
-            if t2i_payload:
+    docs = MODEL_DOCS.get(model_key)
+    if not docs:
+        return base_options
+
+    options_map: dict[str, list[str]] = {
+        "size": [],
+        "aspect_ratio": [],
+        "resolution": [],
+        "quality": [],
+        "input_fidelity": [],
+    }
+    try:
+        t2i = docs.get("t2i")
+        i2i = docs.get("i2i")
+        tasks = []
+        if t2i:
+            tasks.append(_fetch_doc_model_payload(t2i["url"], t2i["model_uuid"]))
+        if i2i:
+            tasks.append(_fetch_doc_model_payload(i2i["url"], i2i["model_uuid"]))
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for result in results:
+                if isinstance(result, Exception) or not result:
+                    continue
                 options_map = _merge_option_maps(
                     options_map,
-                    _extract_options_map(t2i_payload.get("input") or t2i_payload),
+                    _extract_options_map(result.get("input") or result),
                 )
-            i2i_payload = await _fetch_doc_model_payload(
-                GPT_IMAGE_DOCS["i2i"]["url"],
-                GPT_IMAGE_DOCS["i2i"]["model_uuid"],
-            )
-            if i2i_payload:
-                options_map = _merge_option_maps(
-                    options_map,
-                    _extract_options_map(i2i_payload.get("input") or i2i_payload),
-                )
-        except Exception as exc:
-            logger.warning("Wavespeed doc options request failed", error=str(exc))
-            return base_options
-    else:
+    except Exception as exc:
+        logger.warning("Wavespeed doc options request failed", error=str(exc))
         return base_options
 
     merged = _merge_options(base_options, options_map)
@@ -252,6 +352,8 @@ async def get_model_parameter_options_from_wavespeed(
             supports_size=False,
             supports_aspect_ratio=merged.supports_aspect_ratio,
             supports_resolution=True,
+            supports_quality=merged.supports_quality,
+            supports_input_fidelity=merged.supports_input_fidelity,
             quality_stars=merged.quality_stars,
             avg_duration_seconds_min=merged.avg_duration_seconds_min,
             avg_duration_seconds_max=merged.avg_duration_seconds_max,
@@ -259,6 +361,8 @@ async def get_model_parameter_options_from_wavespeed(
             size_options=[],
             aspect_ratio_options=merged.aspect_ratio_options,
             resolution_options=merged.size_options,
+            quality_options=merged.quality_options,
+            input_fidelity_options=merged.input_fidelity_options,
         )
     try:
         await redis.set(

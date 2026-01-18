@@ -64,6 +64,8 @@ def validate_model_options(
     size: str | None,
     aspect_ratio: str | None,
     resolution: str | None,
+    quality: str | None,
+    input_fidelity: str | None,
 ) -> None:
     if size and not options.supports_size:
         raise HTTPException(status_code=400, detail="Size not supported")
@@ -71,6 +73,10 @@ def validate_model_options(
         raise HTTPException(status_code=400, detail="Aspect ratio not supported")
     if resolution and not options.supports_resolution:
         raise HTTPException(status_code=400, detail="Resolution not supported")
+    if quality and not options.supports_quality:
+        raise HTTPException(status_code=400, detail="Quality not supported")
+    if input_fidelity and not options.supports_input_fidelity:
+        raise HTTPException(status_code=400, detail="Input fidelity not supported")
     if size:
         validate_size(size)
         if options.size_options and size not in options.size_options:
@@ -81,6 +87,12 @@ def validate_model_options(
     if resolution and options.resolution_options:
         if resolution not in options.resolution_options:
             raise HTTPException(status_code=400, detail="Invalid resolution")
+    if quality and options.quality_options:
+        if quality not in options.quality_options:
+            raise HTTPException(status_code=400, detail="Invalid quality")
+    if input_fidelity and options.input_fidelity_options:
+        if input_fidelity not in options.input_fidelity_options:
+            raise HTTPException(status_code=400, detail="Invalid input fidelity")
 
 
 def get_active_model(db: Session, model_id: int) -> ModelCatalog:
@@ -99,10 +111,27 @@ def _credits_from_usd(value: Decimal) -> int:
     return int((value * Decimal("1000")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
-_GPT_IMAGE_1_5_PRICES: dict[str, dict[str, int]] = {
+_GPT_IMAGE_1_5_T2I_PRICES: dict[str, dict[str, int]] = {
     "low": {
         "1024*1024": 9000,
         "1024*1536": 13000,
+        "1536*1024": 13000,
+    },
+    "medium": {
+        "1024*1024": 34000,
+        "1024*1536": 51000,
+        "1536*1024": 51000,
+    },
+    "high": {
+        "1024*1024": 133000,
+        "1024*1536": 200000,
+        "1536*1024": 200000,
+    },
+}
+_GPT_IMAGE_1_5_I2I_PRICES: dict[str, dict[str, int]] = {
+    "low": {
+        "1024*1024": 9000,
+        "1024*1536": 34000,
         "1536*1024": 13000,
     },
     "medium": {
@@ -135,15 +164,21 @@ def _normalize_gpt_image_size(size: str | None) -> str:
     return normalized
 
 
-def _dynamic_price_for_model(
+def _get_gpt_image_prices(is_image_to_image: bool) -> dict[str, dict[str, int]]:
+    return _GPT_IMAGE_1_5_I2I_PRICES if is_image_to_image else _GPT_IMAGE_1_5_T2I_PRICES
+
+
+async def _dynamic_price_for_model(
     model_key: str | None,
     size: str | None,
     resolution: str | None,
     quality: str | None,
+    settings,
+    is_image_to_image: bool = False,
 ) -> int | None:
     if not model_key:
         return None
-    key = model_key.lower()
+    key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
     if key == "seedream-v4":
         return _credits_from_usd(Decimal("0.027"))
     if key == "nano-banana-pro":
@@ -153,20 +188,33 @@ def _dynamic_price_for_model(
     if key == "gpt-image-1.5":
         size_value = _normalize_gpt_image_size(size)
         quality_value = (quality or "medium").lower()
-        quality_prices = _GPT_IMAGE_1_5_PRICES.get(quality_value) or _GPT_IMAGE_1_5_PRICES["medium"]
-        price_units = quality_prices.get(size_value) or quality_prices["1024*1024"]
-        return _credits_from_price_units(price_units)
+        prices = _get_gpt_image_prices(is_image_to_image)
+        quality_prices = (
+            prices.get(quality_value)
+            or prices.get("medium")
+            or _GPT_IMAGE_1_5_T2I_PRICES["medium"]
+        )
+        price_units = (
+            quality_prices.get(size_value)
+            or quality_prices.get("1024*1024")
+            or _GPT_IMAGE_1_5_T2I_PRICES["medium"]["1024*1024"]
+        )
+        return _credits_from_price_units(int(price_units))
     return None
 
 
-def get_generation_price(
+async def get_generation_price(
     db: Session,
     model: ModelCatalog,
     size: str | None,
     resolution: str | None,
     quality: str | None,
+    settings,
+    is_image_to_image: bool = False,
 ) -> int:
-    dynamic_price = _dynamic_price_for_model(model.key, size, resolution, quality)
+    dynamic_price = await _dynamic_price_for_model(
+        model.key, size, resolution, quality, settings, is_image_to_image
+    )
     if dynamic_price is not None:
         return dynamic_price
     price = db.execute(
@@ -517,12 +565,16 @@ async def submit_generation(
     if model.key == "seedream-v4" and size_value and not resolution_value:
         resolution_value = size_value
         size_value = None
-    price = get_generation_price(
+    reference_urls = [url for url in payload.reference_urls if url]
+    reference_file_ids = [fid for fid in payload.reference_file_ids if fid]
+    price = await get_generation_price(
         db,
         model,
         size_value,
         resolution_value,
         payload.quality,
+        settings,
+        is_image_to_image=bool(reference_urls),
     )
     model_options = await get_model_parameter_options_from_wavespeed(model.key)
     validate_model_options(
@@ -530,6 +582,8 @@ async def submit_generation(
         size_value,
         payload.aspect_ratio,
         resolution_value,
+        payload.quality,
+        payload.input_fidelity,
     )
 
     active_count = count_active_generations(db, user.id)
@@ -543,8 +597,6 @@ async def submit_generation(
             },
         )
 
-    reference_urls = [url for url in payload.reference_urls if url]
-    reference_file_ids = [fid for fid in payload.reference_file_ids if fid]
     if reference_urls and not model.supports_image_to_image:
         raise HTTPException(status_code=400, detail="Model does not support image-to-image")
     if not reference_urls and not model.supports_text_to_image:

@@ -200,6 +200,8 @@ class ApiClient:
         size: str | None = None,
         aspect_ratio: str | None = None,
         resolution: str | None = None,
+        quality: str | None = None,
+        input_fidelity: str | None = None,
         language: str | None = None,
         reference_urls: list[str] | None = None,
         reference_file_ids: list[str] | None = None,
@@ -215,6 +217,8 @@ class ApiClient:
             "size": size,
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,
+            "quality": quality,
+            "input_fidelity": input_fidelity,
             "reference_urls": reference_urls or [],
             "reference_file_ids": reference_file_ids or [],
         }

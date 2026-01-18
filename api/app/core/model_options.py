@@ -13,6 +13,8 @@ class ModelParameterOptions:
     supports_size: bool = False
     supports_aspect_ratio: bool = False
     supports_resolution: bool = False
+    supports_quality: bool = False
+    supports_input_fidelity: bool = False
     quality_stars: int | None = None
     avg_duration_seconds_min: int | None = None
     avg_duration_seconds_max: int | None = None
@@ -20,6 +22,8 @@ class ModelParameterOptions:
     size_options: list[str] = field(default_factory=list)
     aspect_ratio_options: list[str] = field(default_factory=list)
     resolution_options: list[str] = field(default_factory=list)
+    quality_options: list[str] = field(default_factory=list)
+    input_fidelity_options: list[str] = field(default_factory=list)
 
 
 MODEL_PARAMETER_OPTIONS: dict[str, ModelParameterOptions] = {
@@ -51,11 +55,15 @@ MODEL_PARAMETER_OPTIONS: dict[str, ModelParameterOptions] = {
     ),
     "gpt-image-1.5": ModelParameterOptions(
         supports_size=True,
+        supports_quality=True,
+        supports_input_fidelity=True,
         quality_stars=5,
         avg_duration_seconds_min=20,
         avg_duration_seconds_max=60,
         avg_duration_text="20-60 sec",
         size_options=GPT_IMAGE_1_5_SIZE_OPTIONS,
+        quality_options=["low", "medium", "high"],
+        input_fidelity_options=["low", "high"],
     ),
 }
 

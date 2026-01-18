@@ -76,6 +76,8 @@ class TranslationKey(str, Enum):
     GEN_SIZE = "gen_size"
     GEN_ASPECT_RATIO = "gen_aspect_ratio"
     GEN_RESOLUTION = "gen_resolution"
+    GEN_QUALITY = "gen_quality"
+    GEN_INPUT_FIDELITY = "gen_input_fidelity"
     GEN_DEFAULT = "gen_default"
     GEN_START_BUTTON = "gen_start_button"
     GEN_IN_QUEUE = "gen_in_queue"
@@ -103,6 +105,7 @@ class TranslationKey(str, Enum):
     GEN_MODEL_NOT_FOUND_ERROR = "gen_model_not_found_error"
     GEN_SIZE_NOT_AVAILABLE = "gen_size_not_available"
     GEN_ASPECT_NOT_AVAILABLE = "gen_aspect_not_available"
+    GEN_RESOLUTION_NOT_AVAILABLE = "gen_resolution_not_available"
     GEN_INSUFFICIENT_BALANCE = "gen_insufficient_balance"
     GEN_STATUS_CHECK_TEMP_ERROR = "gen_status_check_temp_error"
     GEN_ERROR_GENERIC = "gen_error_generic"
@@ -117,6 +120,10 @@ class TranslationKey(str, Enum):
     GEN_MODEL_MENU_HINT = "gen_model_menu_hint"
     GEN_ASPECT_MENU_TITLE = "gen_aspect_menu_title"
     GEN_RESOLUTION_MENU_TITLE = "gen_resolution_menu_title"
+    GEN_QUALITY_MENU_TITLE = "gen_quality_menu_title"
+    GEN_INPUT_FIDELITY_MENU_TITLE = "gen_input_fidelity_menu_title"
+    GEN_QUALITY_NOT_AVAILABLE = "gen_quality_not_available"
+    GEN_INPUT_FIDELITY_NOT_AVAILABLE = "gen_input_fidelity_not_available"
     
     # Payments
     TOPUP_TITLE = "topup_title"
