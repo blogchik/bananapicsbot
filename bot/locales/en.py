@@ -2,7 +2,7 @@
 
 TRANSLATIONS: dict[str, str] = {
     # Common
-    "welcome": "👋 Welcome, {name}!\n\n🍌 <b>Banana Pics</b> is a cutting-edge neural network for photo processing and generation!\n\n<i>Example generations are available in our channel:</i>\n@Banana_Pics\n\nSend a photo with a caption or an album with captions to start generating 👇",
+    "welcome": "👋 Welcome, {name}!\n\n🍌 Banana Pics is an AI-powered bot for image generation and editing.\n\nHere you can:\n• 🖼 Generate images from text (Text → Image)\n• 🔁 Transform photos using AI (Image → Image)\n• 💧 Automatically remove watermarks\n\n📌 See example results in our channel:\n@Banana_Pics\n\n🚀 To get started:\nSend a photo with a caption or write a text prompt.\nYou can also send multiple images as an album.",
     "welcome_back": "Welcome back! 😊",
     "start_info": "Please send a text prompt, a photo with a caption, or an album with captions to start generation 👇\n\n❗ Send the photo and prompt in one message.",
     "error_generic": "An error occurred. Please try again later.",
