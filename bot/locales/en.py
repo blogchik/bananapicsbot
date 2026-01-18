@@ -43,10 +43,14 @@ TRANSLATIONS: dict[str, str] = {
     "btn_help": "❓ Help",
     "btn_language": "🌐 Language",
     "btn_start": "🔥 Start",
+    "btn_generation": "🖼 Image Generation",
+    "btn_watermark": "💧 Watermark Removal",
     "cmd_home": "Home",
     "cmd_profile": "Profile",
     "cmd_topup": "Top up balance",
     "cmd_referral": "Referral",
+    "gen_menu_text": "🖼 Image Generation\n\nHere you can generate images using AI. \n\nHow it works: \n• ✍️ Write a text — an image will be generated\n• 📷 Send an image with a caption — the image will be transformed\n• 📁 You can send multiple images as an album\n\n👉 To get started: \nWrite a text prompt or send an image with a caption.",
+    "wm_menu_text": "💧 Watermark Removal\n\nAutomatically remove watermarks from images. \n\nHow it works: \n• Just send an image\n• AI removes the watermark\n• No additional settings required\n\n📷 Send your image now.",
     
     # Generation
     "gen_settings_title": "⚙️ Generation settings",

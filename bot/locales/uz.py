@@ -26,14 +26,6 @@ TRANSLATIONS: dict[str, str] = {
     "profile_trial_available": "mavjud",
     "profile_trial_unavailable": "yo'q",
     "profile_trial_used": " ({count} marta ishlatilgan)",
-    "profile_name": "Ism: {name}",
-    "profile_username": "Username: {username}",
-    "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Balans: {balance} credit",
-    "profile_trial": "Trial: {status}",
-    "profile_trial_available": "bor",
-    "profile_trial_unavailable": "yo'q",
-    "profile_trial_used": " (ishlatilgan: {count})",
     
     # Menu buttons
     "btn_profile": "👤 Profil",
@@ -43,10 +35,14 @@ TRANSLATIONS: dict[str, str] = {
     "btn_help": "❓ Yordam",
     "btn_language": "🌐 Til",
     "btn_start": "🔥 Boshlash",
+    "btn_generation": "🖼 Rasm generatsiya qilish",
+    "btn_watermark": "💧 Watermark olib tashlash",
     "cmd_home": "Home",
     "cmd_profile": "Profil",
     "cmd_topup": "Balans to'ldirish",
     "cmd_referral": "Referral",
+    "gen_menu_text": "🖼 Rasm generatsiya qilish\n\nBu yerda siz AI yordamida rasm yarata olasiz. \n\nQanday ishlaydi: \n• ✍️ Matn yozing — rasm yaratiladi\n• 📷 Rasm + matn yuboring — rasm o‘zgartiriladi\n• 📁 Bir nechta rasmni albom qilib yuborish mumkin\n\n👉 Boshlash uchun: \nMatn yozing yoki rasmga caption qo‘shib yuboring.",
+    "wm_menu_text": "💧 Watermark o‘chirish\n\nRasmdagi watermarklarni avtomatik olib tashlash. \n\nQanday ishlaydi: \n• Faqat rasm yuboring\n• AI watermarkni tozalaydi\n• Qo‘shimcha sozlama kerak emas\n\n📷 Rasmni hoziroq yuboring.",
     
     # Generation
     "gen_settings_title": "⚙️ Generatsiya sozlamalari",
@@ -92,7 +88,6 @@ TRANSLATIONS: dict[str, str] = {
     "gen_trial_used": "Trial ishlatildi",
     "gen_price": "Narx: {price} cr",
     "gen_retry": "🔁 Qayta urinib ko'rish",
-    "gen_max_references": "Maksimal 10 ta reference rasm yuborish mumkin.",
     "gen_image_upload_error": "Rasm yuklashda xatolik. Keyinroq urinib ko'ring.",
     "gen_prompt_not_found": "Prompt topilmadi. Iltimos, qaytadan yuboring.",
     "gen_model_fetch_error": "Serverdan model ma'lumotini olishda xatolik.",
@@ -104,16 +99,6 @@ TRANSLATIONS: dict[str, str] = {
     "gen_insufficient_balance": "Sizda yetarli balans mavjud emas.",
     
     # Profile
-    "profile_title": "👤 Profil",
-    "profile_info": "Mana sizning ma'lumotlaringiz:",
-    "profile_name": "Ism: {name}",
-    "profile_username": "Username: {username}",
-    "profile_telegram_id": "Telegram ID: {telegram_id}",
-    "profile_balance": "💰 Balans: {balance} credit",
-    "profile_trial": "🎁 Trial: {status}",
-    "profile_trial_available": "mavjud",
-    "profile_trial_unavailable": "yo'q",
-    "profile_trial_used": " ({count} marta ishlatilgan)",
     
     # Referral
     "referral_title": "🤝 Referral",
@@ -123,9 +108,7 @@ TRANSLATIONS: dict[str, str] = {
     "referral_bonus": "Yig'ilgan bonus: {total} credit",
     
     # Errors
-    "error_connection": "Server bilan ulanishda xatolik. Keyinroq urinib ko'ring.",
     "error_user_not_found": "User topilmadi.",
-    "error_generic": "Xatolik yuz berdi. Keyinroq urinib ko'ring.",
     
     # Payments
     "topup_title": "⭐ Balans to'ldirish",
@@ -145,10 +128,7 @@ TRANSLATIONS: dict[str, str] = {
     "topup_disabled": "To'lovlar hozircha yopiq.",
     
     # Referral
-    "referral_title": "🤝 Referral",
     "referral_description": "Do'stlaringizni taklif qiling va ularning to'lovlaridan {percent}% bonus oling.\nReferral faqat yangi userlar uchun ishlaydi.",
-    "referral_link": "Link: {link}",
-    "referral_count": "Referallar: {count}",
     "referral_bonus_total": "Yig'ilgan bonus: {total} credit",
     "referral_new_applied": "👤 Yangi referral qo'shildi.\nUning to'lovlaridan {percent}% bonus olasiz.",
     

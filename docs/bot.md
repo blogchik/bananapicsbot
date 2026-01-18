@@ -92,7 +92,7 @@ WEBHOOK_PATH=/webhook
 
 - Barcha tugmalar inline.
 - Home menyu welcome message bilan chiqadi.
-- Home menyu: `Pristupit` (info) va `Profile` tugmalari.
+- Home menyu: `Rasm generatsiya qilish`, `Watermark olib tashlash`, `Profile` tugmalari.
 - Profile menyu: TG info + balans + trial holati + tilni o'zgartirish.
 - Referral menyu: maxsus link, referral soni va jami bonus.
 - Admin panel: `/admin` (faqat admin_ids uchun).

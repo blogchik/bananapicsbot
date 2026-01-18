@@ -17,8 +17,14 @@ class HomeKeyboard:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=_(TranslationKey.BTN_START, None),
-                        callback_data=MenuCallback.INFO,
+                        text=_(TranslationKey.BTN_GENERATION, None),
+                        callback_data=MenuCallback.GENERATION,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.BTN_WATERMARK, None),
+                        callback_data=MenuCallback.WATERMARK,
                     )
                 ],
                 [

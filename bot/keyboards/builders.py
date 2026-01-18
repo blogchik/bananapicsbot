@@ -53,7 +53,8 @@ class MenuCallback:
     """Menu callback data patterns."""
     
     HOME = "menu:home"
-    INFO = "menu:info"
+    GENERATION = "menu:generation"
+    WATERMARK = "menu:watermark"
     PROFILE = "menu:profile"
     TOPUP = "menu:topup"
     REFERRAL = "menu:referral"

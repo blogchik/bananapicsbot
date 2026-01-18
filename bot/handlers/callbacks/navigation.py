@@ -33,15 +33,26 @@ async def home_callback(
     )
 
 
-@router.callback_query(F.data == MenuCallback.INFO)
-async def info_callback(
+@router.callback_query(F.data == MenuCallback.GENERATION)
+async def generation_menu_callback(
     call: CallbackQuery,
     _: Callable[[TranslationKey, dict | None], str],
 ) -> None:
-    """Handle info menu callback."""
+    """Handle generation menu callback."""
     await call.answer()
 
-    await call.message.answer(_(TranslationKey.START_INFO, None))
+    await call.message.answer(_(TranslationKey.GEN_MENU_TEXT, None))
+
+
+@router.callback_query(F.data == MenuCallback.WATERMARK)
+async def watermark_menu_callback(
+    call: CallbackQuery,
+    _: Callable[[TranslationKey, dict | None], str],
+) -> None:
+    """Handle watermark menu callback."""
+    await call.answer()
+
+    await call.message.answer(_(TranslationKey.WM_MENU_TEXT, None))
 
 
 @router.callback_query(F.data == MenuCallback.PROFILE)

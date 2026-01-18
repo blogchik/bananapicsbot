@@ -60,12 +60,18 @@ class TranslationKey(str, Enum):
     BTN_HELP = "btn_help"
     BTN_LANGUAGE = "btn_language"
     BTN_START = "btn_start"
+    BTN_GENERATION = "btn_generation"
+    BTN_WATERMARK = "btn_watermark"
     
     # Command descriptions
     CMD_HOME = "cmd_home"
     CMD_PROFILE = "cmd_profile"
     CMD_TOPUP = "cmd_topup"
     CMD_REFERRAL = "cmd_referral"
+
+    # Home menus
+    GEN_MENU_TEXT = "gen_menu_text"
+    WM_MENU_TEXT = "wm_menu_text"
     
     # Generation
     GEN_SETTINGS_TITLE = "gen_settings_title"
