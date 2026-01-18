@@ -39,10 +39,10 @@ async def topup_handler(
 
     preset_pairs = PaymentService.build_preset_pairs(presets, numerator, denominator)
     try:
-        avg_price = await PaymentService.get_average_generation_price()
+        min_price = await PaymentService.get_min_generation_price()
     except Exception as e:
-        logger.warning("Failed to get average generation price", error=str(e))
-        avg_price = None
+        logger.warning("Failed to get minimum generation price", error=str(e))
+        min_price = None
     rate_line = _(TranslationKey.TOPUP_EXCHANGE_RATE, {
         "numerator": numerator,
         "denominator": denominator,
@@ -58,5 +58,5 @@ async def topup_handler(
     await state.update_data(stars_options=options)
     await message.answer(
         text,
-        reply_markup=PaymentKeyboard.topup_menu(preset_pairs, avg_price, _),
+        reply_markup=PaymentKeyboard.topup_menu(preset_pairs, min_price, _),
     )

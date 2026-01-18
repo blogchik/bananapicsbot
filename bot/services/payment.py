@@ -23,8 +23,8 @@ class PaymentService:
         return await container.api_client.get_stars_options()
 
     @staticmethod
-    async def get_average_generation_price() -> int | None:
-        """Get average model generation price."""
+    async def get_min_generation_price() -> int | None:
+        """Get minimum model generation price."""
         container = get_container()
         models = await container.api_client.get_models()
         prices: list[int] = []
@@ -43,7 +43,7 @@ class PaymentService:
                 prices.append(unit_price)
         if not prices:
             return None
-        return int(round(sum(prices) / len(prices)))
+        return int(min(prices))
     
     @staticmethod
     def calculate_credits(
