@@ -25,13 +25,11 @@ class ProfileKeyboard:
                     InlineKeyboardButton(
                         text=_(TranslationKey.BTN_REFERRAL, None),
                         callback_data=MenuCallback.REFERRAL,
-                    )
-                ],
-                [
+                    ),
                     InlineKeyboardButton(
                         text=_(TranslationKey.BTN_LANGUAGE, None),
                         callback_data=SettingsCallback.LANGUAGE_MENU,
-                    )
+                    ),
                 ],
                 [
                     InlineKeyboardButton(
