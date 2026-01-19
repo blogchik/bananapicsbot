@@ -20,22 +20,22 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    
+
     # Broker settings
     broker_connection_retry_on_startup=True,
-    
+
     # Task settings
     task_track_started=True,
     task_time_limit=300,  # 5 minutes
     task_soft_time_limit=270,  # 4.5 minutes
-    
+
     # Result settings
     result_expires=3600,  # 1 hour
-    
+
     # Worker settings
     worker_prefetch_multiplier=1,
     worker_concurrency=4,
-    
+
     # Beat schedule (if needed)
     beat_schedule={
         "cleanup-expired-generations": {

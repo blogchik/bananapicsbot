@@ -1,7 +1,6 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message, User
-
 from api_client import ApiClient
 from config import load_settings
 from keyboards import profile_menu
@@ -38,7 +37,7 @@ async def send_profile(message: Message, user: User, _) -> None:
         trial_status = _(TranslationKey.PROFILE_TRIAL_USED).format(count=trial.used_count)
     else:
         trial_status = "yo'q"
-    
+
     text = f"{_(TranslationKey.PROFILE_TITLE)}\n" + _(TranslationKey.PROFILE_INFO).format(
         name=name,
         username=username,

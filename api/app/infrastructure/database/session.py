@@ -9,17 +9,16 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 
 
 class Database:
     """Async database manager."""
-    
+
     _engine: AsyncEngine | None = None
     _session_factory: async_sessionmaker[AsyncSession] | None = None
-    
+
     @classmethod
     def get_engine(cls) -> AsyncEngine:
         """Get or create async engine."""
@@ -34,7 +33,7 @@ class Database:
                 pool_recycle=settings.db_pool_recycle,
             )
         return cls._engine
-    
+
     @classmethod
     def get_session_factory(cls) -> async_sessionmaker[AsyncSession]:
         """Get or create session factory."""
@@ -47,7 +46,7 @@ class Database:
                 autoflush=False,
             )
         return cls._session_factory
-    
+
     @classmethod
     @asynccontextmanager
     async def session(cls) -> AsyncGenerator[AsyncSession, None]:
@@ -61,7 +60,7 @@ class Database:
             raise
         finally:
             await session.close()
-    
+
     @classmethod
     async def close(cls) -> None:
         """Close database connections."""

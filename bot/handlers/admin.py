@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import aiohttp
-
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-
 from api_client import ApiClient
 from config import load_settings
 

@@ -15,18 +15,17 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import BufferedInputFile, URLInputFile
 from aiohttp import ClientSession, ClientTimeout
-
 from core.constants import BotConstants
 from core.container import get_container
 from core.exceptions import (
-    APIError,
     ActiveGenerationError,
+    APIError,
     InsufficientBalanceError,
     ProviderUnavailableError,
 )
 from core.logging import get_logger
-from locales import TranslationKey
 from keyboards import GenerationKeyboard
+from locales import TranslationKey
 
 logger = get_logger(__name__)
 
@@ -77,11 +76,11 @@ class GenerationConfig:
 
 class GenerationService:
     """Generation-related business logic."""
-    
+
     _DEFAULTS_KEY_PREFIX = "gen_defaults"
     _LAST_REQUEST_KEY_PREFIX = "gen_last_request"
     _LAST_REQUEST_TTL_SECONDS = 3600
-    
+
     @staticmethod
     def calculate_generation_price(
         model_key: str | None,
@@ -185,21 +184,21 @@ class GenerationService:
             except Exception:
                 logger.warning("Failed to cache models")
         return GenerationService._normalize_models(raw_models)
-    
+
     @staticmethod
     def _normalize_models(raw_models: list[dict]) -> list[NormalizedModel]:
         """Normalize model data from API."""
         normalized: list[NormalizedModel] = []
-        
+
         for item in raw_models:
             model = item.get("model") or {}
             model_id = model.get("id")
             if not model_id:
                 continue
-            
+
             prices = item.get("prices") or []
             price = int(prices[0].get("unit_price", 0)) if prices else 0
-            
+
             options = model.get("options") or {}
             size_options = list(options.get("size_options") or [])
             aspect_ratio_options = list(options.get("aspect_ratio_options") or [])
@@ -210,13 +209,13 @@ class GenerationService:
             avg_duration_seconds_min = options.get("avg_duration_seconds_min")
             avg_duration_seconds_max = options.get("avg_duration_seconds_max")
             avg_duration_text = options.get("avg_duration_text")
-            
+
             supports_size = bool(options.get("supports_size")) or bool(size_options)
             supports_aspect_ratio = bool(options.get("supports_aspect_ratio")) or bool(aspect_ratio_options)
             supports_resolution = bool(options.get("supports_resolution")) or bool(resolution_options)
             supports_quality = bool(options.get("supports_quality")) or bool(quality_options)
             supports_input_fidelity = bool(options.get("supports_input_fidelity")) or bool(input_fidelity_options)
-            
+
             key = str(model.get("key") or "").strip()
             name = model.get("name") or model.get("key") or str(model_id)
             if not key and name:
@@ -256,9 +255,9 @@ class GenerationService:
                 quality_options=quality_options,
                 input_fidelity_options=input_fidelity_options,
             ))
-        
+
         return normalized
-    
+
     @staticmethod
     def find_model(models: list[NormalizedModel], model_id: int) -> NormalizedModel | None:
         """Find model by ID."""
@@ -266,7 +265,7 @@ class GenerationService:
             if model.id == model_id:
                 return model
         return None
-    
+
     @staticmethod
     async def has_active_generation(telegram_id: int) -> bool:
         """Check if user has active generation."""
@@ -362,7 +361,7 @@ class GenerationService:
         except json.JSONDecodeError:
             return {}
         return data if isinstance(data, dict) else {}
-    
+
     @staticmethod
     async def submit_generation(
         telegram_id: int,
@@ -370,7 +369,7 @@ class GenerationService:
     ) -> dict:
         """Submit generation request."""
         container = get_container()
-        
+
         try:
             return await container.api_client.submit_generation(
                 telegram_id=telegram_id,
@@ -410,25 +409,25 @@ class GenerationService:
                     if code == "provider_balance_low":
                         raise ProviderUnavailableError()
             raise
-    
+
     @staticmethod
     async def refresh_generation(request_id: int, telegram_id: int) -> dict:
         """Refresh generation status."""
         container = get_container()
         return await container.api_client.refresh_generation(request_id, telegram_id)
-    
+
     @staticmethod
     async def get_results(request_id: int, telegram_id: int) -> list[str]:
         """Get generation results."""
         container = get_container()
         return await container.api_client.get_generation_results(request_id, telegram_id)
-    
+
     @staticmethod
     async def upload_media(file_bytes: bytes, filename: str) -> str:
         """Upload media file."""
         container = get_container()
         return await container.api_client.upload_media(file_bytes, filename)
-    
+
     @staticmethod
     def _get_status_message(
         status: str | None,
@@ -443,7 +442,7 @@ class GenerationService:
         if normalized == "running":
             return _(TranslationKey.GEN_PROCESSING, None)
         return None
-    
+
     @staticmethod
     def format_model_hashtag(model_name: str) -> str:
         """Format model name as hashtag."""
@@ -451,7 +450,7 @@ class GenerationService:
         if not cleaned:
             return "#Model"
         return f"#{cleaned}"
-    
+
     @staticmethod
     def build_result_caption(
         prompt: str,
@@ -469,20 +468,20 @@ class GenerationService:
             "prompt": "{PROMPT_PLACEHOLDER}",
         })
         return GenerationService._inject_prompt(template, prompt)
-    
+
     @staticmethod
     def _build_escaped_prompt(prompt: str, max_len: int) -> str:
         """Build HTML-escaped prompt with length limit."""
         if max_len <= 0:
             return ""
-        
+
         ellipsis = "..."
         truncated = False
         target_len = max_len - len(ellipsis) if max_len > len(ellipsis) else max_len
-        
+
         chunks: list[str] = []
         current_len = 0
-        
+
         for ch in prompt:
             escaped = html.escape(ch)
             if current_len + len(escaped) > target_len:
@@ -490,7 +489,7 @@ class GenerationService:
                 break
             chunks.append(escaped)
             current_len += len(escaped)
-        
+
         result = "".join(chunks)
         if truncated and max_len > len(ellipsis):
             return result + ellipsis
@@ -508,7 +507,7 @@ class GenerationService:
         )
         escaped_prompt = GenerationService._build_escaped_prompt(prompt, max_prompt_len)
         return f"{prefix}{escaped_prompt}{suffix}"
-    
+
     @staticmethod
     def parse_duration_seconds(
         started_at: str | None,
@@ -525,17 +524,17 @@ class GenerationService:
                 return datetime.fromisoformat(value)
             except ValueError:
                 return None
-        
+
         start_time = parse_datetime(started_at) or parse_datetime(created_at)
         end_time = parse_datetime(completed_at)
-        
+
         if not start_time or not end_time:
             return None
-        
+
         delta = end_time - start_time
         seconds = int(delta.total_seconds())
         return seconds if seconds >= 0 else None
-    
+
     @staticmethod
     def extract_filename_from_url(url: str) -> str:
         """Extract filename from URL."""
@@ -583,7 +582,7 @@ class GenerationService:
                 filename = os.path.basename(filename)
                 filename = GenerationService._ensure_extension(filename, content_type)
                 return await resp.read(), filename
-    
+
     @staticmethod
     async def send_results(
         bot: Bot,
@@ -596,7 +595,7 @@ class GenerationService:
         """Send generation results to user."""
         caption_pending = True
         document_failed = False
-        
+
         for url in outputs:
             caption_value = caption_text if caption_pending else None
             try:
@@ -621,12 +620,12 @@ class GenerationService:
                         parse_mode="HTML",
                     )
                 )
-            
+
             if not sent_document:
                 document_failed = True
             if sent_document and caption_pending:
                 caption_pending = False
-            
+
             # Fallback: send URL as text
             if not sent_document:
                 await GenerationService._retry_send(
@@ -634,7 +633,7 @@ class GenerationService:
                         chat_id, u, reply_to_message_id=reply_to_message_id
                     )
                 )
-        
+
         if document_failed:
             await GenerationService._retry_send(
                 lambda: bot.send_message(
@@ -643,7 +642,7 @@ class GenerationService:
                     reply_to_message_id=reply_to_message_id,
                 )
             )
-    
+
     @staticmethod
     async def _retry_send(
         action,
@@ -660,7 +659,7 @@ class GenerationService:
                     return False
                 await asyncio.sleep(delay_seconds * (attempt + 1))
         return False
-    
+
     @staticmethod
     async def poll_generation_status(
         bot: Bot,
@@ -676,10 +675,10 @@ class GenerationService:
         """Poll generation status and send results when done."""
         container = get_container()
         last_status_text = None
-        
+
         while True:
             await asyncio.sleep(BotConstants.POLL_INTERVAL_SECONDS)
-            
+
             try:
                 result = await container.api_client.refresh_generation(request_id, telegram_id)
             except APIError as exc:
@@ -688,9 +687,9 @@ class GenerationService:
             except Exception:
                 logger.warning("Generation status check failed")
                 continue
-            
+
             status = result.get("status")
-            
+
             # Update status message only for queue/processing
             status_text = GenerationService._get_status_message(status, _)
             if status_text and status_text != last_status_text:
@@ -703,24 +702,24 @@ class GenerationService:
                 except TelegramBadRequest:
                     pass
                 last_status_text = status_text
-            
+
             # Handle completion
             if status == "completed":
                 try:
                     outputs = await container.api_client.get_generation_results(request_id, telegram_id)
                 except Exception:
                     outputs = []
-                
+
                 duration_seconds = GenerationService.parse_duration_seconds(
                     result.get("started_at"),
                     result.get("completed_at"),
                     result.get("created_at"),
                 )
-                
+
                 caption_text = GenerationService.build_result_caption(
                     prompt, model_name, result.get("cost"), duration_seconds, _
                 )
-                
+
                 try:
                     await bot.edit_message_text(
                         _(TranslationKey.GEN_COMPLETED, None),
@@ -729,13 +728,13 @@ class GenerationService:
                     )
                 except TelegramBadRequest:
                     pass
-                
+
                 if outputs:
                     await GenerationService.send_results(
                         bot, chat_id, outputs, prompt_message_id, caption_text, _
                     )
                 return
-            
+
             # Handle failure
             if status == "failed":
                 try:

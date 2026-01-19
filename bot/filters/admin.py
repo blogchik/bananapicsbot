@@ -1,23 +1,22 @@
 """Admin filter."""
 
 from aiogram.filters import BaseFilter
-from aiogram.types import Message, CallbackQuery, TelegramObject
-
+from aiogram.types import CallbackQuery, Message, TelegramObject
 from core.container import get_container
 
 
 class AdminFilter(BaseFilter):
     """Filter for admin users."""
-    
+
     async def __call__(self, event: TelegramObject) -> bool:
         """Check if user is admin."""
         user_id = self._get_user_id(event)
         if user_id is None:
             return False
-        
+
         container = get_container()
         return user_id in container.settings.admin_ids
-    
+
     def _get_user_id(self, event: TelegramObject) -> int | None:
         """Extract user ID from event."""
         if isinstance(event, Message):

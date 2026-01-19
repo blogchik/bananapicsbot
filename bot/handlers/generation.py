@@ -1,18 +1,17 @@
 import asyncio
-from datetime import datetime
 import html
 import mimetypes
 import os
 import re
-from urllib.parse import unquote, urlparse
+from datetime import datetime
 from typing import Awaitable, Callable
+from urllib.parse import unquote, urlparse
 
-from aiohttp import ClientSession, ClientTimeout
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, Message, URLInputFile
-
+from aiohttp import ClientSession, ClientTimeout
 from api_client import ApiClient, ApiError
 from config import load_settings
 from keyboards import (
@@ -1143,7 +1142,7 @@ async def poll_generation_status(
     consecutive_errors = 0
     import time
     start_time = time.time()
-    
+
     while True:
         # Check timeout
         elapsed = time.time() - start_time
@@ -1157,7 +1156,7 @@ async def poll_generation_status(
             except TelegramBadRequest:
                 pass
             return
-        
+
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
             result = await client.refresh_generation(request_id, telegram_id)

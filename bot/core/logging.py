@@ -35,13 +35,13 @@ def setup_logging(
     sentry_dsn: str = "",
 ) -> None:
     """Configure structured logging."""
-    
+
     # Setup Sentry if DSN provided
     if sentry_dsn:
         try:
             import sentry_sdk
             from sentry_sdk.integrations.logging import LoggingIntegration
-            
+
             sentry_logging = LoggingIntegration(
                 level=logging.INFO,
                 event_level=logging.ERROR,
@@ -53,7 +53,7 @@ def setup_logging(
             )
         except ImportError:
             pass
-    
+
     # Shared processors
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,
@@ -65,7 +65,7 @@ def setup_logging(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.UnicodeDecoder(),
     ]
-    
+
     if json_format:
         # JSON format for production
         processors = shared_processors + [
@@ -77,7 +77,7 @@ def setup_logging(
         processors = shared_processors + [
             structlog.dev.ConsoleRenderer(colors=True),
         ]
-    
+
     structlog.configure(
         processors=processors,
         wrapper_class=structlog.stdlib.BoundLogger,
@@ -85,14 +85,14 @@ def setup_logging(
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, level.upper(), logging.INFO),
     )
-    
+
     # Reduce noise from external libraries
     logging.getLogger("aiogram").setLevel(logging.WARNING)
     logging.getLogger("aiohttp").setLevel(logging.WARNING)

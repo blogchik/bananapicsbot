@@ -1,7 +1,6 @@
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
-
 from api_client import ApiClient
 from config import load_settings
 from keyboards import home_menu

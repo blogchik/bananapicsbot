@@ -4,8 +4,7 @@ import time
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Update, Message, CallbackQuery
-
+from aiogram.types import CallbackQuery, Message, TelegramObject, Update
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -21,7 +20,7 @@ class LoggingMiddleware(BaseMiddleware):
     - Processing time
     - Errors
     """
-    
+
     async def __call__(
         self,
         handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
@@ -30,12 +29,12 @@ class LoggingMiddleware(BaseMiddleware):
     ) -> Any:
         """Process update with logging."""
         start_time = time.monotonic()
-        
+
         # Extract update info
         update_type = "unknown"
         user_id = None
         chat_id = None
-        
+
         if isinstance(event, Update):
             if event.message:
                 update_type = "message"
@@ -53,17 +52,17 @@ class LoggingMiddleware(BaseMiddleware):
             update_type = "callback_query"
             user_id = event.from_user.id
             chat_id = event.message.chat.id if event.message else None
-        
+
         logger.debug(
             "Incoming update",
             update_type=update_type,
             user_id=user_id,
             chat_id=chat_id,
         )
-        
+
         try:
             result = await handler(event, data)
-            
+
             duration_ms = (time.monotonic() - start_time) * 1000
             logger.info(
                 "Update processed",
@@ -71,9 +70,9 @@ class LoggingMiddleware(BaseMiddleware):
                 user_id=user_id,
                 duration_ms=round(duration_ms, 2),
             )
-            
+
             return result
-        
+
         except Exception as e:
             duration_ms = (time.monotonic() - start_time) * 1000
             logger.error(

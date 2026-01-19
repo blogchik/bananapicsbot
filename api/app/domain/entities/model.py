@@ -8,7 +8,7 @@ from typing import Optional
 @dataclass
 class ModelPrice:
     """Model pricing entity."""
-    
+
     id: int
     model_id: int
     currency: str = "credit"
@@ -20,7 +20,7 @@ class ModelPrice:
 @dataclass
 class Model:
     """AI Model domain entity."""
-    
+
     id: int
     key: str
     name: str
@@ -36,9 +36,9 @@ class Model:
     is_active: bool = True
     sort_order: int = 0
     created_at: datetime = field(default_factory=datetime.utcnow)
-    
+
     prices: list[ModelPrice] = field(default_factory=list)
-    
+
     @property
     def current_price(self) -> int:
         """Get current active price."""

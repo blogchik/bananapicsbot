@@ -1,11 +1,10 @@
 """Admin schemas."""
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-
 
 # ============ Credits ============
 
@@ -81,13 +80,13 @@ class DashboardStatsOut(BaseModel):
     new_users_week: int
     new_users_month: int
     banned_users: int
-    
+
     # Generations
     total_generations: int
     completed_generations: int
     failed_generations: int
     success_rate: float
-    
+
     # Revenue
     total_deposits: float
     today_deposits: float
@@ -95,7 +94,7 @@ class DashboardStatsOut(BaseModel):
     month_deposits: float
     total_spent: float
     net_revenue: float
-    
+
     # Payments
     total_payments: int
     completed_payments: int
@@ -198,7 +197,7 @@ class BroadcastOut(BaseModel):
     created_at: datetime
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
-    
+
     class Config:
         from_attributes = True
 

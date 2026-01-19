@@ -1,16 +1,16 @@
 """Admin users management handlers."""
 
-from aiogram import Router, F
-from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
 from typing import Callable
 
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+from core.logging import get_logger
 from keyboards import AdminKeyboard
 from keyboards.builders import AdminCallback
 from locales import TranslationKey
 from services import AdminService
 from states import AdminStates
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="admin_users")
@@ -25,7 +25,7 @@ async def admin_users_search(
     """Start user search."""
     await call.answer()
     await state.set_state(AdminStates.waiting_user_search)
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_USER_SEARCH_PROMPT, None),
@@ -41,27 +41,27 @@ async def admin_search_user(
 ) -> None:
     """Handle user search query."""
     query = (message.text or "").strip()
-    
+
     if not query:
         await message.answer(_(TranslationKey.ADMIN_USER_SEARCH_EMPTY, None))
         return
-    
+
     try:
         users = await AdminService.search_users(query)
     except Exception as e:
         logger.warning("Failed to search users", error=str(e))
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if not users:
         await message.answer(
             _(TranslationKey.ADMIN_USER_NOT_FOUND, None),
             reply_markup=AdminKeyboard.back_to_users(_),
         )
         return
-    
+
     await state.clear()
-    
+
     if len(users) == 1:
         # Show single user
         user = users[0]
@@ -95,11 +95,11 @@ def format_user_profile(user: dict, _: Callable[[TranslationKey, dict | None], s
         _(TranslationKey.ADMIN_USER_CREATED, {"date": user.get("created_at", "-")}),
         _(TranslationKey.ADMIN_USER_LAST_ACTIVE, {"date": user.get("last_active", "-")}),
     ]
-    
+
     if user.get("is_banned"):
         lines.append("")
         lines.append(_(TranslationKey.ADMIN_USER_BANNED, None))
-    
+
     return "\n".join(lines)
 
 
@@ -111,12 +111,12 @@ async def admin_view_user(
 ) -> None:
     """View user profile."""
     await call.answer()
-    
+
     try:
         telegram_id = int(call.data.split(":", 3)[3])
     except (IndexError, ValueError):
         return
-    
+
     try:
         user = await AdminService.get_user(telegram_id)
     except Exception as e:
@@ -124,16 +124,16 @@ async def admin_view_user(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if not user:
         if call.message:
             await call.message.answer(_(TranslationKey.ADMIN_USER_NOT_FOUND, None))
         return
-    
+
     await state.update_data(selected_user_id=telegram_id)
-    
+
     text = format_user_profile(user, _)
-    
+
     if call.message:
         await call.message.edit_text(
             text,
@@ -149,10 +149,10 @@ async def admin_users_list(
 ) -> None:
     """Show users list with pagination."""
     await call.answer()
-    
+
     data = await state.get_data()
     page = data.get("users_page", 0)
-    
+
     try:
         result = await AdminService.get_users_page(page)
     except Exception as e:
@@ -160,11 +160,11 @@ async def admin_users_list(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     users = result.get("users", [])
     total = result.get("total", 0)
     has_more = result.get("has_more", False)
-    
+
     if not users:
         if call.message:
             await call.message.edit_text(
@@ -172,9 +172,9 @@ async def admin_users_list(
                 reply_markup=AdminKeyboard.back_to_users(_),
             )
         return
-    
+
     text = _(TranslationKey.ADMIN_USERS_LIST_TITLE, {"total": total, "page": page + 1})
-    
+
     if call.message:
         await call.message.edit_text(
             text,
@@ -190,14 +190,14 @@ async def admin_users_page(
 ) -> None:
     """Handle users list pagination."""
     await call.answer()
-    
+
     try:
         page = int(call.data.split(":", 3)[3])
     except (IndexError, ValueError):
         return
-    
+
     await state.update_data(users_page=page)
-    
+
     try:
         result = await AdminService.get_users_page(page)
     except Exception as e:
@@ -205,13 +205,13 @@ async def admin_users_page(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     users = result.get("users", [])
     total = result.get("total", 0)
     has_more = result.get("has_more", False)
-    
+
     text = _(TranslationKey.ADMIN_USERS_LIST_TITLE, {"total": total, "page": page + 1})
-    
+
     if call.message:
         await call.message.edit_text(
             text,
@@ -226,12 +226,12 @@ async def admin_ban_user(
 ) -> None:
     """Ban/unban user."""
     await call.answer()
-    
+
     try:
         telegram_id = int(call.data.split(":", 3)[3])
     except (IndexError, ValueError):
         return
-    
+
     try:
         result = await AdminService.toggle_ban(telegram_id)
         is_banned = result.get("is_banned", False)
@@ -240,14 +240,14 @@ async def admin_ban_user(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if is_banned:
         msg = _(TranslationKey.ADMIN_USER_BANNED_SUCCESS, None)
     else:
         msg = _(TranslationKey.ADMIN_USER_UNBANNED_SUCCESS, None)
-    
+
     if call.message:
         await call.message.answer(msg)
-    
+
     # Refresh user view
     await admin_view_user.__wrapped__(call, FSMContext, _)

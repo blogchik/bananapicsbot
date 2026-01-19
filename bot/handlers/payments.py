@@ -1,11 +1,9 @@
 import uuid
 
 from aiogram import F, Router
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, LabeledPrice, Message, PreCheckoutQuery
-
 from api_client import ApiClient
 from config import load_settings
 from keyboards import topup_menu

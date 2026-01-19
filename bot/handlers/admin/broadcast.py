@@ -10,19 +10,19 @@ Full broadcast flow:
 7. Admin can check status and cancel if needed
 """
 
-from aiogram import Router, F
-from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, ContentType
-from aiogram.exceptions import TelegramBadRequest
-from typing import Callable
 from datetime import datetime
+from typing import Callable
 
+from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+from core.logging import get_logger
 from keyboards import AdminKeyboard
 from keyboards.builders import AdminCallback
 from locales import TranslationKey
 from services import AdminService
 from states import AdminStates
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="admin_broadcast")
@@ -50,7 +50,7 @@ async def admin_broadcast_new(
     """Start new broadcast - ask for message."""
     await call.answer()
     await state.set_state(AdminStates.waiting_broadcast_message)
-    
+
     if call.message:
         await call.message.edit_text(
             "📤 <b>New Broadcast</b>\n\n"
@@ -78,7 +78,7 @@ async def admin_broadcast_message(
     content_type = "text"
     media_file_id = None
     text = message.text or message.caption
-    
+
     if message.photo:
         content_type = "photo"
         media_file_id = message.photo[-1].file_id
@@ -92,23 +92,23 @@ async def admin_broadcast_message(
         content_type = "sticker"
         media_file_id = message.sticker.file_id
         text = None  # Stickers don't have captions
-    
+
     # Store broadcast data
     await state.update_data(
         broadcast_content_type=content_type,
         broadcast_text=text,
         broadcast_media_file_id=media_file_id,
     )
-    
+
     # Move to filter selection
     await state.set_state(AdminStates.waiting_broadcast_filter)
-    
+
     # Show preview
     await message.answer("✅ Message received! Here's a preview:")
-    
+
     # Forward message as preview
     await message.copy_to(message.chat.id)
-    
+
     # Ask for filter
     await message.answer(
         "📊 <b>Select Target Audience</b>\n\n"
@@ -130,21 +130,21 @@ async def admin_broadcast_filter_selected(
 ) -> None:
     """Handle filter selection."""
     await call.answer()
-    
+
     filter_type = call.data.split(":")[-1]
     await state.update_data(broadcast_filter_type=filter_type)
-    
+
     # Get user count for this filter
     try:
         users_count = await AdminService.get_users_count(filter_type)
     except Exception as e:
         logger.error("Failed to get users count", error=str(e))
         users_count = 0
-    
+
     await state.update_data(broadcast_users_count=users_count)
-    
+
     filter_label = FILTER_LABELS.get(filter_type, filter_type)
-    
+
     if call.message:
         await call.message.edit_text(
             f"📊 Filter: <b>{filter_label}</b>\n"
@@ -166,7 +166,7 @@ async def admin_broadcast_add_button(
     """Start adding inline button - ask for text."""
     await call.answer()
     await state.set_state(AdminStates.waiting_broadcast_button_text)
-    
+
     if call.message:
         await call.message.edit_text(
             "🔘 <b>Add Button</b>\n\n"
@@ -186,14 +186,14 @@ async def admin_broadcast_button_text(
     if not message.text:
         await message.answer("Please send text for the button.")
         return
-    
+
     if len(message.text) > 100:
         await message.answer("Button text is too long (max 100 characters).")
         return
-    
+
     await state.update_data(broadcast_button_text=message.text)
     await state.set_state(AdminStates.waiting_broadcast_button_url)
-    
+
     await message.answer(
         "🔗 <b>Button URL</b>\n\n"
         "Now send the URL that the button will open.\n\n"
@@ -211,16 +211,16 @@ async def admin_broadcast_button_url(
     if not message.text:
         await message.answer("Please send a URL.")
         return
-    
+
     url = message.text.strip()
-    
+
     # Basic URL validation
     if not url.startswith(("http://", "https://")):
         await message.answer("Please send a valid URL starting with http:// or https://")
         return
-    
+
     await state.update_data(broadcast_button_url=url)
-    
+
     # Show preview with button
     await _show_broadcast_preview(message, state, _)
 
@@ -233,9 +233,9 @@ async def admin_broadcast_skip_button(
 ) -> None:
     """Skip adding button - go to preview."""
     await call.answer()
-    
+
     await state.update_data(broadcast_button_text=None, broadcast_button_url=None)
-    
+
     # Show preview
     await _show_broadcast_preview(call.message, state, _)
 
@@ -249,15 +249,15 @@ async def _show_broadcast_preview(
 ) -> None:
     """Show broadcast preview and confirmation."""
     data = await state.get_data()
-    
+
     content_type = data.get("broadcast_content_type", "text")
     filter_type = data.get("broadcast_filter_type", "all")
     users_count = data.get("broadcast_users_count", 0)
     button_text = data.get("broadcast_button_text")
     button_url = data.get("broadcast_button_url")
-    
+
     filter_label = FILTER_LABELS.get(filter_type, filter_type)
-    
+
     lines = [
         "📤 <b>Broadcast Preview</b>",
         "",
@@ -265,19 +265,19 @@ async def _show_broadcast_preview(
         f"📊 Filter: <b>{filter_label}</b>",
         f"👥 Recipients: <b>{users_count}</b>",
     ]
-    
+
     if button_text:
         lines.append(f"🔘 Button: <b>{button_text}</b>")
-    
+
     lines.extend([
         "",
         "⚠️ <b>Are you sure you want to send this broadcast?</b>",
         "",
         f"This will send to <b>{users_count}</b> users.",
     ])
-    
+
     await state.set_state(AdminStates.waiting_broadcast_confirm)
-    
+
     await message.answer(
         "\n".join(lines),
         reply_markup=AdminKeyboard.broadcast_preview(users_count, filter_type, button_text is not None, _),
@@ -295,18 +295,18 @@ async def admin_broadcast_confirm(
 ) -> None:
     """Confirm and start broadcast."""
     await call.answer("Starting broadcast...")
-    
+
     data = await state.get_data()
-    
+
     content_type = data.get("broadcast_content_type", "text")
     text = data.get("broadcast_text")
     media_file_id = data.get("broadcast_media_file_id")
     filter_type = data.get("broadcast_filter_type", "all")
     button_text = data.get("broadcast_button_text")
     button_url = data.get("broadcast_button_url")
-    
+
     admin_id = call.from_user.id if call.from_user else 0
-    
+
     try:
         # Create broadcast in API
         result = await AdminService.create_broadcast(
@@ -318,15 +318,15 @@ async def admin_broadcast_confirm(
             inline_button_url=button_url,
             filter_type=filter_type,
         )
-        
+
         public_id = result.get("public_id", "")
         total_users = result.get("total_users", 0)
-        
+
         # Start broadcast
         await AdminService.start_broadcast(public_id)
-        
+
         await state.clear()
-        
+
         if call.message:
             await call.message.edit_text(
                 f"✅ <b>Broadcast Started!</b>\n\n"
@@ -336,11 +336,11 @@ async def admin_broadcast_confirm(
                 "Use the refresh button to check progress.",
                 reply_markup=AdminKeyboard.broadcast_status(public_id, "running", _),
             )
-        
+
     except Exception as e:
         logger.exception("Failed to start broadcast", error=str(e))
         await state.clear()
-        
+
         if call.message:
             await call.message.edit_text(
                 f"❌ <b>Failed to start broadcast</b>\n\n"
@@ -360,7 +360,7 @@ async def admin_broadcast_cancel(
     """Cancel broadcast creation."""
     await call.answer()
     await state.clear()
-    
+
     if call.message:
         await call.message.edit_text(
             "❌ Broadcast cancelled.",
@@ -377,7 +377,7 @@ async def admin_broadcast_history(
 ) -> None:
     """Show broadcast history."""
     await call.answer()
-    
+
     try:
         broadcasts = await AdminService.get_broadcasts(limit=10)
     except Exception as e:
@@ -385,7 +385,7 @@ async def admin_broadcast_history(
         if call.message:
             await call.message.answer("❌ Failed to load broadcast history.")
         return
-    
+
     if not broadcasts:
         if call.message:
             await call.message.edit_text(
@@ -394,9 +394,9 @@ async def admin_broadcast_history(
                 reply_markup=AdminKeyboard.back_to_broadcast(_),
             )
         return
-    
+
     lines = ["📜 <b>Broadcast History</b>", ""]
-    
+
     for bc in broadcasts:
         status = bc.get("status", "unknown")
         status_emoji = {
@@ -406,16 +406,16 @@ async def admin_broadcast_history(
             "cancelled": "⛔",
             "failed": "❌",
         }.get(status, "❓")
-        
+
         public_id = bc.get("public_id", "-")[:8]
         sent = bc.get("sent_count", 0)
         total = bc.get("total_users", 0)
         blocked = bc.get("blocked_count", 0)
-        
+
         lines.append(f"{status_emoji} <code>{public_id}</code> | {status}")
         lines.append(f"   ✅ {sent}/{total} | 🚫 {blocked} blocked")
         lines.append("")
-    
+
     if call.message:
         await call.message.edit_text(
             "\n".join(lines),
@@ -432,12 +432,12 @@ async def admin_broadcast_status(
 ) -> None:
     """Check broadcast status."""
     await call.answer("Refreshing...")
-    
+
     try:
         public_id = call.data.split(":")[-1]
     except IndexError:
         return
-    
+
     try:
         status = await AdminService.get_broadcast_status(public_id)
     except Exception as e:
@@ -445,7 +445,7 @@ async def admin_broadcast_status(
         if call.message:
             await call.message.answer("❌ Failed to get broadcast status.")
         return
-    
+
     if status.get("error"):
         if call.message:
             await call.message.edit_text(
@@ -453,7 +453,7 @@ async def admin_broadcast_status(
                 reply_markup=AdminKeyboard.back_to_broadcast(_),
             )
         return
-    
+
     bc_status = status.get("status", "unknown")
     status_emoji = {
         "pending": "⏳",
@@ -462,22 +462,22 @@ async def admin_broadcast_status(
         "cancelled": "⛔",
         "failed": "❌",
     }.get(bc_status, "❓")
-    
+
     total = status.get("total_users", 0)
     sent = status.get("sent_count", 0)
     failed = status.get("failed_count", 0)
     blocked = status.get("blocked_count", 0)
     progress = status.get("progress_percent", 0)
-    
+
     # Progress bar
     filled = int(progress / 10)
     bar = "▓" * filled + "░" * (10 - filled)
-    
+
     # Add timestamp to make message unique
     timestamp = datetime.now().strftime("%H:%M:%S")
-    
+
     lines = [
-        f"📊 <b>Broadcast Status</b>",
+        "📊 <b>Broadcast Status</b>",
         "",
         f"📋 ID: <code>{public_id}</code>",
         f"{status_emoji} Status: <b>{bc_status.title()}</b>",
@@ -491,7 +491,7 @@ async def admin_broadcast_status(
         "",
         f"🕐 Updated: {timestamp}",
     ]
-    
+
     if call.message:
         try:
             await call.message.edit_text(
@@ -512,15 +512,15 @@ async def admin_broadcast_cancel_running(
 ) -> None:
     """Cancel a running broadcast."""
     await call.answer("Cancelling...")
-    
+
     try:
         public_id = call.data.split(":")[-1]
     except IndexError:
         return
-    
+
     try:
         await AdminService.cancel_broadcast(public_id)
-        
+
         if call.message:
             await call.message.edit_text(
                 f"⛔ <b>Broadcast Cancelled</b>\n\n"

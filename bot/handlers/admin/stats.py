@@ -1,14 +1,14 @@
 """Admin statistics handlers."""
 
-from aiogram import Router, F
-from aiogram.types import CallbackQuery
 from typing import Callable
 
+from aiogram import F, Router
+from aiogram.types import CallbackQuery
+from core.logging import get_logger
 from keyboards import AdminKeyboard
 from keyboards.builders import AdminCallback
 from locales import TranslationKey
 from services import AdminService
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="admin_stats")
@@ -23,25 +23,25 @@ def format_stats_text(
         _(TranslationKey.ADMIN_STATS_TITLE, None),
         "",
     ]
-    
+
     users = stats.get("users", {})
     lines.append(_(TranslationKey.ADMIN_STATS_USERS_TOTAL, {"count": users.get("total", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_USERS_TODAY, {"count": users.get("today", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_USERS_WEEK, {"count": users.get("week", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_USERS_MONTH, {"count": users.get("month", 0)}))
     lines.append("")
-    
+
     generations = stats.get("generations", {})
     lines.append(_(TranslationKey.ADMIN_STATS_GENS_TOTAL, {"count": generations.get("total", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_GENS_TODAY, {"count": generations.get("today", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_GENS_WEEK, {"count": generations.get("week", 0)}))
     lines.append("")
-    
+
     revenue = stats.get("revenue", {})
     lines.append(_(TranslationKey.ADMIN_STATS_REVENUE_TOTAL, {"amount": revenue.get("total_stars", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_REVENUE_TODAY, {"amount": revenue.get("today_stars", 0)}))
     lines.append(_(TranslationKey.ADMIN_STATS_REVENUE_WEEK, {"amount": revenue.get("week_stars", 0)}))
-    
+
     return "\n".join(lines)
 
 
@@ -52,7 +52,7 @@ async def admin_stats_overview(
 ) -> None:
     """Show stats overview."""
     await call.answer()
-    
+
     try:
         stats = await AdminService.get_overview_stats()
     except Exception as e:
@@ -60,9 +60,9 @@ async def admin_stats_overview(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     text = format_stats_text(stats, _)
-    
+
     if call.message:
         await call.message.edit_text(
             text,
@@ -77,7 +77,7 @@ async def admin_stats_users(
 ) -> None:
     """Show user statistics."""
     await call.answer()
-    
+
     try:
         stats = await AdminService.get_user_stats()
     except Exception as e:
@@ -85,7 +85,7 @@ async def admin_stats_users(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     lines = [
         _(TranslationKey.ADMIN_USER_STATS_TITLE, None),
         "",
@@ -96,7 +96,7 @@ async def admin_stats_users(
         _(TranslationKey.ADMIN_STATS_AVG_BALANCE, {"amount": round(stats.get("avg_balance", 0), 2)}),
         _(TranslationKey.ADMIN_STATS_TOTAL_BALANCE, {"amount": stats.get("total_balance", 0)}),
     ]
-    
+
     if call.message:
         await call.message.edit_text(
             "\n".join(lines),
@@ -111,7 +111,7 @@ async def admin_stats_generations(
 ) -> None:
     """Show generation statistics."""
     await call.answer()
-    
+
     try:
         stats = await AdminService.get_generation_stats()
     except Exception as e:
@@ -119,7 +119,7 @@ async def admin_stats_generations(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     lines = [
         _(TranslationKey.ADMIN_GEN_STATS_TITLE, None),
         "",
@@ -129,14 +129,14 @@ async def admin_stats_generations(
         "",
         _(TranslationKey.ADMIN_STATS_CREDITS_SPENT, {"amount": stats.get("credits_spent", 0)}),
     ]
-    
+
     by_model = stats.get("by_model", {})
     if by_model:
         lines.append("")
         lines.append(_(TranslationKey.ADMIN_STATS_BY_MODEL, None))
         for model, count in sorted(by_model.items(), key=lambda x: x[1], reverse=True)[:10]:
             lines.append(f"  • {model}: {count}")
-    
+
     if call.message:
         await call.message.edit_text(
             "\n".join(lines),
@@ -151,7 +151,7 @@ async def admin_stats_revenue(
 ) -> None:
     """Show revenue statistics."""
     await call.answer()
-    
+
     try:
         stats = await AdminService.get_revenue_stats()
     except Exception as e:
@@ -159,7 +159,7 @@ async def admin_stats_revenue(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     lines = [
         _(TranslationKey.ADMIN_REVENUE_STATS_TITLE, None),
         "",
@@ -171,7 +171,7 @@ async def admin_stats_revenue(
         _(TranslationKey.ADMIN_STATS_PAYMENTS_COUNT, {"count": stats.get("payments_count", 0)}),
         _(TranslationKey.ADMIN_STATS_AVG_PAYMENT, {"amount": round(stats.get("avg_payment", 0), 2)}),
     ]
-    
+
     if call.message:
         await call.message.edit_text(
             "\n".join(lines),

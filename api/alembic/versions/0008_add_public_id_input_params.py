@@ -7,8 +7,8 @@ Create Date: 2026-01-14 23:32:00.000000
 
 import uuid
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0008_add_public_id_input_params"
 down_revision = "0006_add_generation_size"

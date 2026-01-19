@@ -1,14 +1,14 @@
 """Profile command handler."""
 
+from typing import Callable
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message, User
-from typing import Callable
-
+from core.logging import get_logger
 from keyboards import ProfileKeyboard
 from locales import TranslationKey
-from services import UserService, GenerationService
-from core.logging import get_logger
+from services import GenerationService, UserService
 
 logger = get_logger(__name__)
 router = Router(name="profile")
@@ -26,7 +26,7 @@ async def send_profile_message(
         logger.warning("Failed to get profile", user_id=user.id, error=str(e))
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     approx_text = ""
     try:
         models = await GenerationService.get_models()
@@ -40,7 +40,7 @@ async def send_profile_message(
 
     telegram_id_text = _(TranslationKey.PROFILE_ID_LABEL, None) + f": <code>{user.id}</code>"
     balance_text = _(TranslationKey.PROFILE_BALANCE, {"balance": profile.balance})
-    
+
     # Build message
     lines = [
         telegram_id_text,
@@ -49,7 +49,7 @@ async def send_profile_message(
     if approx_text:
         lines.append(approx_text)
     text = "\n".join(lines)
-    
+
     await message.answer(text, reply_markup=ProfileKeyboard.main(_))
 
 
@@ -63,5 +63,5 @@ async def profile_handler(
     if not user:
         await message.answer(_(TranslationKey.USER_NOT_FOUND, None))
         return
-    
+
     await send_profile_message(message, user, _)

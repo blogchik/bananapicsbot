@@ -1,15 +1,16 @@
 """Generation menu keyboards."""
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from typing import Callable
 
-from keyboards.builders import GenerationCallback, MenuCallback
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from locales import TranslationKey
+
+from keyboards.builders import GenerationCallback
 
 
 class GenerationKeyboard:
     """Generation menu keyboard builder."""
-    
+
     @staticmethod
     def main(
         _: Callable[[TranslationKey, dict | None], str],
@@ -34,7 +35,7 @@ class GenerationKeyboard:
         quality_label = quality if quality else default_label
         fidelity_label = input_fidelity if input_fidelity else default_label
         model_text = _(TranslationKey.GEN_MODEL, {"model": model_name})
-        
+
         rows: list[list[InlineKeyboardButton]] = [
             [
                 InlineKeyboardButton(
@@ -43,7 +44,7 @@ class GenerationKeyboard:
                 )
             ]
         ]
-        
+
         param_buttons: list[InlineKeyboardButton] = []
         if show_size:
             size_text = _(TranslationKey.GEN_SIZE, {"size": size_label})
@@ -53,7 +54,7 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.SIZE_MENU,
                 )
             )
-        
+
         if show_aspect_ratio:
             aspect_text = _(TranslationKey.GEN_ASPECT_RATIO, {"ratio": aspect_label})
             param_buttons.append(
@@ -62,7 +63,7 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.RATIO_MENU,
                 )
             )
-        
+
         if show_resolution:
             resolution_text = _(TranslationKey.GEN_RESOLUTION, {"resolution": resolution_label})
             param_buttons.append(
@@ -71,7 +72,7 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.RESOLUTION_MENU,
                 )
             )
-        
+
         if show_quality:
             quality_text = _(TranslationKey.GEN_QUALITY, {"quality": quality_label})
             param_buttons.append(
@@ -80,7 +81,7 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.QUALITY_MENU,
                 )
             )
-        
+
         if show_input_fidelity:
             fidelity_text = _(TranslationKey.GEN_INPUT_FIDELITY, {"value": fidelity_label})
             param_buttons.append(
@@ -89,10 +90,10 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.INPUT_FIDELITY_MENU,
                 )
             )
-        
+
         for i in range(0, len(param_buttons), 2):
             rows.append(param_buttons[i:i + 2])
-        
+
         start_text = _(TranslationKey.GEN_START_BUTTON, {"price": price})
         rows.append([
             InlineKeyboardButton(
@@ -100,7 +101,7 @@ class GenerationKeyboard:
                 callback_data=GenerationCallback.SUBMIT,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
     @staticmethod
@@ -111,7 +112,7 @@ class GenerationKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build model selection menu."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         for model in models:
             model_id = int(model["id"])
             name = str(model["name"])
@@ -122,16 +123,16 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.model_set(model_id),
                 )
             ])
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=GenerationCallback.BACK,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
-    
+
     @staticmethod
     def size_list(
         sizes: list[str],
@@ -140,7 +141,7 @@ class GenerationKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build size selection menu."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         # Default option
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_size else default_text
@@ -150,7 +151,7 @@ class GenerationKeyboard:
                 callback_data=GenerationCallback.size_set("default"),
             )
         ])
-        
+
         # Size options in pairs
         for i in range(0, len(sizes), 2):
             row = []
@@ -163,16 +164,16 @@ class GenerationKeyboard:
                     )
                 )
             rows.append(row)
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=GenerationCallback.BACK,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
-    
+
     @staticmethod
     def aspect_ratio_list(
         ratios: list[str],
@@ -181,7 +182,7 @@ class GenerationKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build aspect ratio selection menu."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         # Default option
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_ratio else default_text
@@ -191,7 +192,7 @@ class GenerationKeyboard:
                 callback_data=GenerationCallback.ratio_set("default"),
             )
         ])
-        
+
         # Ratio options in pairs
         for i in range(0, len(ratios), 2):
             row = []
@@ -204,16 +205,16 @@ class GenerationKeyboard:
                     )
                 )
             rows.append(row)
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=GenerationCallback.BACK,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
-    
+
     @staticmethod
     def resolution_list(
         resolutions: list[str],
@@ -222,7 +223,7 @@ class GenerationKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build resolution selection menu."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         # Default option
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_resolution else default_text
@@ -232,7 +233,7 @@ class GenerationKeyboard:
                 callback_data=GenerationCallback.resolution_set("default"),
             )
         ])
-        
+
         # Resolution options
         for resolution in resolutions:
             label = f"✅ {resolution}" if resolution == selected_resolution else resolution
@@ -242,14 +243,14 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.resolution_set(resolution),
                 )
             ])
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=GenerationCallback.BACK,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
     @staticmethod
@@ -260,7 +261,7 @@ class GenerationKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build quality selection menu."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_quality else default_text
         rows.append([
@@ -269,7 +270,7 @@ class GenerationKeyboard:
                 callback_data=GenerationCallback.quality_set("default"),
             )
         ])
-        
+
         for quality in qualities:
             label = f"✅ {quality}" if quality == selected_quality else quality
             rows.append([
@@ -278,14 +279,14 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.quality_set(quality),
                 )
             ])
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=GenerationCallback.BACK,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
     @staticmethod
@@ -296,7 +297,7 @@ class GenerationKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build input fidelity selection menu."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_value else default_text
         rows.append([
@@ -305,7 +306,7 @@ class GenerationKeyboard:
                 callback_data=GenerationCallback.input_fidelity_set("default"),
             )
         ])
-        
+
         for value in values:
             label = f"✅ {value}" if value == selected_value else value
             rows.append([
@@ -314,14 +315,14 @@ class GenerationKeyboard:
                     callback_data=GenerationCallback.input_fidelity_set(value),
                 )
             ])
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=GenerationCallback.BACK,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
     @staticmethod

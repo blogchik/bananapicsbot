@@ -14,7 +14,7 @@ TRANSLATIONS: dict[str, str] = {
     "yes": "Yes",
     "no": "No",
     "loading": "⏳ Loading...",
-    
+
     # Profile
     "profile_title": "👤 Profile",
     "profile_info": "Your information:",
@@ -36,7 +36,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_trial_available": "available",
     "profile_trial_unavailable": "unavailable",
     "profile_trial_used": " (used: {count})",
-    
+
     # Menu buttons
     "btn_profile": "👤 Profile",
     "btn_topup": "⭐ Top up balance",
@@ -53,7 +53,7 @@ TRANSLATIONS: dict[str, str] = {
     "cmd_referral": "Referral",
     "gen_menu_text": "🖼 Image Generation\n\nHere you can generate images using AI. \n\nHow it works: \n• ✍️ Write a text — an image will be generated\n• 📷 Send an image with a caption — the image will be transformed\n• 📁 You can send multiple images as an album\n\n👉 To get started: \nWrite a text prompt or send an image with a caption.",
     "wm_menu_text": "💧 Watermark Removal\n\nAutomatically remove watermarks from images. \n\nHow it works: \n• Just send an image\n• AI removes the watermark\n• No additional settings required\n\n📷 Send your image now.",
-    
+
     # Generation
     "gen_settings_title": "⚙️ Generation settings",
     "gen_settings_title_t2i": "⚙️ Text-to-image",
@@ -108,7 +108,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_resolution_not_available": "Resolution not available for this model.",
     "gen_image_only": "Please send an image file.",
     "gen_insufficient_balance": "Insufficient balance.",
-    
+
     # Profile
     "profile_title": "👤 Profile",
     "profile_info": "Your information:",
@@ -120,19 +120,19 @@ TRANSLATIONS: dict[str, str] = {
     "profile_trial_available": "available",
     "profile_trial_unavailable": "unavailable",
     "profile_trial_used": " (used {count} times)",
-    
+
     # Referral
     "referral_title": "🤝 Referral",
     "referral_info": "Invite friends and earn {percent}% bonus from their payments.\nReferral works only for new users.",
     "referral_link": "Link: {link}",
     "referral_count": "Referrals: {count}",
     "referral_bonus": "Total bonus earned: {total} credit",
-    
+
     # Errors
     "error_connection": "Connection error. Try again later.",
     "error_user_not_found": "User not found.",
     "error_generic": "An error occurred. Try again later.",
-    
+
     # Payments
     "topup_title": "⭐ Top up balance",
     "topup_description": "Pay with Telegram Stars.",
@@ -149,7 +149,7 @@ TRANSLATIONS: dict[str, str] = {
     "topup_confirmation": "You will receive {credits} credits for {stars} ⭐.",
     "topup_success": "✅ Payment successful!\n+{credits} credits added.\nNew balance: {balance} credits",
     "topup_disabled": "Payments are currently disabled.",
-    
+
     # Referral
     "referral_title": "🤝 Referral",
     "referral_description": "Invite friends and earn {percent}% bonus from their payments.\nReferral works only for new users.",
@@ -157,18 +157,18 @@ TRANSLATIONS: dict[str, str] = {
     "referral_count": "Referrals: {count}",
     "referral_bonus_total": "Total bonus earned: {total} credits",
     "referral_new_applied": "👤 New referral added.\nYou will earn {percent}% bonus from their payments.",
-    
+
     # Settings
     "settings_title": "⚙️ Settings",
     "settings_language": "🌐 Language: {language}",
     "settings_language_changed": "✅ Language changed: {language}",
-    
+
     # Errors
     "insufficient_balance": "Insufficient balance.",
     "rate_limit_exceeded": "Too many requests. Please try again in {seconds} seconds.",
     "user_not_found": "User not found.",
     "model_not_found": "Model not found.",
-    
+
     # Admin
     "admin_panel_title": "🔐 Admin Panel",
     "admin_stats": "📊 Statistics",
@@ -177,7 +177,7 @@ TRANSLATIONS: dict[str, str] = {
     "admin_broadcast": "📢 Broadcast",
     "admin_refund": "💸 Refund",
     "admin_not_authorized": "You are not authorized as admin.",
-    
+
     # Admin - Stats
     "admin_stats_title": "📊 Statistics",
     "admin_stats_users_total": "👥 Total users: {count}",
@@ -204,7 +204,7 @@ TRANSLATIONS: dict[str, str] = {
     "admin_user_stats_title": "👥 User Statistics",
     "admin_gen_stats_title": "🎨 Generation Statistics",
     "admin_revenue_stats_title": "💰 Revenue Statistics",
-    
+
     # Admin - Users
     "admin_users_title": "👥 User Management",
     "admin_user_search_prompt": "🔍 Enter user ID or username:",
@@ -225,7 +225,7 @@ TRANSLATIONS: dict[str, str] = {
     "admin_user_unbanned_success": "✅ User has been unbanned.",
     "admin_users_list_title": "📋 Users ({total}). Page: {page}",
     "admin_users_empty": "📭 No users found.",
-    
+
     # Admin - Credits
     "admin_credits_enter_amount": "💰 Enter credits amount (can be negative):",
     "admin_credits_invalid_amount": "❌ Invalid number.",
@@ -234,12 +234,12 @@ TRANSLATIONS: dict[str, str] = {
     "admin_credits_added": "✅ Added {amount} credits.\nUser: {user_id}\nNew balance: {balance}",
     "admin_credits_removed": "✅ Removed {amount} credits.\nUser: {user_id}\nNew balance: {balance}",
     "admin_action_cancelled": "❌ Action cancelled.",
-    
+
     # Admin - Refund
     "admin_refund_no_generations": "📭 This user has no generations.",
     "admin_refund_select": "🔙 Select generation to refund:",
     "admin_refund_success": "✅ Refunded {amount} credits.\nNew balance: {balance}",
-    
+
     # Admin - Broadcast
     "admin_broadcast_title": "📢 Broadcast",
     "admin_broadcast_enter_message": "📝 Send a message or media for broadcast:",

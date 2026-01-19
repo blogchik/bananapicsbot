@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 import asyncio
 import io
+from dataclasses import dataclass
 from typing import Any
 
 import requests

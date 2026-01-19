@@ -8,7 +8,7 @@ from .manager import LocaleManager
 
 class TranslationKey(str, Enum):
     """Translation keys enum for type safety."""
-    
+
     # Common
     WELCOME = "welcome"
     WELCOME_BACK = "welcome_back"
@@ -22,7 +22,7 @@ class TranslationKey(str, Enum):
     YES = "yes"
     NO = "no"
     LOADING = "loading"
-    
+
     # Profile
     PROFILE_TITLE = "profile_title"
     PROFILE_INFO = "profile_info"
@@ -36,7 +36,7 @@ class TranslationKey(str, Enum):
     PROFILE_TRIAL_AVAILABLE = "profile_trial_available"
     PROFILE_TRIAL_UNAVAILABLE = "profile_trial_unavailable"
     PROFILE_TRIAL_USED = "profile_trial_used"
-    
+
     # Referral
     REFERRAL_TITLE = "referral_title"
     REFERRAL_INFO = "referral_info"
@@ -46,14 +46,14 @@ class TranslationKey(str, Enum):
     REFERRAL_DESCRIPTION = "referral_description"
     REFERRAL_BONUS_TOTAL = "referral_bonus_total"
     REFERRAL_NEW_APPLIED = "referral_new_applied"
-    
+
     # Errors
     ERROR_USER_NOT_FOUND = "error_user_not_found"
     INSUFFICIENT_BALANCE = "insufficient_balance"
     RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
     USER_NOT_FOUND = "user_not_found"
     MODEL_NOT_FOUND = "model_not_found"
-    
+
     # Menu buttons
     BTN_PROFILE = "btn_profile"
     BTN_TOPUP = "btn_topup"
@@ -64,7 +64,7 @@ class TranslationKey(str, Enum):
     BTN_START = "btn_start"
     BTN_GENERATION = "btn_generation"
     BTN_WATERMARK = "btn_watermark"
-    
+
     # Command descriptions
     CMD_HOME = "cmd_home"
     CMD_PROFILE = "cmd_profile"
@@ -74,7 +74,7 @@ class TranslationKey(str, Enum):
     # Home menus
     GEN_MENU_TEXT = "gen_menu_text"
     WM_MENU_TEXT = "wm_menu_text"
-    
+
     # Generation
     GEN_SETTINGS_TITLE = "gen_settings_title"
     GEN_SETTINGS_TITLE_T2I = "gen_settings_title_t2i"
@@ -140,7 +140,7 @@ class TranslationKey(str, Enum):
     WM_PROCESSING = "wm_processing"
     WM_FAILED = "wm_failed"
     WM_SUCCESS = "wm_success"
-    
+
     # Payments
     TOPUP_TITLE = "topup_title"
     TOPUP_DESCRIPTION = "topup_description"
@@ -157,12 +157,12 @@ class TranslationKey(str, Enum):
     TOPUP_CONFIRMATION = "topup_confirmation"
     TOPUP_SUCCESS = "topup_success"
     TOPUP_DISABLED = "topup_disabled"
-    
+
     # Settings
     SETTINGS_TITLE = "settings_title"
     SETTINGS_LANGUAGE = "settings_language"
     SETTINGS_LANGUAGE_CHANGED = "settings_language_changed"
-    
+
     # Admin
     ADMIN_PANEL_TITLE = "admin_panel_title"
     ADMIN_STATS = "admin_stats"
@@ -171,7 +171,7 @@ class TranslationKey(str, Enum):
     ADMIN_BROADCAST = "admin_broadcast"
     ADMIN_REFUND = "admin_refund"
     ADMIN_NOT_AUTHORIZED = "admin_not_authorized"
-    
+
     # Admin - Stats
     ADMIN_STATS_TITLE = "admin_stats_title"
     ADMIN_STATS_USERS_TOTAL = "admin_stats_users_total"
@@ -198,7 +198,7 @@ class TranslationKey(str, Enum):
     ADMIN_USER_STATS_TITLE = "admin_user_stats_title"
     ADMIN_GEN_STATS_TITLE = "admin_gen_stats_title"
     ADMIN_REVENUE_STATS_TITLE = "admin_revenue_stats_title"
-    
+
     # Admin - Users
     ADMIN_USERS_TITLE = "admin_users_title"
     ADMIN_USER_SEARCH_PROMPT = "admin_user_search_prompt"
@@ -219,7 +219,7 @@ class TranslationKey(str, Enum):
     ADMIN_USER_UNBANNED_SUCCESS = "admin_user_unbanned_success"
     ADMIN_USERS_LIST_TITLE = "admin_users_list_title"
     ADMIN_USERS_EMPTY = "admin_users_empty"
-    
+
     # Admin - Credits
     ADMIN_CREDITS_ENTER_AMOUNT = "admin_credits_enter_amount"
     ADMIN_CREDITS_INVALID_AMOUNT = "admin_credits_invalid_amount"
@@ -228,12 +228,12 @@ class TranslationKey(str, Enum):
     ADMIN_CREDITS_ADDED = "admin_credits_added"
     ADMIN_CREDITS_REMOVED = "admin_credits_removed"
     ADMIN_ACTION_CANCELLED = "admin_action_cancelled"
-    
+
     # Admin - Refund
     ADMIN_REFUND_NO_GENERATIONS = "admin_refund_no_generations"
     ADMIN_REFUND_SELECT = "admin_refund_select"
     ADMIN_REFUND_SUCCESS = "admin_refund_success"
-    
+
     # Admin - Broadcast
     ADMIN_BROADCAST_TITLE = "admin_broadcast_title"
     ADMIN_BROADCAST_ENTER_MESSAGE = "admin_broadcast_enter_message"
@@ -254,10 +254,10 @@ class TranslationKey(str, Enum):
 def get_translator(language: str) -> Callable[[TranslationKey, dict | None], str]:
     """Get translator function for language."""
     manager = LocaleManager.get_instance()
-    
+
     def translate(key: TranslationKey, params: dict | None = None) -> str:
         return manager.get(language, key.value, params)
-    
+
     return translate
 
 
@@ -274,6 +274,6 @@ def get_text(
 async def set_user_language(user_id: int, language: str) -> None:
     """Set user language preference."""
     from core.container import get_container
-    
+
     container = get_container()
     await container.redis_client.set_user_language(user_id, language)

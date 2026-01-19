@@ -1,4 +1,3 @@
-from typing import Iterable
 
 from app.core.config import get_settings
 

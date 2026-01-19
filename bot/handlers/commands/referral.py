@@ -1,14 +1,14 @@
 """Referral command handler."""
 
+from typing import Callable
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-from typing import Callable
-
+from core.logging import get_logger
 from keyboards import ReferralKeyboard
 from locales import TranslationKey
 from services import UserService
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="referral")

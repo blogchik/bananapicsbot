@@ -1,16 +1,16 @@
 """Keyboard builders - inline and reply keyboards."""
 
+from .builders import CallbackDataBuilder
 from .inline import (
-    HomeKeyboard,
-    ProfileKeyboard,
-    GenerationKeyboard,
-    PaymentKeyboard,
-    SettingsKeyboard,
     AdminKeyboard,
+    GenerationKeyboard,
+    HomeKeyboard,
+    PaymentKeyboard,
+    ProfileKeyboard,
     ReferralKeyboard,
+    SettingsKeyboard,
     WatermarkKeyboard,
 )
-from .builders import CallbackDataBuilder
 
 __all__ = [
     "HomeKeyboard",

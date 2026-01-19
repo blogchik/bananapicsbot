@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.deps.db import db_session_dep
 from app.core.config import get_settings
+from app.deps.db import db_session_dep
 from app.schemas.referrals import ReferralInfoOut
 from app.services.referrals import get_referral_stats
 from app.services.users import get_user_by_telegram_id

@@ -1,15 +1,14 @@
 """Celery tasks."""
 import asyncio
-import html
 import mimetypes
 import os
 import re
 import time
-import httpx
 from datetime import datetime
 from typing import Optional
 from urllib.parse import unquote, urlparse
 
+import httpx
 from celery import shared_task
 from sqlalchemy import select, update
 
@@ -58,24 +57,27 @@ def process_generation(
     2. Updating generation status in DB
     3. Sending result to user via Telegram when complete
     """
-    from app.db.session import sync_session_factory
     from app.db.models import (
-        GenerationRequest, GenerationJob,
-        GenerationStatus, JobStatus, ModelCatalog, User
+        GenerationJob,
+        GenerationRequest,
+        GenerationStatus,
+        ModelCatalog,
+        User,
     )
+    from app.db.session import sync_session_factory
     from app.services.wavespeed import WavespeedClient
-    
+
     logger.info(
         "Starting generation polling",
         generation_id=generation_request_id,
         chat_id=chat_id,
         message_id=message_id,
     )
-    
+
     poll_interval = settings.generation_poll_interval_seconds
     max_duration = settings.generation_poll_max_duration_seconds
     start_time = time.time()
-    
+
     try:
         with sync_session_factory() as session:
             # Get generation request and job
@@ -132,14 +134,14 @@ def process_generation(
                 return {"error": "Job not found"}
 
             provider_job_id = job.provider_job_id
-        
+
         # Create Wavespeed client for polling
         client = WavespeedClient(
             api_key=settings.wavespeed_api_key,
             api_base_url=settings.wavespeed_api_base_url,
             timeout_seconds=settings.wavespeed_timeout_seconds,
         )
-        
+
         # Polling loop
         while True:
             elapsed = time.time() - start_time
@@ -159,9 +161,9 @@ def process_generation(
                     language,
                 )
                 return {"status": "timeout", "generation_id": generation_request_id}
-            
+
             time.sleep(poll_interval)
-            
+
             try:
                 response = run_async(client.get_prediction_result(provider_job_id))
             except Exception as e:
@@ -171,10 +173,10 @@ def process_generation(
                     error=str(e),
                 )
                 continue
-            
+
             status_value = str(response.data.get("status", "")).lower()
             outputs = _normalize_outputs(response.data.get("outputs", []))
-            
+
             if status_value == "completed" or (not status_value and outputs):
                 # Generation completed successfully
                 _complete_generation(generation_request_id, outputs)
@@ -190,7 +192,7 @@ def process_generation(
                     outputs_count=len(outputs),
                 )
                 return {"status": "completed", "generation_id": generation_request_id}
-            
+
             elif status_value == "failed":
                 error_msg = response.message or "Generation failed"
                 _mark_generation_failed(generation_request_id, error_msg)
@@ -201,7 +203,7 @@ def process_generation(
                     error=error_msg,
                 )
                 return {"status": "failed", "generation_id": generation_request_id}
-            
+
             # Still running, continue polling
             logger.debug(
                 "Generation still running",
@@ -209,7 +211,7 @@ def process_generation(
                 status=status_value,
                 elapsed=elapsed,
             )
-        
+
     except Exception as exc:
         logger.error(
             "Generation processing failed",
@@ -280,9 +282,14 @@ def _rollback_trial_use(session, request_id: int) -> None:
 
 def _mark_generation_failed(request_id: int, error_message: str) -> None:
     """Mark generation as failed in DB."""
+    from app.db.models import (
+        GenerationJob,
+        GenerationRequest,
+        GenerationStatus,
+        JobStatus,
+    )
     from app.db.session import sync_session_factory
-    from app.db.models import GenerationRequest, GenerationJob, GenerationStatus, JobStatus
-    
+
     try:
         with sync_session_factory() as session:
             request = session.query(GenerationRequest).filter(
@@ -293,7 +300,7 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
                 request.completed_at = datetime.utcnow()
                 _refund_generation_cost(session, request)
                 _rollback_trial_use(session, request.id)
-            
+
             job = session.query(GenerationJob).filter(
                 GenerationJob.request_id == request_id
             ).first()
@@ -301,7 +308,7 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
                 job.status = JobStatus.failed
                 job.completed_at = datetime.utcnow()
                 job.error_message = error_message
-            
+
             session.commit()
     except Exception as e:
         logger.error("Failed to mark generation as failed", error=str(e))
@@ -309,12 +316,15 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
 
 def _complete_generation(request_id: int, outputs: list[str]) -> None:
     """Complete generation and save results."""
-    from app.db.session import sync_session_factory
     from app.db.models import (
-        GenerationRequest, GenerationJob, GenerationResult,
-        GenerationStatus, JobStatus
+        GenerationJob,
+        GenerationRequest,
+        GenerationResult,
+        GenerationStatus,
+        JobStatus,
     )
-    
+    from app.db.session import sync_session_factory
+
     try:
         with sync_session_factory() as session:
             request = session.query(GenerationRequest).filter(
@@ -323,14 +333,14 @@ def _complete_generation(request_id: int, outputs: list[str]) -> None:
             if request:
                 request.status = GenerationStatus.completed
                 request.completed_at = datetime.utcnow()
-            
+
             job = session.query(GenerationJob).filter(
                 GenerationJob.request_id == request_id
             ).first()
             if job:
                 job.status = JobStatus.completed
                 job.completed_at = datetime.utcnow()
-            
+
             # Add results
             existing = set(
                 session.execute(
@@ -345,7 +355,7 @@ def _complete_generation(request_id: int, outputs: list[str]) -> None:
                         request_id=request_id,
                         image_url=output
                     ))
-            
+
             session.commit()
     except Exception as e:
         logger.error("Failed to complete generation", error=str(e))
@@ -402,7 +412,7 @@ def _notify_user_generation_failed(
     """Notify user that generation failed."""
     if not settings.bot_token:
         return
-    
+
     try:
         text = _build_failure_message(language, error_message)
         run_async(_edit_telegram_message(chat_id, message_id, text))
@@ -603,11 +613,11 @@ def start_broadcast_task(self, broadcast_id: int):
     2. Gets filtered user list
     3. Queues individual send tasks
     """
-    from app.db.session import sync_session_factory
     from app.db.models import Broadcast, BroadcastStatus
-    
+    from app.db.session import sync_session_factory
+
     logger.info("Starting broadcast", broadcast_id=broadcast_id)
-    
+
     try:
         with sync_session_factory() as session:
             # Get broadcast
@@ -615,25 +625,25 @@ def start_broadcast_task(self, broadcast_id: int):
             if not broadcast:
                 logger.error("Broadcast not found", broadcast_id=broadcast_id)
                 return {"error": "Broadcast not found"}
-            
+
             if broadcast.status != BroadcastStatus.pending:
                 logger.warning("Broadcast not pending", broadcast_id=broadcast_id, status=broadcast.status.value)
                 return {"error": f"Broadcast is {broadcast.status.value}"}
-            
+
             # Update status to running
             broadcast.status = BroadcastStatus.running
             broadcast.started_at = datetime.utcnow()
             session.commit()
-            
+
             # Get filtered user IDs
             user_ids = _get_filtered_user_ids(session, broadcast.filter_type, broadcast.filter_params)
-            
+
             # Update total users count
             broadcast.total_users = len(user_ids)
             session.commit()
-            
+
             logger.info("Broadcasting to users", broadcast_id=broadcast_id, total_users=len(user_ids))
-            
+
             # Queue individual send tasks with rate limiting
             for telegram_id in user_ids:
                 send_broadcast_message.apply_async(
@@ -648,12 +658,12 @@ def start_broadcast_task(self, broadcast_id: int):
                     ],
                     countdown=0,  # Will be rate limited in the task
                 )
-        
+
         return {"status": "started", "total_users": len(user_ids)}
-        
+
     except Exception as exc:
         logger.exception("Failed to start broadcast", broadcast_id=broadcast_id, error=str(exc))
-        
+
         # Mark as failed
         try:
             with sync_session_factory() as session:
@@ -664,35 +674,37 @@ def start_broadcast_task(self, broadcast_id: int):
                     session.commit()
         except:
             pass
-        
+
         return {"error": str(exc)}
 
 
 def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[dict] = None) -> list:
     """Get user IDs matching the filter (sync version)."""
     from datetime import timedelta
+
     from sqlalchemy import func
-    from app.db.models import User, LedgerEntry
-    
+
+    from app.db.models import LedgerEntry, User
+
     now = datetime.utcnow()
-    
+
     if filter_type == "all":
         users = session.query(User.telegram_id).filter(User.is_banned == False).all()
-    
+
     elif filter_type == "active_7d":
         cutoff = now - timedelta(days=7)
         users = session.query(User.telegram_id).filter(
             User.is_banned == False,
             User.last_active_at >= cutoff,
         ).all()
-    
+
     elif filter_type == "active_30d":
         cutoff = now - timedelta(days=30)
         users = session.query(User.telegram_id).filter(
             User.is_banned == False,
             User.last_active_at >= cutoff,
         ).all()
-    
+
     elif filter_type == "with_balance":
         balance_subq = (
             session.query(
@@ -709,7 +721,7 @@ def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[di
             .filter(User.is_banned == False)
             .all()
         )
-    
+
     elif filter_type == "paid_users":
         paid_subq = (
             session.query(LedgerEntry.user_id)
@@ -723,17 +735,17 @@ def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[di
             .filter(User.is_banned == False)
             .all()
         )
-    
+
     elif filter_type == "new_users":
         cutoff = now - timedelta(days=7)
         users = session.query(User.telegram_id).filter(
             User.is_banned == False,
             User.created_at >= cutoff,
         ).all()
-    
+
     else:
         users = session.query(User.telegram_id).filter(User.is_banned == False).all()
-    
+
     return [u[0] for u in users]
 
 
@@ -752,10 +764,9 @@ def send_broadcast_message(
     
     Rate limited to 20 messages per second by Celery.
     """
-    from sqlalchemy import update
-    from app.db.session import sync_session_factory
     from app.db.models import Broadcast, BroadcastRecipient, BroadcastStatus, User
-    
+    from app.db.session import sync_session_factory
+
     try:
         # Check if broadcast is still running
         with sync_session_factory() as session:
@@ -763,9 +774,9 @@ def send_broadcast_message(
             if not broadcast or broadcast.status == BroadcastStatus.cancelled:
                 logger.info("Broadcast cancelled, skipping", broadcast_id=broadcast_id, telegram_id=telegram_id)
                 return {"status": "skipped", "reason": "cancelled"}
-            
+
             admin_id = broadcast.admin_id
-        
+
         # Send message via Telegram Bot API
         result = _send_telegram_message(
             telegram_id=telegram_id,
@@ -775,7 +786,7 @@ def send_broadcast_message(
             inline_button_text=inline_button_text,
             inline_button_url=inline_button_url,
         )
-        
+
         # Update counters atomically
         with sync_session_factory() as session:
             # Use atomic update to avoid race conditions
@@ -800,11 +811,11 @@ def send_broadcast_message(
                     .values(failed_count=Broadcast.failed_count + 1)
                 )
                 status = "failed"
-            
+
             # Get user_id from telegram_id
             user = session.query(User).filter(User.telegram_id == telegram_id).first()
             user_id = user.id if user else None
-            
+
             # Add recipient record
             if user_id:
                 recipient = BroadcastRecipient(
@@ -816,9 +827,9 @@ def send_broadcast_message(
                     sent_at=datetime.utcnow(),
                 )
                 session.add(recipient)
-            
+
             session.commit()
-            
+
             # Re-fetch broadcast to check completion
             broadcast = session.query(Broadcast).filter(Broadcast.id == broadcast_id).first()
             if broadcast:
@@ -831,9 +842,9 @@ def send_broadcast_message(
                     broadcast.status = BroadcastStatus.completed
                     broadcast.completed_at = datetime.utcnow()
                     session.commit()
-                    
+
                     logger.info("Broadcast completed", broadcast_id=broadcast_id)
-                    
+
                     # Send notification to admin
                     _notify_admin_broadcast_completed(
                         admin_id=admin_id,
@@ -844,9 +855,9 @@ def send_broadcast_message(
                         failed=broadcast.failed_count or 0,
                         blocked=broadcast.blocked_count or 0,
                     )
-        
+
         return result
-        
+
     except Exception as exc:
         logger.error(
             "Broadcast message failed",
@@ -854,13 +865,14 @@ def send_broadcast_message(
             telegram_id=telegram_id,
             error=str(exc),
         )
-        
+
         # Update failed counter atomically
         try:
             from sqlalchemy import update
-            from app.db.session import sync_session_factory
+
             from app.db.models import Broadcast, BroadcastStatus
-            
+            from app.db.session import sync_session_factory
+
             with sync_session_factory() as session:
                 session.execute(
                     update(Broadcast)
@@ -868,7 +880,7 @@ def send_broadcast_message(
                     .values(failed_count=Broadcast.failed_count + 1)
                 )
                 session.commit()
-                
+
                 # Check completion
                 broadcast = session.query(Broadcast).filter(Broadcast.id == broadcast_id).first()
                 if broadcast:
@@ -881,7 +893,7 @@ def send_broadcast_message(
                         broadcast.status = BroadcastStatus.completed
                         broadcast.completed_at = datetime.utcnow()
                         session.commit()
-                        
+
                         _notify_admin_broadcast_completed(
                             admin_id=broadcast.admin_id,
                             broadcast_id=broadcast_id,
@@ -893,7 +905,7 @@ def send_broadcast_message(
                         )
         except Exception as inner_exc:
             logger.error("Failed to update broadcast counter", error=str(inner_exc))
-        
+
         # Return error instead of retrying (message may have been sent)
         return {"success": False, "error": str(exc)}
 
@@ -912,9 +924,9 @@ def _notify_admin_broadcast_completed(
     if not bot_token:
         logger.warning("BOT_TOKEN not configured, skipping admin notification")
         return
-    
+
     success_rate = (sent / total * 100) if total > 0 else 0
-    
+
     message = (
         f"✅ <b>Broadcast Completed!</b>\n\n"
         f"📋 ID: <code>{public_id}</code>\n\n"
@@ -925,7 +937,7 @@ def _notify_admin_broadcast_completed(
         f"🚫 Blocked: {blocked}\n"
         f"📈 Success Rate: {success_rate:.1f}%"
     )
-    
+
     try:
         import httpx
         with httpx.Client(timeout=10.0) as client:
@@ -959,9 +971,9 @@ def _send_telegram_message(
     bot_token = settings.bot_token
     if not bot_token:
         return {"success": False, "error": "BOT_TOKEN not configured"}
-    
+
     base_url = f"https://api.telegram.org/bot{bot_token}"
-    
+
     # Build inline keyboard if button provided
     reply_markup = None
     if inline_button_text and inline_button_url:
@@ -970,7 +982,7 @@ def _send_telegram_message(
                 {"text": inline_button_text, "url": inline_button_url}
             ]]
         }
-    
+
     try:
         with httpx.Client(timeout=30.0) as client:
             if content_type == "text":
@@ -982,7 +994,7 @@ def _send_telegram_message(
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
                 response = client.post(f"{base_url}/sendMessage", json=payload)
-            
+
             elif content_type == "photo":
                 payload = {
                     "chat_id": telegram_id,
@@ -993,7 +1005,7 @@ def _send_telegram_message(
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
                 response = client.post(f"{base_url}/sendPhoto", json=payload)
-            
+
             elif content_type == "video":
                 payload = {
                     "chat_id": telegram_id,
@@ -1004,7 +1016,7 @@ def _send_telegram_message(
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
                 response = client.post(f"{base_url}/sendVideo", json=payload)
-            
+
             elif content_type == "audio":
                 payload = {
                     "chat_id": telegram_id,
@@ -1015,31 +1027,31 @@ def _send_telegram_message(
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
                 response = client.post(f"{base_url}/sendAudio", json=payload)
-            
+
             elif content_type == "sticker":
                 payload = {
                     "chat_id": telegram_id,
                     "sticker": media_file_id,
                 }
                 response = client.post(f"{base_url}/sendSticker", json=payload)
-            
+
             else:
                 return {"success": False, "error": f"Unknown content type: {content_type}"}
-            
+
             data = response.json()
-            
+
             if data.get("ok"):
                 return {"success": True, "telegram_id": telegram_id}
             else:
                 error_code = data.get("error_code", 0)
                 description = data.get("description", "Unknown error")
-                
+
                 # Check if user blocked bot
                 if error_code == 403 or "blocked" in description.lower() or "deactivated" in description.lower():
                     return {"success": False, "blocked": True, "error": description}
-                
+
                 return {"success": False, "error": description}
-    
+
     except httpx.TimeoutException:
         return {"success": False, "error": "Request timeout"}
     except Exception as e:
@@ -1055,15 +1067,21 @@ def cleanup_expired_generations():
     2. Mark them as failed
     3. Clear Redis locks
     """
-    from app.db.session import sync_session_factory
-    from app.db.models import GenerationRequest, GenerationJob, GenerationStatus, JobStatus
     from datetime import timedelta
+
+    from app.db.models import (
+        GenerationJob,
+        GenerationRequest,
+        GenerationStatus,
+        JobStatus,
+    )
+    from app.db.session import sync_session_factory
     logger.info("Running generation cleanup")
-    
+
     # Generations stuck for more than 10 minutes
     cutoff_time = datetime.utcnow() - timedelta(minutes=10)
     cleaned_count = 0
-    
+
     try:
         with sync_session_factory() as session:
             # Find stuck generations
@@ -1073,12 +1091,12 @@ def cleanup_expired_generations():
                 GenerationStatus.queued,
                 GenerationStatus.running,
             ]
-            
+
             stuck_generations = session.query(GenerationRequest).filter(
                 GenerationRequest.status.in_(stuck_statuses),
                 GenerationRequest.created_at < cutoff_time,
             ).all()
-            
+
             for gen in stuck_generations:
                 logger.warning(
                     "Cleaning up stuck generation",
@@ -1086,11 +1104,11 @@ def cleanup_expired_generations():
                     status=gen.status.value,
                     created_at=gen.created_at.isoformat(),
                 )
-                
+
                 # Mark as failed
                 gen.status = GenerationStatus.failed
                 gen.completed_at = datetime.utcnow()
-                
+
                 # Update job status
                 job = session.query(GenerationJob).filter(
                     GenerationJob.request_id == gen.id
@@ -1099,16 +1117,16 @@ def cleanup_expired_generations():
                     job.status = JobStatus.failed
                     job.completed_at = datetime.utcnow()
                     job.error_message = "Generation timeout - cleaned up by system"
-                
+
                 cleaned_count += 1
-            
+
             session.commit()
-        
+
         logger.info("Generation cleanup completed", cleaned_count=cleaned_count)
-        
+
     except Exception as e:
         logger.error("Generation cleanup failed", error=str(e))
-    
+
     return {"cleaned_up": cleaned_count}
 
 
@@ -1116,9 +1134,9 @@ def cleanup_expired_generations():
 def send_daily_report(admin_ids: list[int]):
     """Send daily report to admins."""
     logger.info("Sending daily report", admin_ids=admin_ids)
-    
+
     # TODO: Implement daily report generation and sending
-    
+
     return {"sent_to": len(admin_ids)}
 
 
@@ -1133,16 +1151,16 @@ def process_broadcast(self, broadcast_id: str):
     """
     try:
         logger.info("Starting broadcast", broadcast_id=broadcast_id)
-        
+
         # TODO: Implement broadcast processing
         # This would:
         # 1. Get broadcast details
         # 2. Get all active users
         # 3. Queue send_broadcast_message for each user
         # 4. Update broadcast status
-        
+
         return {"status": "completed", "broadcast_id": broadcast_id}
-        
+
     except Exception as exc:
         logger.error(
             "Broadcast processing failed",

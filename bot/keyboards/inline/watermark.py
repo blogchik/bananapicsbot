@@ -1,11 +1,12 @@
 """Watermark tool keyboards."""
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from typing import Callable
 
-from keyboards.builders import WatermarkCallback
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from core.constants import BotConstants
 from locales import TranslationKey
+
+from keyboards.builders import WatermarkCallback
 
 
 class WatermarkKeyboard:

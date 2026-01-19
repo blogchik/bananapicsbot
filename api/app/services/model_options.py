@@ -1,9 +1,9 @@
 import asyncio
 import json
 import re
-from urllib.parse import urlsplit
 from dataclasses import asdict
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 

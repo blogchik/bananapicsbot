@@ -1,17 +1,15 @@
 import re
-from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app.deps.db import db_session_dep
-from app.core.constants import SIZE_OPTIONS
 from app.core.config import get_settings
+from app.core.constants import SIZE_OPTIONS
 from app.core.model_options import ModelParameterOptions
-from app.deps.wavespeed import wavespeed_client
 from app.db.models import (
     GenerationJob,
     GenerationReference,
@@ -24,6 +22,8 @@ from app.db.models import (
     ModelPrice,
     TrialUse,
 )
+from app.deps.db import db_session_dep
+from app.deps.wavespeed import wavespeed_client
 from app.infrastructure.logging import get_logger
 from app.schemas.generation import (
     GenerationAccessIn,

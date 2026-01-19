@@ -4,8 +4,7 @@ import uuid
 from typing import Callable
 
 from aiogram import Bot
-from aiogram.types import LabeledPrice, Message
-
+from aiogram.types import LabeledPrice
 from core.container import get_container
 from core.logging import get_logger
 from locales import TranslationKey
@@ -15,7 +14,7 @@ logger = get_logger(__name__)
 
 class PaymentService:
     """Payment-related business logic."""
-    
+
     @staticmethod
     async def get_stars_options() -> dict:
         """Get stars payment options."""
@@ -44,7 +43,7 @@ class PaymentService:
         if not prices:
             return None
         return int(min(prices))
-    
+
     @staticmethod
     def calculate_credits(
         stars_amount: int,
@@ -55,14 +54,14 @@ class PaymentService:
         if stars_amount <= 0 or denominator <= 0:
             return 0
         return int(round(stars_amount * numerator / denominator))
-    
+
     @staticmethod
     def format_exchange_rate(numerator: int, denominator: int) -> str:
         """Format exchange rate for display."""
         if numerator <= 0 or denominator <= 0:
             return ""
         return f"Kurs: {denominator} ⭐ = {numerator} credit"
-    
+
     @staticmethod
     def parse_stars_amount(value: str) -> int | None:
         """Parse stars amount from user input."""
@@ -71,7 +70,7 @@ class PaymentService:
             return None
         amount = int(value)
         return amount if amount > 0 else None
-    
+
     @staticmethod
     async def send_stars_invoice(
         bot: Bot,
@@ -94,7 +93,7 @@ class PaymentService:
         })
         label = _(TranslationKey.TOPUP_INVOICE_LABEL, None)
         prices = [LabeledPrice(label=label, amount=stars_amount)]
-        
+
         await bot.send_invoice(
             chat_id=chat_id,
             title=title,
@@ -105,7 +104,7 @@ class PaymentService:
             prices=prices,
             reply_to_message_id=message_id,
         )
-    
+
     @staticmethod
     async def confirm_payment(
         telegram_id: int,
@@ -125,7 +124,7 @@ class PaymentService:
             provider_charge_id=provider_charge_id,
             invoice_payload=invoice_payload,
         )
-    
+
     @staticmethod
     def build_preset_pairs(
         presets: list[int],

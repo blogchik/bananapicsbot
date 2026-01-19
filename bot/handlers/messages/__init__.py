@@ -2,8 +2,8 @@
 
 from aiogram import Router
 
-from .prompt import router as prompt_router
 from .media import router as media_router
+from .prompt import router as prompt_router
 
 # Create messages router
 messages_router = Router(name="messages")

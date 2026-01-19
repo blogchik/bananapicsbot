@@ -1,12 +1,12 @@
 """Inline keyboard builders."""
 
-from .home import HomeKeyboard
-from .profile import ProfileKeyboard
-from .generation import GenerationKeyboard
-from .payment import PaymentKeyboard
-from .settings import SettingsKeyboard
 from .admin import AdminKeyboard
+from .generation import GenerationKeyboard
+from .home import HomeKeyboard
+from .payment import PaymentKeyboard
+from .profile import ProfileKeyboard
 from .referral import ReferralKeyboard
+from .settings import SettingsKeyboard
 from .watermark import WatermarkKeyboard
 
 __all__ = [

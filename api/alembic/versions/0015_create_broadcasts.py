@@ -7,10 +7,9 @@ Create Date: 2026-01-16
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-
 
 # revision identifiers, used by Alembic.
 revision: str = "0015_create_broadcasts"
@@ -27,7 +26,7 @@ def upgrade() -> None:
         create_type=False
     )
     op.execute("CREATE TYPE broadcast_status AS ENUM ('pending', 'running', 'completed', 'cancelled', 'failed')")
-    
+
     # Create broadcasts table
     op.create_table(
         "broadcasts",
@@ -69,7 +68,7 @@ def upgrade() -> None:
     op.create_index("ix_broadcasts_public_id", "broadcasts", ["public_id"], unique=True)
     op.create_index("ix_broadcasts_status", "broadcasts", ["status"])
     op.create_index("ix_broadcasts_admin_id", "broadcasts", ["admin_id"])
-    
+
     # Create broadcast_recipients table for tracking individual sends
     op.create_table(
         "broadcast_recipients",
@@ -101,6 +100,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("broadcast_recipients")
     op.drop_table("broadcasts")
-    
+
     # Drop enum
     op.execute("DROP TYPE IF EXISTS broadcast_status")

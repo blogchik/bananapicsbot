@@ -1,14 +1,13 @@
 """Structured logging with structlog and Sentry integration."""
 import logging
 import sys
-from typing import Any, Dict, Optional
 from contextvars import ContextVar
+from typing import Any, Dict, Optional
 
 import structlog
 from structlog.types import Processor
 
 from app.core.config import get_settings
-
 
 # Context variables for request-scoped data
 request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
@@ -24,11 +23,11 @@ def add_request_context(
     request_id = request_id_var.get()
     if request_id:
         event_dict["request_id"] = request_id
-    
+
     user_id = user_id_var.get()
     if user_id:
         event_dict["user_id"] = user_id
-    
+
     return event_dict
 
 
@@ -47,10 +46,10 @@ def add_app_context(
 def setup_logging() -> None:
     """Configure structured logging."""
     settings = get_settings()
-    
+
     # Determine log level
     log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
-    
+
     # Shared processors
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,
@@ -63,7 +62,7 @@ def setup_logging() -> None:
         add_request_context,
         add_app_context,
     ]
-    
+
     # Format-specific processors
     if settings.log_format == "json":
         # JSON format for production
@@ -71,7 +70,7 @@ def setup_logging() -> None:
     else:
         # Console format for development
         renderer = structlog.dev.ConsoleRenderer(colors=True)
-    
+
     structlog.configure(
         processors=shared_processors + [
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
@@ -81,25 +80,25 @@ def setup_logging() -> None:
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard logging
     formatter = structlog.stdlib.ProcessorFormatter(
         processor=renderer,
         foreign_pre_chain=shared_processors,
     )
-    
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
-    
+
     root_logger = logging.getLogger()
     root_logger.handlers = [handler]
     root_logger.setLevel(log_level)
-    
+
     # Set levels for noisy loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-    
+
     # Setup Sentry if DSN provided
     if settings.sentry_dsn:
         setup_sentry(settings.sentry_dsn)
@@ -110,12 +109,12 @@ def setup_sentry(dsn: str) -> None:
     try:
         import sentry_sdk
         from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-        from sentry_sdk.integrations.redis import RedisIntegration
         from sentry_sdk.integrations.logging import LoggingIntegration
-        
+        from sentry_sdk.integrations.redis import RedisIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
         settings = get_settings()
-        
+
         sentry_sdk.init(
             dsn=dsn,
             environment=settings.environment,
@@ -144,7 +143,7 @@ def before_send_filter(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[
         url = event["request"].get("url", "")
         if "/health" in url or "/ready" in url:
             return None
-    
+
     return event
 
 

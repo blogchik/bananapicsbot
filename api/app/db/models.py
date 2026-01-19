@@ -1,17 +1,19 @@
-from datetime import datetime
 import uuid
+from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     DateTime,
-    Enum as SqlEnum,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
+)
+from sqlalchemy import (
+    Enum as SqlEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

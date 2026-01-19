@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 class GenerationStatus(str, Enum):
     """Generation status enum."""
-    
+
     PENDING = "pending"
     CONFIGURING = "configuring"
     QUEUED = "queued"
@@ -22,7 +22,7 @@ class GenerationStatus(str, Enum):
 @dataclass
 class GenerationReference:
     """Reference image for generation."""
-    
+
     id: int
     request_id: int
     telegram_file_id: Optional[str] = None
@@ -33,7 +33,7 @@ class GenerationReference:
 @dataclass
 class GenerationResult:
     """Generation result (output image)."""
-    
+
     id: int
     request_id: int
     url: str
@@ -44,7 +44,7 @@ class GenerationResult:
 @dataclass
 class Generation:
     """Generation domain entity."""
-    
+
     id: int
     public_id: str
     user_id: int
@@ -65,10 +65,10 @@ class Generation:
     updated_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    
+
     references: list[GenerationReference] = field(default_factory=list)
     results: list[GenerationResult] = field(default_factory=list)
-    
+
     @property
     def is_active(self) -> bool:
         """Check if generation is still in progress."""
@@ -78,7 +78,7 @@ class Generation:
             GenerationStatus.QUEUED,
             GenerationStatus.RUNNING,
         )
-    
+
     @property
     def is_finished(self) -> bool:
         """Check if generation is finished."""
@@ -93,7 +93,7 @@ class Generation:
 @dataclass
 class GenerationCreate:
     """Generation creation DTO."""
-    
+
     user_id: int
     model_id: int
     prompt: str

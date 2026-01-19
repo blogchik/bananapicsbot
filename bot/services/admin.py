@@ -1,9 +1,8 @@
 """Admin service."""
 
 import aiohttp
-
 from core.container import get_container
-from core.exceptions import APIError, APIConnectionError
+from core.exceptions import APIConnectionError, APIError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -11,7 +10,7 @@ logger = get_logger(__name__)
 
 class AdminService:
     """Admin-related business logic."""
-    
+
     @staticmethod
     async def add_credits(
         telegram_id: int,
@@ -25,13 +24,13 @@ class AdminService:
             credits=credits,
             description=description,
         )
-    
+
     @staticmethod
     async def get_stats() -> dict:
         """Get admin statistics."""
         container = get_container()
         return await container.api_client.get_admin_stats()
-    
+
     @staticmethod
     async def get_users_list(
         limit: int = 50,
@@ -40,7 +39,7 @@ class AdminService:
         """Get users list."""
         container = get_container()
         return await container.api_client.get_users_list(limit=limit, offset=offset)
-    
+
     @staticmethod
     async def fetch_star_transactions(
         bot_token: str,
@@ -49,7 +48,7 @@ class AdminService:
     ) -> list[dict]:
         """Fetch star transactions from Telegram API."""
         url = f"https://api.telegram.org/bot{bot_token}/getStarTransactions"
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.get(url, params={"offset": offset, "limit": limit}) as resp:
                 data = await resp.json()
@@ -57,7 +56,7 @@ class AdminService:
                     raise RuntimeError(data.get("description", "Telegram API error"))
                 result = data.get("result") or {}
                 return list(result.get("transactions") or [])
-    
+
     @staticmethod
     async def refund_star_payment(
         bot_token: str,
@@ -66,7 +65,7 @@ class AdminService:
     ) -> tuple[bool, str | None]:
         """Refund star payment."""
         url = f"https://api.telegram.org/bot{bot_token}/refundStarPayment"
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 url,
@@ -76,7 +75,7 @@ class AdminService:
                 if payload.get("ok"):
                     return True, None
                 return False, str(payload.get("description"))
-    
+
     @staticmethod
     async def get_user_unrefunded_transactions(
         bot_token: str,
@@ -98,64 +97,64 @@ class AdminService:
         limit = 100
         pages_checked = 0
         max_pages = 10
-        
+
         while pages_checked < max_pages:
             try:
                 transactions = await AdminService.fetch_star_transactions(bot_token, offset, limit)
             except RuntimeError as e:
                 logger.warning("Failed to fetch transactions", error=str(e))
                 break
-            
+
             if not transactions:
                 break
-            
+
             pages_checked += 1
-            
+
             for tx in transactions:
                 tx_id = tx.get("id")
                 if not tx_id:
                     continue
-                
+
                 source = tx.get("source") or {}
                 tx_type = source.get("type")
                 tx_transaction_type = source.get("transaction_type")
                 tx_user = source.get("user") or {}
                 tx_user_id = tx_user.get("id")
-                
+
                 # Only user payments (not refunds which have "receiver" field)
                 if tx_type != "user":
                     continue
-                
+
                 # Only invoice payments
                 if tx_transaction_type and tx_transaction_type != "invoice_payment":
                     continue
-                
+
                 # Only this user
                 if tx_user_id is None or int(tx_user_id) != user_id:
                     continue
-                
+
                 amount = int(tx.get("amount") or 0)
                 if amount <= 0:
                     continue
-                
+
                 # Get date from transaction
                 tx_date = tx.get("date", 0)
-                
+
                 payments.append({
                     "id": tx_id,
                     "amount": amount,
                     "date": tx_date,
                 })
-            
+
             offset += limit
-        
+
         # Sort by date descending (newest first)
         payments.sort(key=lambda x: x.get("date", 0), reverse=True)
-        
+
         return payments
-        
+
         return unrefunded
-    
+
     @staticmethod
     async def refund_single_transaction(
         bot_token: str,
@@ -169,21 +168,21 @@ class AdminService:
         """
         # First, get the transaction to find amount
         transactions = await AdminService.get_user_unrefunded_transactions(bot_token, user_id)
-        
+
         tx_amount = 0
         for tx in transactions:
             if tx["id"] == tx_id:
                 tx_amount = tx["amount"]
                 break
-        
+
         if tx_amount == 0:
             return False, 0, "Tranzaksiya topilmadi yoki allaqachon qaytarilgan"
-        
+
         ok, error = await AdminService.refund_star_payment(bot_token, user_id, tx_id)
-        
+
         if ok:
             return True, tx_amount, None
-        
+
         # Parse error
         if error and "CHARGE_ALREADY_REFUNDED" in error:
             return False, 0, "Tranzaksiya allaqachon qaytarilgan"
@@ -191,7 +190,7 @@ class AdminService:
             return False, 0, "Foydalanuvchi bot bilan aloqa o'chirilgan"
         elif error and "CHARGE_NOT_FOUND" in error:
             return False, 0, "Tranzaksiya topilmadi (eskirgan)"
-        
+
         return False, 0, error
 
     @staticmethod
@@ -214,18 +213,18 @@ class AdminService:
         limit = 100
         pages_checked = 0
         max_pages = 10  # Limit to avoid infinite loop
-        
+
         while refunded_total < stars_amount and pages_checked < max_pages:
             try:
                 transactions = await AdminService.fetch_star_transactions(bot_token, offset, limit)
             except RuntimeError as e:
                 errors.append(f"API xatosi: {str(e)}")
                 break
-            
+
             if not transactions:
                 logger.info("No more transactions found", offset=offset)
                 break
-            
+
             pages_checked += 1
             logger.info(
                 "Processing transactions page",
@@ -233,14 +232,14 @@ class AdminService:
                 count=len(transactions),
                 user_id=user_id,
             )
-            
+
             for tx in transactions:
                 source = tx.get("source") or {}
                 tx_type = source.get("type")
                 tx_transaction_type = source.get("transaction_type")
                 tx_user = source.get("user") or {}
                 tx_user_id = tx_user.get("id")
-                
+
                 logger.info(
                     "Checking transaction",
                     tx_id=tx.get("id"),
@@ -250,34 +249,34 @@ class AdminService:
                     target_user_id=user_id,
                     amount=tx.get("amount"),
                 )
-                
+
                 if tx_type != "user":
                     continue
-                    
+
                 # Check if this is a payment (not a refund which has negative amount)
                 # transaction_type might be "invoice_payment" or might not exist
                 if tx_transaction_type and tx_transaction_type != "invoice_payment":
                     continue
-                
+
                 if tx_user_id is None or int(tx_user_id) != user_id:
                     continue
-                
+
                 # User has made payments to this bot
                 user_has_payments = True
-                
+
                 amount = int(tx.get("amount") or 0)
                 if amount <= 0:
                     # Negative amount means it was already refunded
                     continue
-                
+
                 charge_id = tx.get("id")
                 if not charge_id:
                     continue
-                
+
                 ok, error = await AdminService.refund_star_payment(
                     bot_token, user_id, charge_id
                 )
-                
+
                 if ok:
                     refunded_total += amount
                     refunded_count += 1
@@ -292,20 +291,20 @@ class AdminService:
                 elif error:
                     # Parse Telegram API error
                     if "CHARGE_ALREADY_REFUNDED" in error:
-                        errors.append(f"Tranzaksiya allaqachon qaytarilgan")
+                        errors.append("Tranzaksiya allaqachon qaytarilgan")
                     elif "USER_BOT_INVALID" in error:
-                        errors.append(f"Foydalanuvchi bot bilan aloqa o'chirilgan")
+                        errors.append("Foydalanuvchi bot bilan aloqa o'chirilgan")
                     elif "CHARGE_NOT_FOUND" in error:
-                        errors.append(f"Tranzaksiya topilmadi (eskirgan)")
+                        errors.append("Tranzaksiya topilmadi (eskirgan)")
                     else:
                         errors.append(error)
-            
+
             offset += limit
-        
+
         return refunded_total, refunded_count, errors, user_has_payments
-    
+
     # === New methods for admin panel ===
-    
+
     @staticmethod
     async def get_overview_stats() -> dict:
         """Get overview statistics for admin panel."""
@@ -315,7 +314,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get overview stats", error=str(e))
             return {"error": True}
-    
+
     @staticmethod
     async def get_user_stats() -> dict:
         """Get user statistics."""
@@ -325,7 +324,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get user stats", error=str(e))
             return {"error": True}
-    
+
     @staticmethod
     async def get_generation_stats() -> dict:
         """Get generation statistics."""
@@ -335,7 +334,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get generation stats", error=str(e))
             return {"error": True}
-    
+
     @staticmethod
     async def get_revenue_stats() -> dict:
         """Get revenue statistics."""
@@ -345,7 +344,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get revenue stats", error=str(e))
             return {"error": True}
-    
+
     @staticmethod
     async def search_users(query: str) -> list[dict]:
         """Search users by ID or username."""
@@ -363,7 +362,7 @@ class AdminService:
                 except Exception:
                     pass
             return []
-    
+
     @staticmethod
     async def get_user(telegram_id: int) -> dict | None:
         """Get user by telegram ID."""
@@ -373,7 +372,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get user", error=str(e))
             return None
-    
+
     @staticmethod
     async def get_users_page(page: int = 0, per_page: int = 20) -> dict:
         """Get paginated users list."""
@@ -383,7 +382,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get users page", error=str(e))
             return {"users": [], "total": 0, "error": True}
-    
+
     @staticmethod
     async def toggle_ban(telegram_id: int) -> dict:
         """Toggle user ban status."""
@@ -393,7 +392,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to toggle ban", error=str(e))
             return {"error": True, "message": str(e)}
-    
+
     @staticmethod
     async def adjust_credits(
         telegram_id: int,
@@ -418,7 +417,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to adjust credits", error=str(e))
             return {"error": True, "message": str(e)}
-    
+
     @staticmethod
     async def get_user_generations(
         telegram_id: int,
@@ -434,7 +433,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get user generations", error=str(e))
             return []
-    
+
     @staticmethod
     async def refund_generation(telegram_id: int, generation_id: str) -> dict:
         """Refund a specific generation."""
@@ -447,9 +446,9 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to refund generation", error=str(e))
             return {"error": True, "message": str(e)}
-    
+
     # ============ Broadcast ============
-    
+
     @staticmethod
     async def create_broadcast(
         admin_id: int,
@@ -475,7 +474,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to create broadcast", error=str(e))
             raise
-    
+
     @staticmethod
     async def start_broadcast(public_id: str) -> dict:
         """Start sending a broadcast."""
@@ -485,7 +484,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to start broadcast", error=str(e))
             raise
-    
+
     @staticmethod
     async def cancel_broadcast(public_id: str) -> dict:
         """Cancel a broadcast."""
@@ -495,7 +494,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to cancel broadcast", error=str(e))
             raise
-    
+
     @staticmethod
     async def get_broadcasts(limit: int = 10) -> list[dict]:
         """Get broadcast history."""
@@ -506,7 +505,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get broadcasts", error=str(e))
             return []
-    
+
     @staticmethod
     async def get_broadcast_status(public_id: str) -> dict:
         """Get broadcast status."""
@@ -516,7 +515,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get broadcast status", error=str(e))
             return {"error": True, "status": "unknown"}
-    
+
     @staticmethod
     async def get_users_count(filter_type: str = "all") -> int:
         """Get users count by filter."""
@@ -527,7 +526,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get users count", error=str(e))
             return 0
-    
+
     @staticmethod
     async def get_user_payments(
         telegram_id: int,
@@ -543,7 +542,7 @@ class AdminService:
         except (APIError, APIConnectionError) as e:
             logger.warning("Failed to get user payments", error=str(e))
             return []
-    
+
     @staticmethod
     async def get_stars_settings() -> dict:
         """Get stars payment settings."""

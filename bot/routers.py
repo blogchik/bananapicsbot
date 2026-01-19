@@ -1,5 +1,4 @@
 from aiogram import Router
-
 from handlers import (
     admin_router,
     generation_router,

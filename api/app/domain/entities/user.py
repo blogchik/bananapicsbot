@@ -8,7 +8,7 @@ from typing import Optional
 @dataclass
 class User:
     """User domain entity."""
-    
+
     id: int
     telegram_id: int
     referral_code: str
@@ -22,7 +22,7 @@ class User:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
     last_active_at: Optional[datetime] = None
-    
+
     @property
     def full_name(self) -> str:
         """Get user's full name."""
@@ -37,7 +37,7 @@ class User:
 @dataclass
 class UserCreate:
     """User creation DTO."""
-    
+
     telegram_id: int
     referral_code: Optional[str] = None
     username: Optional[str] = None
@@ -49,7 +49,7 @@ class UserCreate:
 @dataclass
 class UserUpdate:
     """User update DTO."""
-    
+
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None

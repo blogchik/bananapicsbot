@@ -20,7 +20,7 @@ class UserProfile:
 
 class UserService:
     """User-related business logic."""
-    
+
     @staticmethod
     async def sync_user(
         telegram_id: int,
@@ -29,44 +29,44 @@ class UserService:
         """Sync user with API."""
         container = get_container()
         return await container.api_client.sync_user(telegram_id, referral_code)
-    
+
     @staticmethod
     async def get_balance(telegram_id: int) -> int:
         """Get user balance."""
         container = get_container()
         return await container.api_client.get_balance(telegram_id)
-    
+
     @staticmethod
     async def get_trial(telegram_id: int) -> TrialStatus:
         """Get user trial status."""
         container = get_container()
         return await container.api_client.get_trial(telegram_id)
-    
+
     @staticmethod
     async def get_profile(telegram_id: int) -> UserProfile:
         """Get user profile with balance and trial info."""
         container = get_container()
-        
+
         # Sync user first
         await container.api_client.sync_user(telegram_id)
-        
+
         # Get balance and trial
         balance = await container.api_client.get_balance(telegram_id)
         trial = await container.api_client.get_trial(telegram_id)
-        
+
         return UserProfile(
             telegram_id=telegram_id,
             balance=balance,
             trial_available=trial.trial_available,
             trial_used_count=trial.used_count,
         )
-    
+
     @staticmethod
     async def get_referral_info(telegram_id: int) -> dict:
         """Get referral info."""
         container = get_container()
         return await container.api_client.get_referral_info(telegram_id)
-    
+
     @staticmethod
     def format_user_name(first_name: str, last_name: str | None, username: str | None, user_id: int) -> str:
         """Format user display name."""

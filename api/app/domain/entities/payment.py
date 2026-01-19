@@ -8,7 +8,7 @@ from typing import Optional
 
 class PaymentStatus(str, Enum):
     """Payment status enum."""
-    
+
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -18,7 +18,7 @@ class PaymentStatus(str, Enum):
 
 class PaymentProvider(str, Enum):
     """Payment provider enum."""
-    
+
     TELEGRAM_STARS = "telegram_stars"
     CLICK = "click"
     PAYME = "payme"
@@ -27,7 +27,7 @@ class PaymentProvider(str, Enum):
 @dataclass
 class Payment:
     """Payment domain entity."""
-    
+
     id: int
     user_id: int
     amount: int  # Stars or currency amount
@@ -42,12 +42,12 @@ class Payment:
     created_at: datetime = field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
     refunded_at: Optional[datetime] = None
-    
+
     @property
     def is_completed(self) -> bool:
         """Check if payment is completed."""
         return self.status == PaymentStatus.COMPLETED
-    
+
     @property
     def is_refundable(self) -> bool:
         """Check if payment can be refunded."""

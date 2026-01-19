@@ -1,23 +1,22 @@
 """Generation callback handlers."""
 
-from aiogram import Router, F
+from typing import Callable
+
+from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, LinkPreviewOptions
-from typing import Callable
-
-from keyboards import GenerationKeyboard, ProfileKeyboard
-from keyboards.builders import GenerationCallback
-from locales import TranslationKey
-from services import GenerationService
-from services.generation import GenerationConfig, NormalizedModel
-from states import GenerationStates
 from core.exceptions import (
     ActiveGenerationError,
     InsufficientBalanceError,
     ProviderUnavailableError,
 )
 from core.logging import get_logger
+from keyboards import GenerationKeyboard, ProfileKeyboard
+from keyboards.builders import GenerationCallback
+from locales import TranslationKey
+from services import GenerationService
+from services.generation import GenerationConfig, NormalizedModel
 
 logger = get_logger(__name__)
 router = Router(name="generation_callbacks")
@@ -146,22 +145,22 @@ async def open_model_menu(
 ) -> None:
     """Open model selection menu."""
     await call.answer()
-    
+
     data = await state.get_data()
     prompt = data.get("prompt")
     if not prompt:
         await call.message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED, None))
         return
-    
+
     try:
         models = await GenerationService.get_models()
     except Exception as e:
         logger.warning("Failed to get models", error=str(e))
         await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     model_id = data.get("model_id")
-    
+
     try:
         await call.message.edit_text(
             build_model_menu_text(models, _),
@@ -186,31 +185,31 @@ async def select_model(
 ) -> None:
     """Handle model selection."""
     await call.answer()
-    
+
     data = await state.get_data()
     prompt = data.get("prompt")
     if not prompt:
         await call.message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED, None))
         return
-    
+
     try:
         model_id = int(call.data.split(":", 3)[3])
     except (IndexError, ValueError):
         return
-    
+
     try:
         models = await GenerationService.get_models()
     except Exception:
         await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     selected = GenerationService.find_model(models, model_id)
     if not selected:
         await call.message.answer(_(TranslationKey.MODEL_NOT_FOUND, None))
         return
-    
+
     show_size, show_aspect, show_resolution, show_quality, show_input_fidelity = get_support_flags(selected)
-    
+
     # Reset options when model changes
     size = data.get("size") if show_size else None
     aspect_ratio = data.get("aspect_ratio") if show_aspect else None
@@ -220,7 +219,7 @@ async def select_model(
 
     if resolution and selected.resolution_options and resolution not in selected.resolution_options:
         resolution = None
-    
+
     await state.update_data(
         model_id=selected.id,
         model_name=selected.name,
@@ -285,13 +284,13 @@ async def open_size_menu(
     """Open size selection menu."""
     data = await state.get_data()
     size_options = data.get("size_options") or []
-    
+
     if not size_options:
         await call.answer(_(TranslationKey.GEN_SIZE_NOT_AVAILABLE, None), show_alert=True)
         return
-    
+
     await call.answer()
-    
+
     try:
         await call.message.edit_reply_markup(
             reply_markup=GenerationKeyboard.size_list(size_options, data.get("size"), _)
@@ -308,12 +307,12 @@ async def select_size(
 ) -> None:
     """Handle size selection."""
     await call.answer()
-    
+
     size_value = call.data.split(":", 3)[3]
     size = None if size_value == "default" else size_value
-    
+
     await state.update_data(size=size)
-    
+
     data = await state.get_data()
     model_id = data.get("model_id")
     if model_id:
@@ -348,11 +347,11 @@ async def open_ratio_menu(
     """Open aspect ratio selection menu."""
     data = await state.get_data()
     ratio_options = data.get("aspect_ratio_options") or []
-    
+
     if not ratio_options:
         await call.answer(_(TranslationKey.GEN_ASPECT_NOT_AVAILABLE, None), show_alert=True)
         return
-    
+
     await call.answer()
 
     selected_ratio = data.get("aspect_ratio") or (ratio_options[0] if ratio_options else None)
@@ -393,12 +392,12 @@ async def select_ratio(
 ) -> None:
     """Handle aspect ratio selection."""
     await call.answer()
-    
+
     ratio_value = call.data.split(":", 3)[3]
     aspect_ratio = None if ratio_value == "default" else ratio_value
-    
+
     await state.update_data(aspect_ratio=aspect_ratio)
-    
+
     data = await state.get_data()
     model_id = data.get("model_id")
     if model_id:
@@ -453,11 +452,11 @@ async def open_resolution_menu(
     """Open resolution selection menu."""
     data = await state.get_data()
     resolution_options = data.get("resolution_options") or []
-    
+
     if not resolution_options:
         await call.answer(_(TranslationKey.GEN_RESOLUTION_NOT_AVAILABLE, None), show_alert=True)
         return
-    
+
     await call.answer()
 
     try:
@@ -490,10 +489,10 @@ async def select_resolution(
 ) -> None:
     """Handle resolution selection."""
     await call.answer()
-    
+
     resolution_value = call.data.split(":", 3)[3]
     resolution = None if resolution_value == "default" else resolution_value
-    
+
     await state.update_data(resolution=resolution)
     data = await state.get_data()
     price = GenerationService.calculate_generation_price(
@@ -505,7 +504,7 @@ async def select_resolution(
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
     await state.update_data(price=price)
-    
+
     model_id = data.get("model_id")
     if model_id:
         await GenerationService.save_generation_defaults(
@@ -544,13 +543,13 @@ async def open_quality_menu(
     """Open quality selection menu."""
     data = await state.get_data()
     quality_options = data.get("quality_options") or []
-    
+
     if not quality_options:
         await call.answer(_(TranslationKey.GEN_QUALITY_NOT_AVAILABLE, None), show_alert=True)
         return
-    
+
     await call.answer()
-    
+
     try:
         await call.message.edit_reply_markup(
             reply_markup=GenerationKeyboard.quality_list(
@@ -571,10 +570,10 @@ async def select_quality(
 ) -> None:
     """Handle quality selection."""
     await call.answer()
-    
+
     quality_value = call.data.split(":", 3)[3]
     quality = None if quality_value == "default" else quality_value
-    
+
     await state.update_data(quality=quality)
     data = await state.get_data()
     price = GenerationService.calculate_generation_price(
@@ -586,7 +585,7 @@ async def select_quality(
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
     await state.update_data(price=price)
-    
+
     model_id = data.get("model_id")
     if model_id:
         await GenerationService.save_generation_defaults(
@@ -621,13 +620,13 @@ async def open_input_fidelity_menu(
     """Open input fidelity selection menu."""
     data = await state.get_data()
     fidelity_options = data.get("input_fidelity_options") or []
-    
+
     if not fidelity_options:
         await call.answer(_(TranslationKey.GEN_INPUT_FIDELITY_NOT_AVAILABLE, None), show_alert=True)
         return
-    
+
     await call.answer()
-    
+
     try:
         await call.message.edit_reply_markup(
             reply_markup=GenerationKeyboard.input_fidelity_list(
@@ -648,10 +647,10 @@ async def select_input_fidelity(
 ) -> None:
     """Handle input fidelity selection."""
     await call.answer()
-    
+
     fidelity_value = call.data.split(":", 3)[3]
     input_fidelity = None if fidelity_value == "default" else fidelity_value
-    
+
     await state.update_data(input_fidelity=input_fidelity)
     data = await state.get_data()
     model_id = data.get("model_id")
@@ -687,7 +686,7 @@ async def back_to_generation(
 ) -> None:
     """Go back to generation menu."""
     await call.answer()
-    
+
     data = await state.get_data()
     if call.message and call.message.text:
         model_name = data.get("model_name", "-")
@@ -761,7 +760,7 @@ async def submit_generation(
 ) -> None:
     """Submit generation request."""
     await call.answer()
-    
+
     data = await state.get_data()
     prompt = data.get("prompt")
     model_id = data.get("model_id")
@@ -776,17 +775,17 @@ async def submit_generation(
         data.get("quality"),
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
-    
+
     if not prompt or not model_id:
         await call.message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED, None))
         return
-    
+
     # Show processing status
     try:
         await call.message.edit_text(_(TranslationKey.GEN_IN_QUEUE, None))
     except TelegramBadRequest:
         pass
-    
+
     # Build config
     config = GenerationConfig(
         prompt=prompt,
@@ -826,7 +825,7 @@ async def submit_generation(
             "prompt_message_id": data.get("prompt_message_id"),
         },
     )
-    
+
     try:
         result = await GenerationService.submit_generation(call.from_user.id, config)
     except ActiveGenerationError:
@@ -845,16 +844,16 @@ async def submit_generation(
         logger.error("Generation submit failed", error=str(e))
         await call.message.edit_text(_(TranslationKey.ERROR_GENERIC, None))
         return
-    
+
     request = result.get("request", {})
     request_id = request.get("id")
     request_status = request.get("status")
-    
+
     if not request_id:
         await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
         await state.clear()
         return
-    
+
     # Handle already completed
     await state.clear()
 
@@ -954,7 +953,7 @@ async def _update_generation_menu(
         data.get("quality"),
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
     )
-    
+
     show_size = data.get("supports_size") and bool(data.get("size_options"))
     show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
     show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
@@ -962,13 +961,13 @@ async def _update_generation_menu(
     show_input_fidelity = data.get("supports_input_fidelity") and bool(
         data.get("input_fidelity_options")
     )
-    
+
     has_reference = bool(data.get("reference_urls") or data.get("reference_file_ids"))
     text = build_generation_text(
         prompt, model_name, size, aspect_ratio, resolution,
         show_size, show_aspect, show_resolution, has_reference, _,
     )
-    
+
     try:
         await call.message.edit_text(
             text,

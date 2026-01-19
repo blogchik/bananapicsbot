@@ -1,14 +1,13 @@
 """Database dependencies."""
-from collections.abc import Generator, AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.infrastructure.database.session import Database
-from app.core.config import get_settings
 
 
 # Sync session dependency (for Alembic compatibility)

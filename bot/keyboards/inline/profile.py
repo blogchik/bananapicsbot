@@ -1,15 +1,16 @@
 """Profile menu keyboard."""
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from typing import Callable
 
-from keyboards.builders import MenuCallback, SettingsCallback
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from locales import TranslationKey
+
+from keyboards.builders import MenuCallback, SettingsCallback
 
 
 class ProfileKeyboard:
     """Profile menu keyboard builder."""
-    
+
     @staticmethod
     def main(_: Callable[[TranslationKey, dict | None], str]) -> InlineKeyboardMarkup:
         """Build profile menu."""

@@ -6,8 +6,7 @@ from typing import Any
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
-
-from core.exceptions import APIError, APIConnectionError
+from core.exceptions import APIConnectionError, APIError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +39,7 @@ class ApiClient:
     - Proper resource cleanup
     - Structured logging
     """
-    
+
     def __init__(
         self,
         base_url: str,
@@ -54,7 +53,7 @@ class ApiClient:
         self.retry_attempts = retry_attempts
         self._session: ClientSession | None = None
         self._connector: TCPConnector | None = None
-    
+
     async def _get_session(self) -> ClientSession:
         """Get or create HTTP session with connection pooling."""
         if self._session is None or self._session.closed:
@@ -69,7 +68,7 @@ class ApiClient:
                 connector=self._connector,
             )
         return self._session
-    
+
     async def close(self) -> None:
         """Close HTTP session and connector."""
         if self._session is not None and not self._session.closed:
@@ -78,7 +77,7 @@ class ApiClient:
         if self._connector is not None and not self._connector.closed:
             await self._connector.close()
             self._connector = None
-    
+
     async def _request(
         self,
         method: str,
@@ -90,7 +89,7 @@ class ApiClient:
         url = f"{self.base_url}{path}"
         attempts = self.retry_attempts if retry else 1
         last_error: Exception | None = None
-        
+
         for attempt in range(attempts):
             try:
                 session = await self._get_session()
@@ -101,11 +100,11 @@ class ApiClient:
                         else:
                             data = await resp.text()
                         raise APIError(resp.status, data)
-                    
+
                     if resp.content_type == "application/json":
                         return await resp.json()
                     return await resp.text()
-            
+
             except APIError:
                 raise
             except aiohttp.ClientError as e:
@@ -128,9 +127,9 @@ class ApiClient:
                 )
                 if attempt < attempts - 1:
                     await asyncio.sleep(0.5 * (attempt + 1))
-        
+
         raise APIConnectionError(str(last_error) if last_error else "Connection failed")
-    
+
     async def _upload(
         self,
         path: str,
@@ -141,7 +140,7 @@ class ApiClient:
         url = f"{self.base_url}{path}"
         data = aiohttp.FormData()
         data.add_field("file", file_bytes, filename=filename)
-        
+
         try:
             session = await self._get_session()
             async with session.post(url, data=data) as resp:
@@ -156,7 +155,7 @@ class ApiClient:
             raise
         except Exception as e:
             raise APIConnectionError(str(e))
-    
+
     # User endpoints
     async def sync_user(
         self,
@@ -168,12 +167,12 @@ class ApiClient:
         if referral_code:
             payload["referral_code"] = referral_code
         return await self._request("POST", "/api/v1/users/sync", json=payload)
-    
+
     async def get_balance(self, telegram_id: int) -> int:
         """Get user balance."""
         data = await self._request("GET", f"/api/v1/users/{telegram_id}/balance")
         return int(data["balance"])
-    
+
     async def get_trial(self, telegram_id: int) -> TrialStatus:
         """Get user trial status."""
         data = await self._request("GET", f"/api/v1/users/{telegram_id}/trial")
@@ -181,16 +180,16 @@ class ApiClient:
             trial_available=bool(data["trial_available"]),
             used_count=int(data["used_count"]),
         )
-    
+
     # Model endpoints
     async def get_models(self) -> list[dict]:
         """Get available models."""
         return await self._request("GET", "/api/v1/models")
-    
+
     async def get_sizes(self) -> list[str]:
         """Get available sizes."""
         return await self._request("GET", "/api/v1/sizes")
-    
+
     # Generation endpoints
     async def submit_generation(
         self,
@@ -235,7 +234,7 @@ class ApiClient:
             "/api/v1/generations/submit",
             json=payload,
         )
-    
+
     async def refresh_generation(
         self,
         request_id: int,
@@ -247,7 +246,7 @@ class ApiClient:
             f"/api/v1/generations/{request_id}/refresh",
             json={"telegram_id": telegram_id},
         )
-    
+
     async def get_generation_results(
         self,
         request_id: int,
@@ -258,14 +257,14 @@ class ApiClient:
             "GET",
             f"/api/v1/generations/{request_id}/results?telegram_id={telegram_id}",
         )
-    
+
     async def get_active_generation(self, telegram_id: int) -> dict:
         """Check for active generation."""
         return await self._request(
             "GET",
             f"/api/v1/generations/active?telegram_id={telegram_id}",
         )
-    
+
     # Media endpoints
     async def upload_media(self, file_bytes: bytes, filename: str) -> str:
         """Upload media file."""
@@ -279,12 +278,12 @@ class ApiClient:
             "/api/v1/tools/watermark-remove",
             json={"telegram_id": telegram_id, "image_url": image_url},
         )
-    
+
     # Payment endpoints
     async def get_stars_options(self) -> dict:
         """Get stars payment options."""
         return await self._request("GET", "/api/v1/payments/stars/options")
-    
+
     async def confirm_stars_payment(
         self,
         telegram_id: int,
@@ -307,12 +306,12 @@ class ApiClient:
                 "invoice_payload": invoice_payload,
             },
         )
-    
+
     # Referral endpoints
     async def get_referral_info(self, telegram_id: int) -> dict:
         """Get referral info."""
         return await self._request("GET", f"/api/v1/referrals/{telegram_id}")
-    
+
     # Admin endpoints
     async def add_admin_credits(
         self,
@@ -328,11 +327,11 @@ class ApiClient:
         if description:
             payload["reason"] = description  # Changed from 'description' to 'reason'
         return await self._request("POST", "/api/v1/admin/credits", json=payload)
-    
+
     async def get_admin_stats(self) -> dict:
         """Get admin statistics."""
         return await self._request("GET", "/api/v1/admin/stats")
-    
+
     async def get_users_list(
         self,
         limit: int = 50,
@@ -343,7 +342,7 @@ class ApiClient:
             "GET",
             f"/api/v1/admin/users?limit={limit}&offset={offset}",
         )
-    
+
     # Extended admin endpoints - all use /api/v1/admin/stats now
     async def get_admin_overview_stats(self) -> dict:
         """Get overview statistics for admin panel."""
@@ -367,7 +366,7 @@ class ApiClient:
                 "week_stars": stats.get("week_deposits", 0),
             },
         }
-    
+
     async def get_admin_user_stats(self) -> dict:
         """Get user statistics."""
         stats = await self._request("GET", "/api/v1/admin/stats")
@@ -378,7 +377,7 @@ class ApiClient:
             "avg_balance": 0,
             "total_balance": 0,
         }
-    
+
     async def get_admin_generation_stats(self) -> dict:
         """Get generation statistics."""
         stats = await self._request("GET", "/api/v1/admin/stats")
@@ -389,7 +388,7 @@ class ApiClient:
             "credits_spent": stats.get("total_spent", 0),
             "by_model": {},
         }
-    
+
     async def get_admin_revenue_stats(self) -> dict:
         """Get revenue statistics."""
         stats = await self._request("GET", "/api/v1/admin/stats")
@@ -401,7 +400,7 @@ class ApiClient:
             "total_credits_purchased": 0,
             "credits_spent": stats.get("total_spent", 0),
         }
-    
+
     async def search_users(self, query: str) -> list[dict]:
         """Search users by ID or username."""
         # Use /api/v1/admin/users with query param
@@ -410,7 +409,7 @@ class ApiClient:
             f"/api/v1/admin/users?query={query}&limit=20",
         )
         users = result.get("users", [])
-        
+
         # Transform to expected format
         transformed = []
         for user in users:
@@ -426,7 +425,7 @@ class ApiClient:
                 "is_banned": user.get("is_banned", False),
             })
         return transformed
-    
+
     async def get_user_by_telegram_id(self, telegram_id: int) -> dict | None:
         """Get user by telegram ID."""
         try:
@@ -447,7 +446,7 @@ class ApiClient:
             if e.status == 404:
                 return None
             raise
-    
+
     async def get_users_page(self, page: int = 0, per_page: int = 20) -> dict:
         """Get paginated users list."""
         offset = page * per_page
@@ -458,7 +457,7 @@ class ApiClient:
         users = result.get("users", [])
         total = result.get("total", 0)
         has_more = (offset + len(users)) < total
-        
+
         # Transform users to expected format
         transformed_users = []
         for user in users:
@@ -468,7 +467,7 @@ class ApiClient:
                 "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip() or None,
                 "balance": int(user.get("balance", 0)),
             })
-        
+
         return {
             "users": transformed_users,
             "total": total,
@@ -476,13 +475,13 @@ class ApiClient:
             "per_page": per_page,
             "has_more": has_more,
         }
-    
+
     async def toggle_user_ban(self, telegram_id: int) -> dict:
         """Toggle user ban status."""
         # This endpoint doesn't exist yet - return mock for now
         logger.warning("toggle_user_ban endpoint not implemented")
         return {"error": True, "message": "Not implemented"}
-    
+
     async def adjust_user_credits(
         self,
         telegram_id: int,
@@ -500,7 +499,7 @@ class ApiClient:
                 "reason": reason,
             },
         )
-    
+
     async def get_user_generations(
         self,
         telegram_id: int,
@@ -511,7 +510,7 @@ class ApiClient:
             "GET",
             f"/api/v1/admin/users/{telegram_id}/generations?limit={limit}",
         )
-    
+
     async def refund_generation(
         self,
         telegram_id: int,
@@ -523,7 +522,7 @@ class ApiClient:
             f"/api/v1/admin/generations/{generation_id}/refund",
             json={"telegram_id": telegram_id},
         )
-    
+
     # Broadcast endpoints
     async def create_broadcast(
         self,
@@ -549,42 +548,42 @@ class ApiClient:
                 "filter_type": filter_type,
             },
         )
-    
+
     async def start_broadcast(self, public_id: str) -> dict:
         """Start sending a broadcast."""
         return await self._request(
             "POST",
             f"/api/v1/admin/broadcasts/{public_id}/start",
         )
-    
+
     async def cancel_broadcast(self, public_id: str) -> dict:
         """Cancel a broadcast."""
         return await self._request(
             "POST",
             f"/api/v1/admin/broadcasts/{public_id}/cancel",
         )
-    
+
     async def get_broadcasts(self, limit: int = 10) -> dict:
         """Get broadcast history."""
         return await self._request(
             "GET",
             f"/api/v1/admin/broadcasts?limit={limit}",
         )
-    
+
     async def get_broadcast_status(self, public_id: str) -> dict:
         """Get broadcast status."""
         return await self._request(
             "GET",
             f"/api/v1/admin/broadcasts/{public_id}",
         )
-    
+
     async def get_users_count(self, filter_type: str = "all") -> dict:
         """Get users count by filter."""
         return await self._request(
             "GET",
             f"/api/v1/admin/users/count?filter_type={filter_type}",
         )
-    
+
     async def get_user_payments(
         self,
         telegram_id: int,

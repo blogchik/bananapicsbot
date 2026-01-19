@@ -5,7 +5,7 @@ from typing import Any
 
 class BotException(Exception):
     """Base exception for bot errors."""
-    
+
     def __init__(self, message: str, user_message: str | None = None) -> None:
         super().__init__(message)
         self.message = message
@@ -14,7 +14,7 @@ class BotException(Exception):
 
 class APIConnectionError(BotException):
     """Raised when API connection fails."""
-    
+
     def __init__(self, message: str = "API connection failed") -> None:
         super().__init__(
             message=message,
@@ -24,7 +24,7 @@ class APIConnectionError(BotException):
 
 class APIError(BotException):
     """Raised when API returns an error."""
-    
+
     def __init__(
         self,
         status: int,
@@ -38,7 +38,7 @@ class APIError(BotException):
 
 class InsufficientBalanceError(BotException):
     """Raised when user doesn't have enough balance."""
-    
+
     def __init__(self) -> None:
         super().__init__(
             message="Insufficient balance",
@@ -48,7 +48,7 @@ class InsufficientBalanceError(BotException):
 
 class ActiveGenerationError(BotException):
     """Raised when user already has active generation."""
-    
+
     def __init__(self, active_request_id: int | None = None) -> None:
         super().__init__(
             message="Active generation exists",
@@ -69,7 +69,7 @@ class ProviderUnavailableError(BotException):
 
 class RateLimitExceededError(BotException):
     """Raised when rate limit is exceeded."""
-    
+
     def __init__(self, retry_after: int = 60) -> None:
         super().__init__(
             message="Rate limit exceeded",
@@ -80,7 +80,7 @@ class RateLimitExceededError(BotException):
 
 class ValidationError(BotException):
     """Raised when validation fails."""
-    
+
     def __init__(self, field: str, message: str) -> None:
         super().__init__(
             message=f"Validation error: {field} - {message}",
@@ -91,7 +91,7 @@ class ValidationError(BotException):
 
 class ModelNotFoundError(BotException):
     """Raised when model is not found."""
-    
+
     def __init__(self, model_id: int) -> None:
         super().__init__(
             message=f"Model {model_id} not found",
@@ -102,7 +102,7 @@ class ModelNotFoundError(BotException):
 
 class PromptRequiredError(BotException):
     """Raised when prompt is required but not provided."""
-    
+
     def __init__(self) -> None:
         super().__init__(
             message="Prompt is required",

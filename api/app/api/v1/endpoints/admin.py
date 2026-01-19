@@ -1,29 +1,29 @@
 """Admin endpoints for bot administration."""
-from typing import Optional, List
 from decimal import Decimal
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps.db import get_async_session
+from app.infrastructure.logging import get_logger
 from app.schemas.admin import (
     # Credits
     AdminCreditIn,
     AdminCreditOut,
     # Users
     AdminUserOut,
-    UserListOut,
-    # Stats
-    DashboardStatsOut,
     # Broadcast
     BroadcastCreateRequest,
-    BroadcastOut,
     BroadcastListOut,
+    BroadcastOut,
     BroadcastStatusOut,
+    # Stats
+    DashboardStatsOut,
+    UserListOut,
 )
 from app.services.admin_service import AdminService
 from app.services.broadcast_service import BroadcastService
-from app.infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -40,12 +40,12 @@ async def get_dashboard_stats(
     """Get admin dashboard statistics."""
     try:
         service = AdminService(session)
-        
+
         user_stats = await service.get_user_stats()
         gen_stats = await service.get_generation_stats(days)
         revenue_stats = await service.get_revenue_stats(days)
         payment_stats = await service.get_payment_stats(days)
-        
+
         return DashboardStatsOut(
             total_users=user_stats["total_users"],
             active_users_7d=user_stats["active_7d"],
@@ -88,19 +88,19 @@ async def search_users(
     """Search users with filters."""
     try:
         service = AdminService(session)
-        
+
         users, total = await service.search_users(
             query=query,
             offset=offset,
             limit=limit,
         )
-        
+
         result_users = []
         for user in users:
             balance = await service.get_user_balance(user.id)
             referral_count = await service.get_user_referral_count(user.id)
             gen_count = await service.get_user_generation_count(user.id)
-            
+
             result_users.append(AdminUserOut(
                 telegram_id=user.telegram_id,
                 username=None,
@@ -118,7 +118,7 @@ async def search_users(
                 created_at=user.created_at,
                 last_active_at=None,
             ))
-        
+
         return UserListOut(
             users=result_users,
             total=total,
@@ -159,15 +159,15 @@ async def get_user(
     """Get user details."""
     try:
         service = AdminService(session)
-        
+
         user = await service.get_user_by_telegram_id(telegram_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         balance = await service.get_user_balance(user.id)
         referral_count = await service.get_user_referral_count(user.id)
         gen_count = await service.get_user_generation_count(user.id)
-        
+
         return AdminUserOut(
             telegram_id=user.telegram_id,
             username=None,
@@ -205,21 +205,21 @@ async def adjust_credits(
     """Add or remove credits from user."""
     try:
         service = AdminService(session)
-        
+
         user = await service.get_user_by_telegram_id(data.telegram_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         old_balance = await service.get_user_balance(user.id)
-        
+
         await service.add_user_credits(
             user_id=user.id,
             amount=data.amount,
             reason=data.reason or "Admin adjustment",
         )
-        
+
         new_balance = await service.get_user_balance(user.id)
-        
+
         return AdminCreditOut(
             telegram_id=data.telegram_id,
             amount=data.amount,
@@ -256,11 +256,11 @@ async def get_user_generations(
     """Get user's recent generations."""
     try:
         service = AdminService(session)
-        
+
         user = await service.get_user_by_telegram_id(telegram_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         generations = await service.get_user_generations(user.id, limit)
         return generations
     except HTTPException:
@@ -286,18 +286,18 @@ async def refund_generation(
         telegram_id = data.get("telegram_id")
         if not telegram_id:
             raise HTTPException(status_code=400, detail="telegram_id required")
-        
+
         service = AdminService(session)
-        
+
         user = await service.get_user_by_telegram_id(telegram_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         result = await service.refund_generation(user.id, generation_id)
-        
+
         if result.get("error"):
             raise HTTPException(status_code=400, detail=result.get("message", "Refund failed"))
-        
+
         return result
     except HTTPException:
         raise
@@ -320,11 +320,11 @@ async def get_user_payments(
     """Get user's payment history."""
     try:
         service = AdminService(session)
-        
+
         user = await service.get_user_by_telegram_id(telegram_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         payments = await service.get_user_payments(user.id, limit)
         return payments
     except HTTPException:
@@ -394,14 +394,14 @@ async def get_broadcast_status(
     try:
         service = BroadcastService(session)
         broadcast = await service.get_broadcast_by_public_id(public_id)
-        
+
         if not broadcast:
             raise HTTPException(status_code=404, detail="Broadcast not found")
-        
+
         total = broadcast.total_users or 0
         sent = broadcast.sent_count or 0
         progress = (sent / total * 100) if total > 0 else 0.0
-        
+
         return BroadcastStatusOut(
             public_id=broadcast.public_id,
             status=broadcast.status.value,
@@ -432,17 +432,17 @@ async def start_broadcast(
     try:
         service = BroadcastService(session)
         broadcast = await service.get_broadcast_by_public_id(public_id)
-        
+
         if not broadcast:
             raise HTTPException(status_code=404, detail="Broadcast not found")
-        
+
         if broadcast.status.value != "pending":
             raise HTTPException(status_code=400, detail=f"Broadcast is {broadcast.status.value}, cannot start")
-        
+
         # Start broadcast via Celery
         from app.worker.tasks import start_broadcast_task
         start_broadcast_task.delay(broadcast.id)
-        
+
         return {"status": "started", "public_id": public_id}
     except HTTPException:
         raise
@@ -463,15 +463,15 @@ async def cancel_broadcast(
     try:
         service = BroadcastService(session)
         broadcast = await service.get_broadcast_by_public_id(public_id)
-        
+
         if not broadcast:
             raise HTTPException(status_code=404, detail="Broadcast not found")
-        
+
         if broadcast.status.value not in ("pending", "running"):
             raise HTTPException(status_code=400, detail=f"Broadcast is {broadcast.status.value}, cannot cancel")
-        
+
         await service.cancel_broadcast(broadcast.id)
-        
+
         return {"status": "cancelled", "public_id": public_id}
     except HTTPException:
         raise

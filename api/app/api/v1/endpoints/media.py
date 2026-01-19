@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.deps.wavespeed import wavespeed_client
 from app.schemas.media import MediaUploadOut

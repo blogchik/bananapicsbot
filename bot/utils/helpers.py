@@ -14,7 +14,7 @@ def truncate_text(
     """Truncate text to max length with suffix."""
     if len(text) <= max_length:
         return text
-    
+
     return text[:max_length - len(suffix)] + suffix
 
 

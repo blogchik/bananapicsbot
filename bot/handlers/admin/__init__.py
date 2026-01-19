@@ -1,14 +1,13 @@
 """Admin panel handlers."""
 
 from aiogram import Router
-
-from .panel import router as panel_router
-from .users import router as users_router
-from .credits import router as credits_router
-from .broadcast import router as broadcast_router
-from .stats import router as stats_router
-
 from filters import AdminFilter
+
+from .broadcast import router as broadcast_router
+from .credits import router as credits_router
+from .panel import router as panel_router
+from .stats import router as stats_router
+from .users import router as users_router
 
 # Create admin router with admin filter
 admin_router = Router(name="admin")

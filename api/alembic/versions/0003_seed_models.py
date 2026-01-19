@@ -7,8 +7,8 @@ Create Date: 2026-01-14 22:10:00.000000
 
 from datetime import datetime
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0003_seed_models"
 down_revision = "0002_add_generation_models"

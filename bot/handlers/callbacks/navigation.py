@@ -1,14 +1,14 @@
 """Navigation callback handlers."""
 
-from aiogram import Router, F
-from aiogram.types import CallbackQuery
 from typing import Callable
 
+from aiogram import F, Router
+from aiogram.types import CallbackQuery
+from core.logging import get_logger
 from keyboards import HomeKeyboard, ProfileKeyboard
 from keyboards.builders import MenuCallback
 from locales import TranslationKey
-from services import UserService, GenerationService
-from core.logging import get_logger
+from services import GenerationService, UserService
 
 logger = get_logger(__name__)
 router = Router(name="navigation")
@@ -21,10 +21,10 @@ async def home_callback(
 ) -> None:
     """Handle home menu callback."""
     await call.answer()
-    
+
     if call.message:
         await call.message.delete()
-    
+
     user = call.from_user
     name = user.first_name if user else ""
     await call.message.answer(
@@ -62,19 +62,19 @@ async def profile_callback(
 ) -> None:
     """Handle profile menu callback."""
     await call.answer()
-    
+
     if call.message:
         await call.message.delete()
-    
+
     user = call.from_user
-    
+
     try:
         profile = await UserService.get_profile(user.id)
     except Exception as e:
         logger.warning("Failed to get profile", user_id=user.id, error=str(e))
         await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     approx_text = ""
     try:
         models = await GenerationService.get_models()
@@ -88,7 +88,7 @@ async def profile_callback(
 
     telegram_id_text = _(TranslationKey.PROFILE_ID_LABEL, None) + f": <code>{user.id}</code>"
     balance_text = _(TranslationKey.PROFILE_BALANCE, {"balance": profile.balance})
-    
+
     # Build message
     lines = [
         telegram_id_text,
@@ -97,7 +97,7 @@ async def profile_callback(
     if approx_text:
         lines.append(approx_text)
     text = "\n".join(lines)
-    
+
     await call.message.answer(text, reply_markup=ProfileKeyboard.main(_))
 
 
@@ -109,12 +109,12 @@ async def settings_callback(
 ) -> None:
     """Handle settings menu callback."""
     await call.answer()
-    
+
     if call.message:
         await call.message.delete()
-    
+
     from keyboards import SettingsKeyboard
-    
+
     await call.message.answer(
         _(TranslationKey.SETTINGS_LANGUAGE, {"language": language}),
         reply_markup=SettingsKeyboard.language_list(language, _),
@@ -129,12 +129,12 @@ async def help_callback(
 ) -> None:
     """Handle help menu callback."""
     await call.answer()
-    
+
     if call.message:
         await call.message.delete()
-    
+
     from handlers.commands.help import HELP_TEXTS
-    
+
     help_text = HELP_TEXTS.get(language, HELP_TEXTS["uz"])
     await call.message.answer(
         help_text,

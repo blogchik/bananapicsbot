@@ -1,13 +1,13 @@
 """Payment repository implementation."""
-from typing import Optional, Sequence, Dict, Any
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import Any, Dict, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.entities.payment import Payment, PaymentStatus, PaymentProvider
+from app.domain.entities.payment import Payment, PaymentProvider, PaymentStatus
 from app.domain.interfaces.repositories import IPaymentRepository
 from app.infrastructure.database.models import PaymentModel
 from app.infrastructure.repositories.base import BaseRepository
@@ -15,12 +15,12 @@ from app.infrastructure.repositories.base import BaseRepository
 
 class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
     """Payment repository implementation."""
-    
+
     model = PaymentModel
-    
+
     def __init__(self, session: AsyncSession):
         super().__init__(session)
-    
+
     def _to_entity(self, model: PaymentModel) -> Payment:
         """Convert ORM model to domain entity."""
         return Payment(
@@ -35,7 +35,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
             created_at=model.created_at,
             completed_at=model.completed_at,
         )
-    
+
     async def create(
         self,
         telegram_id: int,
@@ -57,14 +57,14 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         await self.session.flush()
         await self.session.refresh(model)
         return self._to_entity(model)
-    
+
     async def get_by_id(self, payment_id: UUID) -> Optional[Payment]:
         """Get payment by ID."""
         query = select(PaymentModel).where(PaymentModel.id == payment_id)
         result = await self.session.execute(query)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     async def get_by_provider_id(
         self,
         provider: PaymentProvider,
@@ -80,7 +80,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         result = await self.session.execute(query)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     async def update_status(
         self,
         payment_id: UUID,
@@ -89,13 +89,13 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
     ) -> bool:
         """Update payment status."""
         values: Dict[str, Any] = {"status": status.value}
-        
+
         if provider_payment_id:
             values["provider_payment_id"] = provider_payment_id
-        
+
         if status == PaymentStatus.COMPLETED:
             values["completed_at"] = datetime.utcnow()
-        
+
         query = (
             update(PaymentModel)
             .where(PaymentModel.id == payment_id)
@@ -103,7 +103,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         )
         result = await self.session.execute(query)
         return result.rowcount > 0
-    
+
     async def get_user_payments(
         self,
         telegram_id: int,
@@ -113,33 +113,33 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
     ) -> Sequence[Payment]:
         """Get user's payments."""
         query = select(PaymentModel).where(PaymentModel.telegram_id == telegram_id)
-        
+
         if status:
             query = query.where(PaymentModel.status == status.value)
-        
+
         query = (
             query.order_by(PaymentModel.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
-        
+
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
-    
+
     async def get_stats(
         self,
         days: int = 30,
     ) -> Dict[str, Any]:
         """Get payment statistics."""
         since = datetime.utcnow() - timedelta(days=days)
-        
+
         # Total payments
         total_query = select(func.count()).select_from(PaymentModel).where(
             PaymentModel.created_at >= since
         )
         total_result = await self.session.execute(total_query)
         total = total_result.scalar() or 0
-        
+
         # Completed payments
         completed_query = select(func.count()).select_from(PaymentModel).where(
             and_(
@@ -149,7 +149,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         )
         completed_result = await self.session.execute(completed_query)
         completed = completed_result.scalar() or 0
-        
+
         # Total amount
         amount_query = select(
             func.coalesce(func.sum(PaymentModel.amount), Decimal("0"))
@@ -161,7 +161,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         )
         amount_result = await self.session.execute(amount_query)
         total_amount = amount_result.scalar() or Decimal("0")
-        
+
         # Total credits
         credits_query = select(
             func.coalesce(func.sum(PaymentModel.credits), Decimal("0"))
@@ -173,7 +173,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         )
         credits_result = await self.session.execute(credits_query)
         total_credits = credits_result.scalar() or Decimal("0")
-        
+
         # By provider
         by_provider_query = (
             select(
@@ -194,7 +194,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
             row.provider: {"count": row.count, "amount": float(row.amount or 0)}
             for row in by_provider_result.all()
         }
-        
+
         return {
             "period_days": days,
             "total_payments": total,
@@ -204,14 +204,14 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
             "total_credits": float(total_credits),
             "by_provider": by_provider,
         }
-    
+
     async def get_daily_stats(
         self,
         days: int = 7,
     ) -> Sequence[Dict[str, Any]]:
         """Get daily payment statistics."""
         since = datetime.utcnow() - timedelta(days=days)
-        
+
         query = (
             select(
                 func.date(PaymentModel.created_at).label("date"),
@@ -227,7 +227,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
             .group_by(func.date(PaymentModel.created_at))
             .order_by(func.date(PaymentModel.created_at))
         )
-        
+
         result = await self.session.execute(query)
         return [
             {

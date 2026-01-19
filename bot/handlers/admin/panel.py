@@ -1,16 +1,15 @@
 """Admin panel main handler."""
 
-from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
 from typing import Callable
 
+from aiogram import F, Router
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+from core.logging import get_logger
 from keyboards import AdminKeyboard
 from keyboards.builders import AdminCallback
 from locales import TranslationKey
-from services import AdminService
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="admin_panel")
@@ -24,7 +23,7 @@ async def cmd_admin(
 ) -> None:
     """Show admin panel."""
     await state.clear()
-    
+
     await message.answer(
         _(TranslationKey.ADMIN_PANEL_TITLE, None),
         reply_markup=AdminKeyboard.main(_),
@@ -40,7 +39,7 @@ async def admin_main(
     """Return to admin main menu."""
     await call.answer()
     await state.clear()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_PANEL_TITLE, None),
@@ -55,7 +54,7 @@ async def admin_stats_menu(
 ) -> None:
     """Show stats menu."""
     await call.answer()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_STATS_TITLE, None),
@@ -70,7 +69,7 @@ async def admin_users_menu(
 ) -> None:
     """Show users management menu."""
     await call.answer()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_USERS_TITLE, None),
@@ -85,7 +84,7 @@ async def admin_broadcast_menu(
 ) -> None:
     """Show broadcast menu."""
     await call.answer()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_BROADCAST_TITLE, None),

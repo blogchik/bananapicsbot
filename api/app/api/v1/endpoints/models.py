@@ -3,7 +3,6 @@ import asyncio
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.services.model_options import get_model_parameter_options_from_wavespeed
 from app.deps.db import db_session_dep
 from app.schemas.model_catalog import (
     ModelCatalogOut,
@@ -11,6 +10,7 @@ from app.schemas.model_catalog import (
     ModelOptionsOut,
     ModelPriceOut,
 )
+from app.services.model_options import get_model_parameter_options_from_wavespeed
 from app.services.models import list_active_models, list_active_prices_for_models
 
 router = APIRouter()

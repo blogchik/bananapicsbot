@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.deps.db import db_session_dep
 from app.schemas.balance import BalanceOut
 from app.schemas.trial import TrialStatusOut
-from app.core.config import get_settings
 from app.schemas.user import UserSyncIn, UserSyncOut
 from app.services.ledger import get_user_balance
 from app.services.users import get_or_create_user, get_user_by_telegram_id

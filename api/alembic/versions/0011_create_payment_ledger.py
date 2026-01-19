@@ -5,8 +5,8 @@ Revises: 0010_update_model_prices
 Create Date: 2026-01-15 00:00:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0011_create_payment_ledger"
 down_revision = "0010_update_model_prices"

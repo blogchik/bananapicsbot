@@ -2,9 +2,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from fastapi.exceptions import RequestValidationError
 
 from app.api.v1.api import router as v1_router
 from app.core.config import get_settings
@@ -13,11 +13,11 @@ from app.core.exceptions import (
     unhandled_exception_handler,
     validation_exception_handler,
 )
-from app.middlewares.request_id import RequestIdMiddleware
-from app.middlewares.rate_limit import RateLimitMiddleware
-from app.schemas.common import InfoResponse
 from app.deps.db import init_database, shutdown_database
-from app.infrastructure.logging import setup_logging, get_logger
+from app.infrastructure.logging import get_logger, setup_logging
+from app.middlewares.rate_limit import RateLimitMiddleware
+from app.middlewares.request_id import RequestIdMiddleware
+from app.schemas.common import InfoResponse
 
 logger = get_logger(__name__)
 
@@ -27,15 +27,15 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
     logger.info("Starting application...")
-    
+
     await init_database()
     logger.info("Database connected")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down application...")
-    
+
     await shutdown_database()
     logger.info("Database disconnected")
 
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
     # Setup logging first
     setup_logging()
-    
+
     settings = get_settings()
 
     app = FastAPI(

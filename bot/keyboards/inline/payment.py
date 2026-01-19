@@ -1,15 +1,16 @@
 """Payment keyboards."""
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from typing import Callable
 
-from keyboards.builders import TopupCallback, MenuCallback
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from locales import TranslationKey
+
+from keyboards.builders import MenuCallback, TopupCallback
 
 
 class PaymentKeyboard:
     """Payment keyboard builder."""
-    
+
     @staticmethod
     def topup_menu(
         presets: list[tuple[int, int]],
@@ -18,7 +19,7 @@ class PaymentKeyboard:
     ) -> InlineKeyboardMarkup:
         """Build top-up menu with preset amounts."""
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         # Preset amounts in a single column
         for amount, credits in presets:
             gens = (credits // min_price) if min_price else 0
@@ -33,7 +34,7 @@ class PaymentKeyboard:
                     callback_data=TopupCallback.stars(amount),
                 )
             ])
-        
+
         # Custom amount button
         rows.append([
             InlineKeyboardButton(
@@ -41,7 +42,7 @@ class PaymentKeyboard:
                 callback_data=TopupCallback.CUSTOM,
             )
         ])
-        
+
         # Back button
         rows.append([
             InlineKeyboardButton(
@@ -49,5 +50,5 @@ class PaymentKeyboard:
                 callback_data=MenuCallback.PROFILE,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)

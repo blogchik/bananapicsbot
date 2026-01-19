@@ -1,17 +1,15 @@
 """Watermark tool callback handlers."""
 
-from aiogram import Router, F
-from aiogram.exceptions import TelegramBadRequest
-from aiogram.fsm.context import FSMContext
 import os
-
-from aiogram.types import CallbackQuery, URLInputFile
 from typing import Callable
 
+from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, URLInputFile
 from core.container import get_container
 from core.exceptions import APIError
 from core.logging import get_logger
-from keyboards.builders import WatermarkCallback
 from locales import TranslationKey
 from services import GenerationService
 

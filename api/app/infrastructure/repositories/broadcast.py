@@ -1,12 +1,16 @@
 """Broadcast repository implementation."""
-from typing import Optional, Sequence, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import select, func, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.entities.broadcast import Broadcast, BroadcastStatus, BroadcastContentType
+from app.domain.entities.broadcast import (
+    Broadcast,
+    BroadcastContentType,
+    BroadcastStatus,
+)
 from app.domain.interfaces.repositories import IBroadcastRepository
 from app.infrastructure.database.models import BroadcastModel
 from app.infrastructure.repositories.base import BaseRepository
@@ -14,12 +18,12 @@ from app.infrastructure.repositories.base import BaseRepository
 
 class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
     """Broadcast repository implementation."""
-    
+
     model = BroadcastModel
-    
+
     def __init__(self, session: AsyncSession):
         super().__init__(session)
-    
+
     def _to_entity(self, model: BroadcastModel) -> Broadcast:
         """Convert ORM model to domain entity."""
         return Broadcast(
@@ -36,7 +40,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
             started_at=model.started_at,
             completed_at=model.completed_at,
         )
-    
+
     async def create(
         self,
         admin_id: int,
@@ -58,14 +62,14 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         await self.session.flush()
         await self.session.refresh(model)
         return self._to_entity(model)
-    
+
     async def get_by_id(self, broadcast_id: UUID) -> Optional[Broadcast]:
         """Get broadcast by ID."""
         query = select(BroadcastModel).where(BroadcastModel.id == broadcast_id)
         result = await self.session.execute(query)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     async def update_status(
         self,
         broadcast_id: UUID,
@@ -73,12 +77,12 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
     ) -> bool:
         """Update broadcast status."""
         values: Dict[str, Any] = {"status": status.value}
-        
+
         if status == BroadcastStatus.SENDING:
             values["started_at"] = datetime.utcnow()
         elif status in (BroadcastStatus.COMPLETED, BroadcastStatus.FAILED, BroadcastStatus.CANCELLED):
             values["completed_at"] = datetime.utcnow()
-        
+
         query = (
             update(BroadcastModel)
             .where(BroadcastModel.id == broadcast_id)
@@ -86,7 +90,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         )
         result = await self.session.execute(query)
         return result.rowcount > 0
-    
+
     async def update_progress(
         self,
         broadcast_id: UUID,
@@ -101,7 +105,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         )
         result = await self.session.execute(query)
         return result.rowcount > 0
-    
+
     async def increment_sent(self, broadcast_id: UUID) -> bool:
         """Increment sent count."""
         query = (
@@ -111,7 +115,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         )
         result = await self.session.execute(query)
         return result.rowcount > 0
-    
+
     async def increment_failed(self, broadcast_id: UUID) -> bool:
         """Increment failed count."""
         query = (
@@ -121,7 +125,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         )
         result = await self.session.execute(query)
         return result.rowcount > 0
-    
+
     async def get_all(
         self,
         status: Optional[BroadcastStatus] = None,
@@ -130,19 +134,19 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
     ) -> Sequence[Broadcast]:
         """Get all broadcasts."""
         query = select(BroadcastModel)
-        
+
         if status:
             query = query.where(BroadcastModel.status == status.value)
-        
+
         query = (
             query.order_by(BroadcastModel.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
-        
+
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
-    
+
     async def get_pending_broadcasts(self) -> Sequence[Broadcast]:
         """Get pending broadcasts for processing."""
         query = (
@@ -152,7 +156,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         )
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
-    
+
     async def cancel(self, broadcast_id: UUID) -> bool:
         """Cancel broadcast."""
         return await self.update_status(broadcast_id, BroadcastStatus.CANCELLED)

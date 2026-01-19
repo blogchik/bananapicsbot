@@ -2,11 +2,11 @@
 
 from aiogram import Router
 
-from .navigation import router as navigation_router
 from .generation import router as generation_router
-from .watermark import router as watermark_router
-from .settings import router as settings_router
+from .navigation import router as navigation_router
 from .referral import router as referral_router
+from .settings import router as settings_router
+from .watermark import router as watermark_router
 
 # Create callbacks router
 callbacks_router = Router(name="callbacks")

@@ -1,15 +1,15 @@
 """Topup command handler."""
 
+from typing import Callable
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from typing import Callable
-
+from core.logging import get_logger
 from keyboards import PaymentKeyboard
 from locales import TranslationKey
 from services import PaymentService
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="topup")

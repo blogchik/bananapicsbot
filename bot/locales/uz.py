@@ -14,7 +14,7 @@ TRANSLATIONS: dict[str, str] = {
     "yes": "Ha",
     "no": "Yo'q",
     "loading": "⏳ Yuklanmoqda...",
-    
+
     # Profile
     "profile_title": "👤 Profil",
     "profile_info": "Mana sizning ma'lumotlaringiz:",
@@ -28,7 +28,7 @@ TRANSLATIONS: dict[str, str] = {
     "profile_trial_available": "mavjud",
     "profile_trial_unavailable": "yo'q",
     "profile_trial_used": " ({count} marta ishlatilgan)",
-    
+
     # Menu buttons
     "btn_profile": "👤 Profil",
     "btn_topup": "⭐ Balans to'ldirish",
@@ -45,7 +45,7 @@ TRANSLATIONS: dict[str, str] = {
     "cmd_referral": "Referral",
     "gen_menu_text": "🖼 Rasm generatsiya qilish\n\nBu yerda siz AI yordamida rasm yarata olasiz. \n\nQanday ishlaydi: \n• ✍️ Matn yozing — rasm yaratiladi\n• 📷 Rasm + matn yuboring — rasm o‘zgartiriladi\n• 📁 Bir nechta rasmni albom qilib yuborish mumkin\n\n👉 Boshlash uchun: \nMatn yozing yoki rasmga caption qo‘shib yuboring.",
     "wm_menu_text": "💧 Watermark o‘chirish\n\nRasmdagi watermarklarni avtomatik olib tashlash. \n\nQanday ishlaydi: \n• Faqat rasm yuboring\n• AI watermarkni tozalaydi\n• Qo‘shimcha sozlama kerak emas\n\n📷 Rasmni hoziroq yuboring.",
-    
+
     # Generation
     "gen_settings_title": "⚙️ Generatsiya sozlamalari",
     "gen_settings_title_t2i": "⚙️ Matn bo'yicha generatsiya",
@@ -99,19 +99,19 @@ TRANSLATIONS: dict[str, str] = {
     "gen_resolution_not_available": "Bu modelda resolution mavjud emas.",
     "gen_image_only": "Iltimos, rasm fayl yuboring.",
     "gen_insufficient_balance": "Sizda yetarli balans mavjud emas.",
-    
+
     # Profile
-    
+
     # Referral
     "referral_title": "🤝 Referral",
     "referral_info": "Do'stlaringizni taklif qiling va ularning to'lovlaridan {percent}% bonus oling.\nReferral faqat yangi userlar uchun ishlaydi.",
     "referral_link": "Link: {link}",
     "referral_count": "Referallar: {count}",
     "referral_bonus": "Yig'ilgan bonus: {total} credit",
-    
+
     # Errors
     "error_user_not_found": "User topilmadi.",
-    
+
     # Payments
     "topup_title": "⭐ Balans to'ldirish",
     "topup_description": "Telegram Stars orqali to'lov qiling.",
@@ -128,23 +128,23 @@ TRANSLATIONS: dict[str, str] = {
     "topup_confirmation": "Siz {stars} ⭐ uchun {credits} credit olasiz.",
     "topup_success": "✅ To'lov muvaffaqiyatli!\n+{credits} credit qo'shildi.\nYangi balans: {balance} credit",
     "topup_disabled": "To'lovlar hozircha yopiq.",
-    
+
     # Referral
     "referral_description": "Do'stlaringizni taklif qiling va ularning to'lovlaridan {percent}% bonus oling.\nReferral faqat yangi userlar uchun ishlaydi.",
     "referral_bonus_total": "Yig'ilgan bonus: {total} credit",
     "referral_new_applied": "👤 Yangi referral qo'shildi.\nUning to'lovlaridan {percent}% bonus olasiz.",
-    
+
     # Settings
     "settings_title": "⚙️ Sozlamalar",
     "settings_language": "🌐 Til: {language}",
     "settings_language_changed": "✅ Til o'zgartirildi: {language}",
-    
+
     # Errors
     "insufficient_balance": "Sizda yetarli balans mavjud emas.",
     "rate_limit_exceeded": "Juda ko'p so'rov. {seconds} soniyadan keyin urinib ko'ring.",
     "user_not_found": "User topilmadi.",
     "model_not_found": "Model topilmadi.",
-    
+
     # Admin
     "admin_panel_title": "🔐 Admin Panel",
     "admin_stats": "📊 Statistika",
@@ -153,7 +153,7 @@ TRANSLATIONS: dict[str, str] = {
     "admin_broadcast": "📢 Broadcast",
     "admin_refund": "💸 Refund",
     "admin_not_authorized": "Sizda admin huquqlari yo'q.",
-    
+
     # Admin - Stats
     "admin_stats_title": "📊 Statistika",
     "admin_stats_users_total": "👥 Jami foydalanuvchilar: {count}",
@@ -180,7 +180,7 @@ TRANSLATIONS: dict[str, str] = {
     "admin_user_stats_title": "👥 Foydalanuvchi statistikasi",
     "admin_gen_stats_title": "🎨 Generatsiya statistikasi",
     "admin_revenue_stats_title": "💰 Daromad statistikasi",
-    
+
     # Admin - Users
     "admin_users_title": "👥 Foydalanuvchilarni boshqarish",
     "admin_user_search_prompt": "🔍 Foydalanuvchi ID yoki username kiriting:",
@@ -201,7 +201,7 @@ TRANSLATIONS: dict[str, str] = {
     "admin_user_unbanned_success": "✅ Foydalanuvchi unban qilindi.",
     "admin_users_list_title": "📋 Foydalanuvchilar ({total}). Sahifa: {page}",
     "admin_users_empty": "📭 Foydalanuvchilar yo'q.",
-    
+
     # Admin - Credits
     "admin_credits_enter_amount": "💰 Credit miqdorini kiriting (salbiy son bo'lishi mumkin):",
     "admin_credits_invalid_amount": "❌ Noto'g'ri raqam.",
@@ -210,12 +210,12 @@ TRANSLATIONS: dict[str, str] = {
     "admin_credits_added": "✅ {amount} credit qo'shildi.\nFoydalanuvchi: {user_id}\nYangi balans: {balance}",
     "admin_credits_removed": "✅ {amount} credit olib tashlandi.\nFoydalanuvchi: {user_id}\nYangi balans: {balance}",
     "admin_action_cancelled": "❌ Amal bekor qilindi.",
-    
+
     # Admin - Refund
     "admin_refund_no_generations": "📭 Bu foydalanuvchida generatsiyalar yo'q.",
     "admin_refund_select": "🔙 Qaytarish uchun generatsiyani tanlang:",
     "admin_refund_success": "✅ {amount} credit qaytarildi.\nYangi balans: {balance}",
-    
+
     # Admin - Broadcast
     "admin_broadcast_title": "📢 Broadcast",
     "admin_broadcast_enter_message": "📝 Yuborish uchun xabar yozing yoki media yuboring:",

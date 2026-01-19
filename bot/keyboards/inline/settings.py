@@ -1,15 +1,16 @@
 """Settings keyboards."""
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from typing import Callable
 
-from keyboards.builders import SettingsCallback, MenuCallback
-from locales import TranslationKey, LocaleManager
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from locales import LocaleManager, TranslationKey
+
+from keyboards.builders import MenuCallback, SettingsCallback
 
 
 class SettingsKeyboard:
     """Settings keyboard builder."""
-    
+
     @staticmethod
     def main(
         current_language: str,
@@ -18,7 +19,7 @@ class SettingsKeyboard:
         """Build main settings menu."""
         manager = LocaleManager.get_instance()
         language_name = manager.language_names.get(current_language, current_language)
-        
+
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -35,7 +36,7 @@ class SettingsKeyboard:
                 ],
             ]
         )
-    
+
     @staticmethod
     def language_list(
         current_language: str,
@@ -44,7 +45,7 @@ class SettingsKeyboard:
         """Build language selection menu."""
         manager = LocaleManager.get_instance()
         rows: list[list[InlineKeyboardButton]] = []
-        
+
         for code, name in manager.language_names.items():
             label = f"✅ {name}" if code == current_language else name
             rows.append([
@@ -53,12 +54,12 @@ class SettingsKeyboard:
                     callback_data=SettingsCallback.language_set(code),
                 )
             ])
-        
+
         rows.append([
             InlineKeyboardButton(
                 text=_(TranslationKey.BACK, None),
                 callback_data=MenuCallback.PROFILE,
             )
         ])
-        
+
         return InlineKeyboardMarkup(inline_keyboard=rows)

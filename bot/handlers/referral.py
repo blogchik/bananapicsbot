@@ -1,7 +1,6 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message, User
-
 from api_client import ApiClient
 from config import load_settings
 from keyboards import referral_menu
@@ -30,7 +29,7 @@ async def send_referral_menu(message: Message, user: User, _) -> None:
         username = ""
     code = str(info.get("referral_code", ""))
     link = f"https://t.me/{username}?start=r_{code}" if username and code else "-"
-    
+
     bonus_percent = int(info.get("bonus_percent", 10))
     text = (
         f"{_(TranslationKey.REFERRAL_TITLE)}\n"

@@ -20,13 +20,13 @@ def format_date(
     """Format date/datetime to string."""
     if value is None:
         return "-"
-    
+
     if isinstance(value, str):
         try:
             value = datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             return value
-    
+
     if include_time:
         return value.strftime("%d.%m.%Y %H:%M")
     return value.strftime("%d.%m.%Y")

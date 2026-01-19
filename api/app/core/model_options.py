@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 
 from app.core.constants import (
     ASPECT_RATIO_OPTIONS,
-    NANO_BANANA_PRO_RESOLUTIONS,
     GPT_IMAGE_1_5_SIZE_OPTIONS,
+    NANO_BANANA_PRO_RESOLUTIONS,
     SIZE_OPTIONS,
 )
 

@@ -1,16 +1,16 @@
 """Admin credits management handlers."""
 
-from aiogram import Router, F
-from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
 from typing import Callable
 
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+from core.logging import get_logger
 from keyboards import AdminKeyboard
 from keyboards.builders import AdminCallback
 from locales import TranslationKey
 from services import AdminService
 from states import AdminStates
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 router = Router(name="admin_credits")
@@ -25,7 +25,7 @@ async def admin_credits_menu(
     """Show add credits prompt - ask for user ID."""
     await call.answer()
     await state.set_state(AdminStates.waiting_credits_user_id)
-    
+
     if call.message:
         await call.message.edit_text(
             "👤 Foydalanuvchi Telegram ID sini kiriting:",
@@ -41,7 +41,7 @@ async def admin_credits_user_id(
 ) -> None:
     """Handle user ID input for credits."""
     text = (message.text or "").strip()
-    
+
     try:
         telegram_id = int(text)
     except ValueError:
@@ -50,7 +50,7 @@ async def admin_credits_user_id(
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     # Verify user exists
     try:
         user = await AdminService.get_user(telegram_id)
@@ -58,17 +58,17 @@ async def admin_credits_user_id(
         logger.warning("Failed to get user", error=str(e))
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if not user:
         await message.answer(
             _(TranslationKey.ADMIN_USER_NOT_FOUND, None),
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     await state.update_data(credits_user_id=telegram_id)
     await state.set_state(AdminStates.waiting_credits_amount)
-    
+
     await message.answer(
         _(TranslationKey.ADMIN_CREDITS_ENTER_AMOUNT, None),
         reply_to_message_id=message.message_id,
@@ -83,15 +83,15 @@ async def admin_add_credits_start(
 ) -> None:
     """Start add credits flow."""
     await call.answer()
-    
+
     try:
         telegram_id = int(call.data.split(":", 3)[3])
     except (IndexError, ValueError):
         return
-    
+
     await state.update_data(credits_user_id=telegram_id)
     await state.set_state(AdminStates.waiting_credits_amount)
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_CREDITS_ENTER_AMOUNT, None),
@@ -107,7 +107,7 @@ async def admin_add_credits_amount(
 ) -> None:
     """Handle credits amount input."""
     text = (message.text or "").strip()
-    
+
     try:
         amount = int(text)
     except ValueError:
@@ -116,17 +116,17 @@ async def admin_add_credits_amount(
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     if amount == 0:
         await message.answer(
             _(TranslationKey.ADMIN_CREDITS_ZERO_AMOUNT, None),
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     await state.update_data(credits_amount=amount)
     await state.set_state(AdminStates.waiting_credits_reason)
-    
+
     await message.answer(
         _(TranslationKey.ADMIN_CREDITS_ENTER_REASON, {"amount": amount}),
         reply_to_message_id=message.message_id,
@@ -141,16 +141,16 @@ async def admin_add_credits_reason(
 ) -> None:
     """Handle credits reason and confirm."""
     reason = (message.text or "").strip() or "Admin adjustment"
-    
+
     data = await state.get_data()
     telegram_id = data.get("credits_user_id")
     amount = data.get("credits_amount")
-    
+
     if not telegram_id or amount is None:
         await state.clear()
         await message.answer(_(TranslationKey.ERROR_GENERIC, None))
         return
-    
+
     try:
         result = await AdminService.adjust_credits(telegram_id, amount, reason)
         new_balance = result.get("new_balance", 0)
@@ -158,9 +158,9 @@ async def admin_add_credits_reason(
         logger.warning("Failed to adjust credits", error=str(e))
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     await state.clear()
-    
+
     if amount > 0:
         text = _(TranslationKey.ADMIN_CREDITS_ADDED, {
             "amount": amount,
@@ -173,7 +173,7 @@ async def admin_add_credits_reason(
             "user_id": telegram_id,
             "balance": new_balance,
         })
-    
+
     await message.answer(text, reply_markup=AdminKeyboard.back_to_main(_))
 
 
@@ -186,7 +186,7 @@ async def admin_cancel_action(
     """Cancel current admin action."""
     await call.answer()
     await state.clear()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_ACTION_CANCELLED, None),
@@ -203,7 +203,7 @@ async def admin_refund_menu(
     """Show refund type selection menu."""
     await call.answer()
     await state.clear()
-    
+
     if call.message:
         await call.message.edit_text(
             "🔙 **Refund turi tanlang:**\n\n"
@@ -223,7 +223,7 @@ async def admin_credit_refund_start(
     """Start credit refund flow - ask for user ID."""
     await call.answer()
     await state.set_state(AdminStates.waiting_refund_user_id)
-    
+
     if call.message:
         await call.message.edit_text(
             "🎨 **Credit Refund**\n\n"
@@ -241,7 +241,7 @@ async def admin_refund_user_id(
 ) -> None:
     """Handle user ID input for refund."""
     text = (message.text or "").strip()
-    
+
     try:
         telegram_id = int(text)
     except ValueError:
@@ -250,7 +250,7 @@ async def admin_refund_user_id(
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     # Get user generations
     try:
         generations = await AdminService.get_user_generations(telegram_id, limit=10)
@@ -258,7 +258,7 @@ async def admin_refund_user_id(
         logger.warning("Failed to get user generations", error=str(e))
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if not generations:
         await message.answer(
             _(TranslationKey.ADMIN_REFUND_NO_GENERATIONS, None),
@@ -266,9 +266,9 @@ async def admin_refund_user_id(
         )
         await state.clear()
         return
-    
+
     await state.update_data(refund_user_id=telegram_id)
-    
+
     await message.answer(
         _(TranslationKey.ADMIN_REFUND_SELECT, None),
         reply_markup=AdminKeyboard.generation_list(generations, _),
@@ -283,12 +283,12 @@ async def admin_refund_start(
 ) -> None:
     """Start refund flow."""
     await call.answer()
-    
+
     try:
         telegram_id = int(call.data.split(":", 3)[3])
     except (IndexError, ValueError):
         return
-    
+
     try:
         generations = await AdminService.get_user_generations(telegram_id, limit=10)
     except Exception as e:
@@ -296,7 +296,7 @@ async def admin_refund_start(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if not generations:
         if call.message:
             await call.message.answer(
@@ -304,9 +304,9 @@ async def admin_refund_start(
                 reply_markup=AdminKeyboard.back_to_users(_),
             )
         return
-    
+
     await state.update_data(refund_user_id=telegram_id)
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_REFUND_SELECT, None),
@@ -322,20 +322,20 @@ async def admin_refund_generation(
 ) -> None:
     """Refund specific generation."""
     await call.answer()
-    
+
     try:
         gen_id = call.data.split(":", 3)[3]
     except IndexError:
         return
-    
+
     data = await state.get_data()
     telegram_id = data.get("refund_user_id")
-    
+
     if not telegram_id:
         await state.clear()
         await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
         return
-    
+
     try:
         result = await AdminService.refund_generation(telegram_id, gen_id)
         refunded = result.get("credits_refunded", 0)
@@ -345,9 +345,9 @@ async def admin_refund_generation(
         if call.message:
             await call.message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     await state.clear()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_REFUND_SUCCESS, {
@@ -369,7 +369,7 @@ async def admin_stars_refund_start(
     """Start stars refund flow - ask for user ID."""
     await call.answer()
     await state.set_state(AdminStates.waiting_stars_refund_user_id)
-    
+
     if call.message:
         await call.message.edit_text(
             "⭐ **Stars Refund**\n\n"
@@ -387,7 +387,7 @@ async def admin_stars_refund_user_id(
 ) -> None:
     """Handle user ID input for stars refund - show unrefunded transactions."""
     text = (message.text or "").strip()
-    
+
     try:
         telegram_id = int(text)
     except ValueError:
@@ -396,7 +396,7 @@ async def admin_stars_refund_user_id(
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     # Get user info
     try:
         user = await AdminService.get_user(telegram_id)
@@ -404,27 +404,27 @@ async def admin_stars_refund_user_id(
         logger.warning("Failed to get user", error=str(e))
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
-    
+
     if not user:
         await message.answer(
             _(TranslationKey.ADMIN_USER_NOT_FOUND, None),
             reply_to_message_id=message.message_id,
         )
         return
-    
+
     balance = user.get("balance", 0)
-    
+
     # Show loading message
     loading_msg = await message.answer(
         "⏳ Telegram API orqali tranzaksiyalar yuklanmoqda...",
         reply_to_message_id=message.message_id,
     )
-    
+
     # Get bot token and fetch unrefunded transactions
     from core.container import get_container
     container = get_container()
     bot_token = container.settings.bot_token.get_secret_value()
-    
+
     try:
         transactions = await AdminService.get_user_unrefunded_transactions(
             bot_token=bot_token,
@@ -436,9 +436,9 @@ async def admin_stars_refund_user_id(
             f"❌ Tranzaksiyalarni olishda xatolik: {str(e)}",
         )
         return
-    
+
     await state.clear()
-    
+
     if not transactions:
         await loading_msg.edit_text(
             f"❌ **To'lovlar topilmadi**\n\n"
@@ -449,16 +449,16 @@ async def admin_stars_refund_user_id(
             reply_markup=AdminKeyboard.back_to_main(_),
         )
         return
-    
+
     # Store data for later use - use list to preserve order for index-based lookup
     await state.update_data(
         stars_refund_user_id=telegram_id,
         stars_refund_balance=balance,
         stars_refund_transactions=transactions,
     )
-    
+
     total_stars = sum(tx["amount"] for tx in transactions)
-    
+
     await loading_msg.edit_text(
         f"⭐ **Stars Refund**\n\n"
         f"👤 User: `{telegram_id}`\n"
@@ -479,7 +479,7 @@ async def admin_stars_refund_single(
 ) -> None:
     """Refund a single transaction."""
     await call.answer()
-    
+
     # Extract transaction index from callback data
     try:
         tx_index = int(call.data.replace("admin:refund:stars:tx:", ""))
@@ -492,12 +492,12 @@ async def admin_stars_refund_single(
                 reply_markup=AdminKeyboard.back_to_main(_),
             )
         return
-    
+
     data = await state.get_data()
     telegram_id = data.get("stars_refund_user_id")
     balance = data.get("stars_refund_balance", 0)
     transactions = data.get("stars_refund_transactions", [])
-    
+
     if not telegram_id or tx_index >= len(transactions):
         await state.clear()
         if call.message:
@@ -507,11 +507,11 @@ async def admin_stars_refund_single(
                 reply_markup=AdminKeyboard.back_to_main(_),
             )
         return
-    
+
     tx = transactions[tx_index]
     tx_id = tx["id"]
     stars_amount = tx["amount"]
-    
+
     if call.message:
         await call.message.edit_text(
             f"⏳ Stars refund jarayoni...\n\n"
@@ -519,19 +519,19 @@ async def admin_stars_refund_single(
             f"⭐ {stars_amount} Stars qaytarilmoqda...",
             parse_mode="Markdown",
         )
-    
+
     # Get bot token
     from core.container import get_container
     container = get_container()
     bot_token = container.settings.bot_token.get_secret_value()
-    
+
     try:
         ok, error = await AdminService.refund_star_payment(
             bot_token=bot_token,
             user_id=telegram_id,
             charge_id=tx_id,
         )
-        
+
         if ok:
             # Get exchange rate and deduct credits
             try:
@@ -541,9 +541,9 @@ async def admin_stars_refund_single(
             except Exception:
                 numerator = 1
                 denominator = 1
-            
+
             credits_to_deduct = (stars_amount * numerator) // denominator
-            
+
             try:
                 await AdminService.adjust_credits(
                     telegram_id=telegram_id,
@@ -551,7 +551,7 @@ async def admin_stars_refund_single(
                     reason=f"Stars refund: {stars_amount}⭐",
                 )
                 new_balance = balance - credits_to_deduct
-                
+
                 await state.clear()
                 if call.message:
                     await call.message.edit_text(
@@ -581,7 +581,7 @@ async def admin_stars_refund_single(
                 # Transaction already refunded - remove from list and refresh
                 transactions.pop(tx_index)
                 await state.update_data(stars_refund_transactions=transactions)
-                
+
                 if not transactions:
                     await state.clear()
                     if call.message:
@@ -617,7 +617,7 @@ async def admin_stars_refund_single(
                         parse_mode="Markdown",
                         reply_markup=AdminKeyboard.back_to_main(_),
                     )
-    
+
     except Exception as e:
         logger.error("Stars refund failed", error=str(e))
         await state.clear()
@@ -637,12 +637,12 @@ async def admin_stars_refund_all(
 ) -> None:
     """Refund all transactions."""
     await call.answer()
-    
+
     data = await state.get_data()
     telegram_id = data.get("stars_refund_user_id")
     balance = data.get("stars_refund_balance", 0)
     transactions = data.get("stars_refund_transactions", [])
-    
+
     if not telegram_id or not transactions:
         await state.clear()
         if call.message:
@@ -652,9 +652,9 @@ async def admin_stars_refund_all(
                 reply_markup=AdminKeyboard.back_to_main(_),
             )
         return
-    
+
     total_stars = sum(tx["amount"] for tx in transactions)
-    
+
     if call.message:
         await call.message.edit_text(
             f"⏳ Barcha tranzaksiyalar qaytarilmoqda...\n\n"
@@ -662,16 +662,16 @@ async def admin_stars_refund_all(
             f"⭐ Jami: {total_stars} Stars ({len(transactions)} ta)",
             parse_mode="Markdown",
         )
-    
+
     # Get bot token
     from core.container import get_container
     container = get_container()
     bot_token = container.settings.bot_token.get_secret_value()
-    
+
     refunded_total = 0
     refunded_count = 0
     errors: list[str] = []
-    
+
     for tx in transactions:
         tx_id = tx["id"]
         try:
@@ -680,7 +680,7 @@ async def admin_stars_refund_all(
                 user_id=telegram_id,
                 charge_id=tx_id,
             )
-            
+
             if ok:
                 refunded_total += tx["amount"]
                 refunded_count += 1
@@ -691,7 +691,7 @@ async def admin_stars_refund_all(
                     errors.append(f"{tx['amount']}⭐: {error}")
         except Exception as e:
             errors.append(f"{tx['amount']}⭐: {str(e)}")
-    
+
     if refunded_total > 0:
         # Deduct credits
         try:
@@ -701,9 +701,9 @@ async def admin_stars_refund_all(
         except Exception:
             numerator = 1
             denominator = 1
-        
+
         credits_to_deduct = (refunded_total * numerator) // denominator
-        
+
         try:
             await AdminService.adjust_credits(
                 telegram_id=telegram_id,
@@ -711,13 +711,13 @@ async def admin_stars_refund_all(
                 reason=f"Stars refund: {refunded_total}⭐",
             )
             new_balance = balance - credits_to_deduct
-            
+
             await state.clear()
-            
+
             error_text = ""
             if errors:
-                error_text = f"\n\n⚠️ **Ba'zi xatolar:**\n" + "\n".join(f"• {e}" for e in errors[:3])
-            
+                error_text = "\n\n⚠️ **Ba'zi xatolar:**\n" + "\n".join(f"• {e}" for e in errors[:3])
+
             if call.message:
                 await call.message.edit_text(
                     f"✅ **Stars Refund muvaffaqiyatli!**\n\n"
@@ -764,7 +764,7 @@ async def admin_stars_refund_cancel(
     """Cancel stars refund."""
     await call.answer()
     await state.clear()
-    
+
     if call.message:
         await call.message.edit_text(
             _(TranslationKey.ADMIN_ACTION_CANCELLED, None),

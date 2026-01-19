@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 class IWavespeedService(ABC):
     """Wavespeed AI service interface."""
-    
+
     @abstractmethod
     async def submit_generation(
         self,
@@ -19,7 +19,7 @@ class IWavespeedService(ABC):
     ) -> dict[str, Any]:
         """Submit generation to Wavespeed."""
         pass
-    
+
     @abstractmethod
     async def get_generation_status(
         self,
@@ -27,7 +27,7 @@ class IWavespeedService(ABC):
     ) -> dict[str, Any]:
         """Get generation status from Wavespeed."""
         pass
-    
+
     @abstractmethod
     async def cancel_generation(
         self,
@@ -39,12 +39,12 @@ class IWavespeedService(ABC):
 
 class ICacheService(ABC):
     """Cache service interface."""
-    
+
     @abstractmethod
     async def get(self, key: str) -> Optional[Any]:
         """Get value from cache."""
         pass
-    
+
     @abstractmethod
     async def set(
         self,
@@ -54,22 +54,22 @@ class ICacheService(ABC):
     ) -> None:
         """Set value in cache."""
         pass
-    
+
     @abstractmethod
     async def delete(self, key: str) -> None:
         """Delete value from cache."""
         pass
-    
+
     @abstractmethod
     async def exists(self, key: str) -> bool:
         """Check if key exists."""
         pass
-    
+
     @abstractmethod
     async def incr(self, key: str, amount: int = 1) -> int:
         """Increment counter."""
         pass
-    
+
     @abstractmethod
     async def expire(self, key: str, ttl: int) -> None:
         """Set TTL on key."""
@@ -78,7 +78,7 @@ class ICacheService(ABC):
 
 class IEventPublisher(ABC):
     """Event publisher interface for async communication."""
-    
+
     @abstractmethod
     async def publish(
         self,
@@ -87,7 +87,7 @@ class IEventPublisher(ABC):
     ) -> None:
         """Publish event."""
         pass
-    
+
     @abstractmethod
     async def publish_delayed(
         self,

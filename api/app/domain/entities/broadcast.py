@@ -3,12 +3,12 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 
 class BroadcastStatus(str, Enum):
     """Broadcast status enum."""
-    
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -18,7 +18,7 @@ class BroadcastStatus(str, Enum):
 
 class BroadcastContentType(str, Enum):
     """Broadcast content type."""
-    
+
     TEXT = "text"
     PHOTO = "photo"
     VIDEO = "video"
@@ -29,7 +29,7 @@ class BroadcastContentType(str, Enum):
 @dataclass
 class Broadcast:
     """Broadcast domain entity."""
-    
+
     id: int
     created_by: int  # Admin user ID
     content_type: BroadcastContentType
@@ -43,14 +43,14 @@ class Broadcast:
     created_at: datetime = field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    
+
     @property
     def progress_percent(self) -> float:
         """Get broadcast progress percentage."""
         if self.target_count == 0:
             return 0.0
         return (self.sent_count + self.failed_count) / self.target_count * 100
-    
+
     @property
     def is_active(self) -> bool:
         """Check if broadcast is active."""
