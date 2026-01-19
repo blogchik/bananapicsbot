@@ -233,11 +233,19 @@ async def _dynamic_price_for_model(
             inputs["quality"] = quality
         
         # Try fetching from Wavespeed pricing API
-        client = wavespeed_client()
-        price = await get_model_price_from_wavespeed(client, wavespeed_model_id, inputs)
-        if price is not None:
-            await set_cached_price(cache_key, price)
-            return price
+        try:
+            client = wavespeed_client()
+            price = await get_model_price_from_wavespeed(client, wavespeed_model_id, inputs)
+            if price is not None:
+                await set_cached_price(cache_key, price)
+                return price
+        except Exception as exc:
+            # Log and fall through to hardcoded prices
+            logger.debug(
+                "Wavespeed pricing API unavailable, using fallback",
+                model_key=key,
+                error=str(exc),
+            )
     
     # Fallback to hardcoded prices if API fails
     if key == "seedream-v4":
