@@ -134,8 +134,19 @@ async def admin_stats_generations(
     if by_model:
         lines.append("")
         lines.append(_(TranslationKey.ADMIN_STATS_BY_MODEL, None))
-        for model, count in sorted(by_model.items(), key=lambda x: x[1], reverse=True)[:10]:
-            lines.append(f"  • {model}: {count}")
+        # Handle both dict format (with credits) and int format (legacy)
+        sorted_models = sorted(
+            by_model.items(),
+            key=lambda x: x[1].get("count", x[1]) if isinstance(x[1], dict) else x[1],
+            reverse=True
+        )[:10]
+        for model, data in sorted_models:
+            if isinstance(data, dict):
+                count = data.get("count", 0)
+                credits = data.get("credits", 0)
+                lines.append(f"  • {model}: {count} ({credits} credits)")
+            else:
+                lines.append(f"  • {model}: {data}")
 
     if call.message:
         await call.message.edit_text(

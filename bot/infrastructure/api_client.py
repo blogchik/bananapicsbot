@@ -386,7 +386,7 @@ class ApiClient:
             "completed": stats.get("completed_generations", 0),
             "failed": stats.get("failed_generations", 0),
             "credits_spent": stats.get("total_spent", 0),
-            "by_model": {},
+            "by_model": stats.get("by_model", {}),
         }
 
     async def get_admin_revenue_stats(self) -> dict:
@@ -593,4 +593,11 @@ class ApiClient:
         return await self._request(
             "GET",
             f"/api/v1/admin/users/{telegram_id}/payments?limit={limit}",
+        )
+
+    async def mark_payment_refunded(self, telegram_charge_id: str) -> dict:
+        """Mark a payment as refunded by telegram_charge_id."""
+        return await self._request(
+            "POST",
+            f"/api/v1/payments/stars/refund/{telegram_charge_id}",
         )

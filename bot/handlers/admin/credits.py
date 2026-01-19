@@ -552,6 +552,12 @@ async def admin_stars_refund_single(
                 )
                 new_balance = balance - credits_to_deduct
 
+                # Mark payment as refunded in database
+                try:
+                    await container.api_client.mark_payment_refunded(tx_id)
+                except Exception as e:
+                    logger.warning("Failed to mark payment as refunded", error=str(e))
+
                 await state.clear()
                 if call.message:
                     await call.message.edit_text(
@@ -684,6 +690,11 @@ async def admin_stars_refund_all(
             if ok:
                 refunded_total += tx["amount"]
                 refunded_count += 1
+                # Mark payment as refunded in database
+                try:
+                    await container.api_client.mark_payment_refunded(tx_id)
+                except Exception as e:
+                    logger.warning("Failed to mark payment as refunded", error=str(e))
             elif error:
                 if "CHARGE_ALREADY_REFUNDED" in error:
                     errors.append(f"{tx['amount']}⭐: allaqachon qaytarilgan")
@@ -691,6 +702,7 @@ async def admin_stars_refund_all(
                     errors.append(f"{tx['amount']}⭐: {error}")
         except Exception as e:
             errors.append(f"{tx['amount']}⭐: {str(e)}")
+
 
     if refunded_total > 0:
         # Deduct credits

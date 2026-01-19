@@ -104,3 +104,27 @@ async def confirm_stars_payment(
 
     balance = get_user_balance(db, user.id)
     return StarsPaymentConfirmOut(credits_added=credits, balance=balance)
+
+
+@router.post("/payments/stars/refund/{telegram_charge_id}")
+async def mark_payment_refunded(
+    telegram_charge_id: str,
+    db: Session = Depends(db_session_dep),
+) -> dict:
+    """Mark a payment as refunded by telegram_charge_id."""
+    payment = db.execute(
+        select(PaymentLedger).where(
+            PaymentLedger.telegram_charge_id == telegram_charge_id
+        )
+    ).scalar_one_or_none()
+
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    if payment.is_refunded:
+        return {"success": True, "message": "Already marked as refunded"}
+
+    payment.is_refunded = True
+    db.commit()
+
+    return {"success": True, "refunded_stars": payment.stars_amount}

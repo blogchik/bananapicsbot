@@ -133,21 +133,40 @@ class AdminService:
         week_start = now - timedelta(days=7)
         month_start = now - timedelta(days=30)
 
-        # Helper to get stars paid for a period from PaymentLedger
+        # Helper to get stars paid for a period from PaymentLedger (excluding refunded)
         async def get_stars_since(start_date: datetime) -> float:
             query = select(
                 func.coalesce(func.sum(PaymentLedger.stars_amount), 0)
             ).where(
-                PaymentLedger.created_at >= start_date,
+                and_(
+                    PaymentLedger.created_at >= start_date,
+                    PaymentLedger.is_refunded == False,  # Exclude refunded payments
+                )
             )
             result = await self.session.execute(query)
             return float(result.scalar() or 0)
 
-        # Total stars received
+        # Helper to get refunded stars for a period
+        async def get_refunded_since(start_date: datetime) -> float:
+            query = select(
+                func.coalesce(func.sum(PaymentLedger.stars_amount), 0)
+            ).where(
+                and_(
+                    PaymentLedger.created_at >= start_date,
+                    PaymentLedger.is_refunded == True,
+                )
+            )
+            result = await self.session.execute(query)
+            return float(result.scalar() or 0)
+
+        # Total stars received (excluding refunded)
         total_stars = await get_stars_since(since)
         today_stars = await get_stars_since(today_start)
         week_stars = await get_stars_since(week_start)
         month_stars = await get_stars_since(month_start)
+
+        # Total refunded stars
+        total_refunded = await get_refunded_since(since)
 
         # Total credits spent (generations - negative values)
         spent_query = select(
@@ -161,13 +180,37 @@ class AdminService:
         spent_result = await self.session.execute(spent_query)
         spent = spent_result.scalar() or 0
 
+        # Get by_model statistics with credits
+        by_model_query = (
+            select(
+                ModelCatalog.key,
+                func.count(GenerationRequest.id).label("count"),
+                func.coalesce(func.sum(GenerationRequest.cost), 0).label("credits"),
+            )
+            .join(ModelCatalog, GenerationRequest.model_id == ModelCatalog.id)
+            .where(
+                and_(
+                    GenerationRequest.created_at >= since,
+                    GenerationRequest.status == GenerationStatus.completed,
+                )
+            )
+            .group_by(ModelCatalog.key)
+        )
+        by_model_result = await self.session.execute(by_model_query)
+        by_model = {
+            row.key: {"count": row.count, "credits": int(row.credits)}
+            for row in by_model_result.all()
+        }
+
         return {
             "total_deposits": total_stars,
             "today_deposits": today_stars,
             "week_deposits": week_stars,
             "month_deposits": month_stars,
+            "total_refunded": total_refunded,
             "total_spent": spent,
             "net_revenue": total_stars,
+            "by_model": by_model,
         }
 
     # ============ Payment Stats ============

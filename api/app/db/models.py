@@ -273,6 +273,7 @@ class PaymentLedger(Base):
     telegram_charge_id: Mapped[str] = mapped_column(String(200), unique=True, index=True)
     provider_charge_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     invoice_payload: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    is_refunded: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow
     )

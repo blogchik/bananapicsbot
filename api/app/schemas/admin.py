@@ -92,8 +92,12 @@ class DashboardStatsOut(BaseModel):
     today_deposits: float
     week_deposits: float
     month_deposits: float
+    total_refunded: float = 0.0
     total_spent: float
     net_revenue: float
+
+    # Model statistics
+    by_model: Dict[str, Dict[str, Any]] = {}
 
     # Payments
     total_payments: int
