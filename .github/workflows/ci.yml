@@ -97,8 +97,9 @@ jobs:
           scp docker-compose.yml $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/docker-compose.yml
           
           # Execute commands on server
+          # Only pull custom images from ghcr.io, not postgres/redis from Docker Hub
           ssh $SSH_USERNAME@$SSH_HOST "cd ~/bananapicsbot && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
-            docker compose pull && \
+            docker compose pull api bot && \
             docker compose up -d && \
             docker image prune -f"
