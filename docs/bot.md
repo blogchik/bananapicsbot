@@ -51,7 +51,7 @@ BOT_TOKEN=your_telegram_bot_token
 
 # Optional
 REDIS_URL=redis://redis:6379/0
-API_BASE_URL=http://api:8000
+API_BASE_URL=http://api:9000
 ADMIN_IDS=686980246
 USE_WEBHOOK=false
 WEBHOOK_BASE_URL=https://your-domain.com
@@ -77,11 +77,13 @@ docker compose up -d --build
 ## Modes
 
 ### Polling (default)
+
 ```env
 USE_WEBHOOK=false
 ```
 
 ### Webhook
+
 ```env
 USE_WEBHOOK=true
 WEBHOOK_BASE_URL=https://your-domain.com
@@ -134,7 +136,7 @@ Admin panel inline buttons orqali ishlaydi:
 7. Admin confirms → broadcast starts via Celery workers
 8. Progress shown with real-time updates:
    - Sent count
-   - Failed count  
+   - Failed count
    - Blocked count (users who blocked the bot)
    - Progress bar with percentage
 9. Admin can cancel running broadcast
@@ -233,7 +235,7 @@ await call.message.edit_text(_(TranslationKey.PROFILE_TITLE))
 
 ## API servis
 
-- API `http://localhost:8000` manzilda ishlaydi.
+- API `http://localhost:9000` manzilda ishlaydi.
 - Healthcheck: `GET /api/v1/health`
 - API info: `GET /api/v1/info`
 

@@ -46,18 +46,22 @@ app/
 ## Admin Endpointlar
 
 ### Dashboard
+
 - `GET /api/v1/admin/stats` - umumiy statistika (users, generations, revenue)
 - `GET /api/v1/admin/health` - admin API health check
 
 ### User Management
+
 - `GET /api/v1/admin/users` - userlarni qidirish (query, pagination)
 - `GET /api/v1/admin/users/{telegram_id}` - user tafsilotlari
 - `GET /api/v1/admin/users/count?filter_type=...` - filter bo'yicha user soni
 
 ### Credits
+
 - `POST /api/v1/admin/credits` - balansni o'zgartirish
 
 ### Broadcast
+
 - `POST /api/v1/admin/broadcasts` - yangi broadcast yaratish
 - `GET /api/v1/admin/broadcasts` - broadcast tarixini ko'rish
 - `GET /api/v1/admin/broadcasts/{public_id}` - broadcast holati
@@ -67,28 +71,35 @@ app/
 ## Asosiy Endpointlar
 
 ### Health & Info
+
 - `GET /` - root info
 - `GET /api/v1/health` - healthcheck (uptime, request id)
 - `GET /api/v1/info` - API info
 
 ### Users
+
 - `POST /api/v1/users/sync` - Telegram userni yaratish/sync
 - `GET /api/v1/users/{telegram_id}/balance` - user balansi
 - `GET /api/v1/users/{telegram_id}/trial` - trial holati
 
 ### Referrals
+
 - `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari
 
 ### Models
+
 - `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration). Model options (size/aspect_ratio/resolution) Wavespeed docs sahifalaridan olinadi va cache qilinadi (parallel fetch).
 - `POST /api/v1/tools/watermark-remove` - watermark remover (12 credit), input: `telegram_id`, `image_url`, optional `output_format`
 - `GET /api/v1/sizes` - size variantlari
 
 ### Payments
+
 - `GET /api/v1/payments/stars/options` - Stars to'lov variantlari
 - `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash
 
 ### Generations
+
+- `POST /api/v1/generations/price` - generatsiya narxini hisoblash. Wavespeed API orqali real-time va bot-side caching (5 daqiqa) bilan ishlaydi. Input: model_id, size, quality, resolution, etc. Rate limit: user boshiga 60 req/min.
 - `POST /api/v1/generations/submit` - generatsiyani boshlash (backend Celery polling + Telegram push)
 - `GET /api/v1/generations/active?telegram_id=...` - aktiv generatsiya
 - `GET /api/v1/generations/{id}?telegram_id=...` - generatsiya holati
@@ -99,15 +110,18 @@ app/
 `gpt-image-1.5` uchun `quality` (low/medium/high) va `input_fidelity` (low/high, edit uchun) optional.
 
 ### Media
+
 - `POST /api/v1/media/upload` - Wavespeed media upload
 
 ## Caching Strategy
 
 Multi-layer cache:
+
 - **L1 (Memory)**: 60s TTL, tez access, process-local
 - **L2 (Redis)**: 300s TTL, shared across processes
 
 Cache patterns:
+
 - User profiles: 5 min
 - Balances: 1 min
 - Admin stats: 1 min
@@ -117,10 +131,12 @@ Cache patterns:
 ## Background Tasks (Celery)
 
 Workers:
+
 - `celery-worker` - task execution
 - `celery-beat` - scheduled tasks
 
 Tasks:
+
 - `process_generation` - Wavespeed API polling va natijani Telegramga push qilish
 - `send_broadcast_message` - individual broadcast messages
 - `process_broadcast` - broadcast orchestration
@@ -154,12 +170,13 @@ Tasks:
 ## Model katalogi
 
 Mavjud modellar:
+
 - `seedream-v4` - 27 credit (size parametri)
 - `nano-banana` - 38 credit (aspect_ratio)
 - `nano-banana-pro` - 140 credit (1k/2k), 240 credit (4k) (aspect_ratio, resolution)
 - `gpt-image-1.5` - size/quality bo'yicha dinamik narx:
-  - t2i: low 0.009/0.013, medium 0.034/0.051, high 0.133/0.200 (1024*1024 / 1024*1536,1536*1024)
-  - i2i: low 0.009/0.034/0.013 (1024*1024 / 1024*1536 / 1536*1024), medium 0.034/0.051, high 0.133/0.200
+  - t2i: low 0.009/0.013, medium 0.034/0.051, high 0.133/0.200 (1024*1024 / 1024*1536,1536\*1024)
+  - i2i: low 0.009/0.034/0.013 (1024*1024 / 1024*1536 / 1536\*1024), medium 0.034/0.051, high 0.133/0.200
 
 ## Middlewarelar
 
@@ -170,6 +187,7 @@ Mavjud modellar:
 ## Logging
 
 Structured logging (structlog):
+
 - JSON format production uchun
 - Console format development uchun
 - Sentry integratsiya errors uchun
@@ -178,12 +196,12 @@ Structured logging (structlog):
 
 ```yaml
 services:
-  api:          # FastAPI application
+  api: # FastAPI application
   celery-worker: # Background task worker
-  celery-beat:   # Scheduled tasks
-  redis:         # Cache, Celery broker
-  db:            # PostgreSQL
-  bot:           # Telegram bot
+  celery-beat: # Scheduled tasks
+  redis: # Cache, Celery broker
+  db: # PostgreSQL
+  bot: # Telegram bot
 ```
 
 Barcha servislar `app_net` nomli bitta Docker networkda ishlaydi.

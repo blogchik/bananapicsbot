@@ -15,7 +15,9 @@
 - **Cheklov:** user bir vaqtda faqat 1 ta generatsiya boshlaydi (Redis lock + DB advisory lock).
 - **Aktiv holat:** aktiv generatsiya bor paytda yangi so'rov yuborilsa, bot kutishni so'raydi va oldingi generatsiya davom etadi.
 - **Backend va saqlash:** FastAPI /api/v1, Postgres + Alembic, CORS, rate limit, request id, global error handling; requestlar `public_id` bilan unique, prompt/size/reference URL + telegram file id, input params, natijalar va joblar saqlanadi.
-- **Model:** `seedream-v4` (27 credit), `nano-banana` (38 credit), `nano-banana-pro` (1k/2k: 140 credit, 4k: 240 credit), `gpt-image-1.5` (size bo'yicha dinamik narx); text-to-image va image-to-image; `aspect_ratio` nano modellarda yoqilgan, `resolution` `seedream-v4` va `nano-banana-pro` uchun, `size` alohida menyu sifatida ishlatilmaydi.
+- **Model:** `seedream-v4`, `nano-banana`, `nano-banana-pro`, `gpt-image-1.5`. Barcha modellar uchun narxlar dinamik ravishda API (`/api/v1/generations/price`) orqali olinadi. Wavespeed API real-time narxlariga asoslanadi. `gpt-image-1.5` narxi quality va size parametrlariga qarab o'zgaradi.
+- **Caching:** Bot tarafida narxlar (model va parametrlar bo'yicha) 5 daqiqa davomida Redis da cache qilinadi. Bu API so'rovlarini kamaytiradi va narx barqarorligini ta'minlaydi.
+- **Model parametrlari:** `seedream-v4` (size), `nano`, `nano-banana-pro` (aspect_ratio, resolution: `4k` uchun qimmatroq), `gpt-image-1.5` (size, quality, input_fidelity).
 - **Model konfiguratsiya:** parametrlar va variantlar `/api/v1/models` javobidagi `model.options` orqali keladi, bot shunga moslashadi.
 - **Broadcast:** Admin broadcast menyusidan yangi broadcast yaratadi, xabar yuboradi (text/photo/video/audio/sticker), filter tanlaydi (all/active_7d/active_30d/with_balance/paid_users/new_users), ixtiyoriy inline button qo'shadi, preview ko'radi va tasdiqlaydi. Celery worker rate limit bilan yuboradi (20 msg/sec). Progress va statistika real-time ko'rinadi (sent/failed/blocked). Broadcast bekor qilish mumkin.
 
