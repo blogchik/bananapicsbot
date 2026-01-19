@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -6,11 +6,14 @@ on:
   pull_request:
     branches: [ "master", "main" ]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      # Use Redis service for tests dependent on it (if we add them later)
       redis:
         image: redis
         ports:
@@ -38,12 +41,64 @@ jobs:
         run: |
           pytest api/tests
 
-  build:
-    needs: [test]
+  build-and-push:
+    needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - name: Create .env file
+      
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create .env file for build
         run: cp .env.example .env
-      - name: Build all services
-        run: docker compose build
+        
+      - name: Build and Push
+        run: |
+          docker compose build
+          docker compose push
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: "placeholder" # We will accept new host keys strictly or lazily
+          if_key_exists: replace
+          
+      - name: Adding Known Hosts
+        run: |
+           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        run: |
+          # Create .env file from secret
+          echo "$PROD_ENV_FILE" > .env.prod
+          
+          # Copy files to server
+          scp .env.prod $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/.env
+          scp docker-compose.yml $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/docker-compose.yml
+          
+          # Execute commands on server
+          ssh $SSH_USERNAME@$SSH_HOST "cd ~/bananapicsbot && \
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
+            docker compose pull && \
+            docker compose up -d && \
+            docker image prune -f"
