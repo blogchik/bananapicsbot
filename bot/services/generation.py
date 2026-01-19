@@ -122,6 +122,34 @@ class GenerationService:
         return base_price
 
     @staticmethod
+    def _get_pricing_cache_key(
+        model_key: str | None,
+        size: str | None,
+        aspect_ratio: str | None,
+        resolution: str | None,
+        quality: str | None,
+        input_fidelity: str | None,
+        is_i2i: bool,
+    ) -> str:
+        """Build pricing cache key."""
+        parts = [
+            "bot:pricing",
+            (model_key or "").lower().replace(":", "_"),
+            f"i2i={is_i2i}",
+        ]
+        if size:
+            parts.append(f"s={size}")
+        if aspect_ratio:
+            parts.append(f"ar={aspect_ratio}")
+        if resolution:
+            parts.append(f"res={resolution}")
+        if quality:
+            parts.append(f"q={quality}")
+        if input_fidelity:
+            parts.append(f"fid={input_fidelity}")
+        return ":".join(parts)
+
+    @staticmethod
     async def get_dynamic_price(
         telegram_id: int,
         model_id: int,
@@ -156,6 +184,17 @@ class GenerationService:
         """
         container = get_container()
         
+        # Check bot-side cache first
+        cache_key = GenerationService._get_pricing_cache_key(
+            model_key, size, aspect_ratio, resolution, quality, input_fidelity, is_image_to_image
+        )
+        try:
+            cached_price = await container.redis_client.get(cache_key)
+            if cached_price:
+                return int(cached_price)
+        except Exception:
+            pass  # Ignore cache errors
+
         try:
             price_data = await container.api_client.get_generation_price(
                 telegram_id=telegram_id,
@@ -186,6 +225,12 @@ class GenerationService:
                 cached=cached,
             )
             
+            # Cache on bot side for 5 minutes
+            try:
+                await container.redis_client.set(cache_key, str(price_credits), ex=300)
+            except Exception:
+                pass
+
             return price_credits
             
         except Exception as exc:
