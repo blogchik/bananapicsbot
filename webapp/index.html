@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Banana Pics - Web App</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app" style="display: none">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <h1 class="header-title">🍌 Banana Pics</h1>
+          <div class="header-balance">
+            <span class="balance-label">💰</span>
+            <span id="header-balance" class="balance-value">0</span>
+            <span class="balance-unit">cr</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="main-content">
+        <!-- Generation Page -->
+        <div id="page-generation" class="page active">
+          <div class="page-header">
+            <h2>🎨 Generation</h2>
+          </div>
+
+          <!-- Generation Type Tabs -->
+          <div class="tabs">
+            <button class="tab-button active" data-tab="text-to-image">
+              ✍️ Text to Image
+            </button>
+            <button class="tab-button" data-tab="image-to-image">
+              🖼️ Image to Image
+            </button>
+          </div>
+
+          <!-- Text to Image Tab -->
+          <div id="tab-text-to-image" class="tab-content active">
+            <div class="form-group">
+              <label for="t2i-prompt">Prompt</label>
+              <textarea
+                id="t2i-prompt"
+                class="textarea"
+                rows="4"
+                placeholder="Describe the image you want to create..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="t2i-model">Model</label>
+              <select id="t2i-model" class="select">
+                <option value="">Loading models...</option>
+              </select>
+            </div>
+
+            <div id="t2i-parameters" class="parameters-container"></div>
+
+            <div class="price-display">
+              <span class="price-label">Price:</span>
+              <span id="t2i-price" class="price-value">- cr</span>
+            </div>
+
+            <button
+              id="t2i-generate-btn"
+              class="btn btn-primary btn-large"
+              disabled
+            >
+              🚀 Generate Image
+            </button>
+
+            <div
+              id="t2i-status"
+              class="status-container"
+              style="display: none"
+            ></div>
+            <div
+              id="t2i-results"
+              class="results-grid"
+              style="display: none"
+            ></div>
+          </div>
+
+          <!-- Image to Image Tab -->
+          <div id="tab-image-to-image" class="tab-content">
+            <div class="form-group">
+              <label>Reference Images (1-10)</label>
+              <div class="file-upload-area" id="i2i-upload-area">
+                <input
+                  type="file"
+                  id="i2i-file-input"
+                  accept="image/*"
+                  multiple
+                  class="file-input"
+                />
+                <div class="upload-placeholder">
+                  <div class="upload-icon">📤</div>
+                  <p>Click or tap to upload images</p>
+                  <p class="upload-hint">Up to 10 images</p>
+                </div>
+              </div>
+              <div id="i2i-preview" class="image-preview-grid"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="i2i-prompt">Prompt</label>
+              <textarea
+                id="i2i-prompt"
+                class="textarea"
+                rows="4"
+                placeholder="Describe how you want to transform the image..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="i2i-model">Model</label>
+              <select id="i2i-model" class="select">
+                <option value="">Loading models...</option>
+              </select>
+            </div>
+
+            <div id="i2i-parameters" class="parameters-container"></div>
+
+            <div class="price-display">
+              <span class="price-label">Price:</span>
+              <span id="i2i-price" class="price-value">- cr</span>
+            </div>
+
+            <button
+              id="i2i-generate-btn"
+              class="btn btn-primary btn-large"
+              disabled
+            >
+              🚀 Generate Image
+            </button>
+
+            <div
+              id="i2i-status"
+              class="status-container"
+              style="display: none"
+            ></div>
+            <div
+              id="i2i-results"
+              class="results-grid"
+              style="display: none"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Tools Page -->
+        <div id="page-tools" class="page">
+          <div class="page-header">
+            <h2>🔧 Tools</h2>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-header">
+              <h3>💧 Watermark Remover</h3>
+              <span class="tool-price">12 credits</span>
+            </div>
+            <p class="tool-description">
+              Remove watermarks from images automatically
+            </p>
+
+            <div class="file-upload-area" id="wm-upload-area">
+              <input
+                type="file"
+                id="wm-file-input"
+                accept="image/*"
+                class="file-input"
+              />
+              <div class="upload-placeholder">
+                <div class="upload-icon">📤</div>
+                <p>Upload image with watermark</p>
+              </div>
+            </div>
+
+            <div
+              id="wm-preview"
+              style="display: none"
+              class="image-preview-single"
+            ></div>
+
+            <button
+              id="wm-remove-btn"
+              class="btn btn-primary btn-large"
+              disabled
+              style="margin-top: 16px"
+            >
+              ✨ Remove Watermark
+            </button>
+
+            <div
+              id="wm-status"
+              class="status-container"
+              style="display: none"
+            ></div>
+            <div
+              id="wm-result"
+              class="result-container"
+              style="display: none"
+            ></div>
+          </div>
+
+          <div class="tool-card" style="opacity: 0.6">
+            <div class="tool-header">
+              <h3>🔮 More Tools Coming Soon</h3>
+            </div>
+            <p class="tool-description">
+              Additional image processing tools will be added here
+            </p>
+          </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="page-profile" class="page">
+          <div class="page-header">
+            <h2>👤 Profile</h2>
+          </div>
+
+          <div class="profile-card">
+            <div class="profile-header">
+              <div class="profile-avatar" id="profile-avatar">👤</div>
+              <div class="profile-info">
+                <h3 id="profile-name">-</h3>
+                <p id="profile-username">@-</p>
+              </div>
+            </div>
+
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-label">Telegram ID</span>
+                <span id="profile-id" class="stat-value">-</span>
+              </div>
+              <div class="stat-item highlight">
+                <span class="stat-label">💰 Balance</span>
+                <span id="profile-balance" class="stat-value">0 credits</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">🧮 Approximate Generations</span>
+                <span id="profile-generations" class="stat-value">~0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="referral-card">
+            <h3>🤝 Referral Program</h3>
+            <p class="referral-description">
+              Invite friends and earn 10% bonus from their payments!
+            </p>
+
+            <div class="referral-link-container">
+              <input
+                type="text"
+                id="referral-link"
+                class="referral-link-input"
+                readonly
+                value="Loading..."
+              />
+              <button id="copy-referral-btn" class="btn btn-secondary btn-icon">
+                📋
+              </button>
+            </div>
+
+            <div class="referral-stats">
+              <div class="stat-item">
+                <span class="stat-label">Referrals</span>
+                <span id="referral-count" class="stat-value">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Total Bonus</span>
+                <span id="referral-bonus" class="stat-value">0 credits</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-secondary btn-large" id="topup-btn">
+            ⭐ Top Up Balance
+          </button>
+        </div>
+      </main>
+
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-page="generation">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-label">Generation</span>
+        </button>
+        <button class="nav-item" data-page="tools">
+          <span class="nav-icon">🔧</span>
+          <span class="nav-label">Tools</span>
+        </button>
+        <button class="nav-item" data-page="profile">
+          <span class="nav-icon">👤</span>
+          <span class="nav-label">Profile</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="./js/utils.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/pages/generation.js"></script>
+    <script src="./js/pages/tools.js"></script>
+    <script src="./js/pages/profile.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>

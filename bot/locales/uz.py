@@ -45,6 +45,11 @@ TRANSLATIONS: dict[str, str] = {
     "cmd_referral": "Referral",
     "gen_menu_text": "🖼 Rasm generatsiya qilish\n\nBu yerda siz AI yordamida rasm yarata olasiz. \n\nQanday ishlaydi: \n• ✍️ Matn yozing — rasm yaratiladi\n• 📷 Rasm + matn yuboring — rasm o‘zgartiriladi\n• 📁 Bir nechta rasmni albom qilib yuborish mumkin\n\n👉 Boshlash uchun: \nMatn yozing yoki rasmga caption qo‘shib yuboring.",
     "wm_menu_text": "💧 Watermark o‘chirish\n\nRasmdagi watermarklarni avtomatik olib tashlash. \n\nQanday ishlaydi: \n• Faqat rasm yuboring\n• AI watermarkni tozalaydi\n• Qo‘shimcha sozlama kerak emas\n\n📷 Rasmni hoziroq yuboring.",
+    "cmd_webapp": "Web App",
+    "btn_webapp": "🌐 Web App-ni ochish",
+    "webapp_title": "🌐 Web versiya",
+    "webapp_description": "🖥 Web ilovamiz orqali rasmlar yaratish yanada qulay!\n\n✨ Nimalar mavjud:\n• 🎨 Rasm generatsiya qilish\n• 🔧 Asboblar (watermark olib tashlash va boshqalar)\n• 👤 Profil va balansni ko'rish\n• 📊 Referral statistika\n\nQulayroq interfeys va barcha funksiyalar bir joyda!",
+    "webapp_button": "🚀 Web App-ni ochish",
 
     # Generation
     "gen_settings_title": "⚙️ Generatsiya sozlamalari",

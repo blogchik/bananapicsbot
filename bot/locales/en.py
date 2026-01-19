@@ -53,6 +53,11 @@ TRANSLATIONS: dict[str, str] = {
     "cmd_referral": "Referral",
     "gen_menu_text": "🖼 Image Generation\n\nHere you can generate images using AI. \n\nHow it works: \n• ✍️ Write a text — an image will be generated\n• 📷 Send an image with a caption — the image will be transformed\n• 📁 You can send multiple images as an album\n\n👉 To get started: \nWrite a text prompt or send an image with a caption.",
     "wm_menu_text": "💧 Watermark Removal\n\nAutomatically remove watermarks from images. \n\nHow it works: \n• Just send an image\n• AI removes the watermark\n• No additional settings required\n\n📷 Send your image now.",
+    "cmd_webapp": "Web App",
+    "btn_webapp": "🌐 Open Web App",
+    "webapp_title": "🌐 Web Version",
+    "webapp_description": "🖥 Our web app makes image creation even more convenient!\n\n✨ What's available:\n• 🎨 Image generation\n• 🔧 Tools (watermark removal and more)\n• 👤 View profile and balance\n• 📊 Referral statistics\n\nConvenient interface with all features in one place!",
+    "webapp_button": "🚀 Open Web App",
 
     # Generation
     "gen_settings_title": "⚙️ Generation settings",
