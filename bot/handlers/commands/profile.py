@@ -29,11 +29,9 @@ async def send_profile_message(
 
     approx_text = ""
     try:
-        models = await GenerationService.get_models()
-        prices = [model.price for model in models if model.price > 0]
-        if prices:
-            min_price = min(prices)
-            approx_count = int(profile.balance // min_price)
+        avg_price = await GenerationService.get_average_model_price()
+        if avg_price > 0:
+            approx_count = int(profile.balance // avg_price)
             approx_text = _(TranslationKey.PROFILE_GENERATIONS_ESTIMATE, {"count": approx_count})
     except Exception:
         approx_text = ""

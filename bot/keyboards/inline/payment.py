@@ -14,7 +14,7 @@ class PaymentKeyboard:
     @staticmethod
     def topup_menu(
         presets: list[tuple[int, int]],
-        min_price: int | None,
+        avg_price: int | None,
         _: Callable[[TranslationKey, dict | None], str],
     ) -> InlineKeyboardMarkup:
         """Build top-up menu with preset amounts."""
@@ -22,7 +22,7 @@ class PaymentKeyboard:
 
         # Preset amounts in a single column
         for amount, credits in presets:
-            gens = (credits // min_price) if min_price else 0
+            gens = (credits // avg_price) if avg_price else 0
             label = _(TranslationKey.TOPUP_PRESET_LABEL, {
                 "stars": amount,
                 "credits": credits,

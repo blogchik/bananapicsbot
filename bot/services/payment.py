@@ -23,7 +23,10 @@ class PaymentService:
 
     @staticmethod
     async def get_min_generation_price() -> int | None:
-        """Get minimum model generation price."""
+        """Get minimum model generation price.
+        
+        DEPRECATED: Use get_average_generation_price() for estimated generations.
+        """
         container = get_container()
         models = await container.api_client.get_models()
         prices: list[int] = []
@@ -43,6 +46,36 @@ class PaymentService:
         if not prices:
             return None
         return int(min(prices))
+
+    @staticmethod
+    async def get_average_generation_price() -> int | None:
+        """Get average model generation price for estimated generations.
+        
+        Used on payment and profile pages to show approximate number
+        of generations the user can perform with their balance.
+        
+        Returns:
+            Average price in credits, or None if no models available
+        """
+        container = get_container()
+        models = await container.api_client.get_models()
+        prices: list[int] = []
+        for item in models:
+            model = item.get("model") or {}
+            if not model.get("id"):
+                continue
+            model_prices = item.get("prices") or []
+            if not model_prices:
+                continue
+            try:
+                unit_price = int(model_prices[0].get("unit_price", 0))
+            except (TypeError, ValueError):
+                unit_price = 0
+            if unit_price > 0:
+                prices.append(unit_price)
+        if not prices:
+            return None
+        return int(sum(prices) / len(prices))
 
     @staticmethod
     def calculate_credits(

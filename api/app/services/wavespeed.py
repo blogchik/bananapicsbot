@@ -369,3 +369,43 @@ class WavespeedClient:
             )
 
         return await asyncio.to_thread(_call)
+
+    async def get_model_pricing(
+        self,
+        model_id: str,
+        inputs: dict[str, Any] | None = None,
+    ) -> WavespeedResponse:
+        """Get pricing for a model with given inputs.
+        
+        Args:
+            model_id: Full model identifier (e.g., "bytedance/seedream-v4")
+            inputs: Optional input parameters (prompt, size, quality, etc.)
+        
+        Returns:
+            WavespeedResponse with data containing:
+                - model_id: str
+                - unit_price: float (USD)
+                - currency: str ("USD")
+        """
+        def _call() -> WavespeedResponse:
+            url = f"{self._client.base_url}/api/v3/model/pricing"
+            headers = self._client._get_headers()
+            request_timeout = (
+                min(self._client.connection_timeout, self._timeout_seconds),
+                self._timeout_seconds,
+            )
+            payload = {
+                "model_id": model_id,
+                "inputs": inputs or {},
+            }
+            response = requests.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=request_timeout,
+            )
+            response.raise_for_status()
+            return self._response_from_result(response.json())
+
+        return await asyncio.to_thread(_call)
+

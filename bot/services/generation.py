@@ -90,14 +90,35 @@ class GenerationService:
         quality: str | None,
         is_image_to_image: bool = False,
     ) -> int:
+        """Calculate generation price for a model.
+        
+        Prices are fetched from API (via base_price from NormalizedModel)
+        and converted using $1 = 1000 credits formula.
+        
+        For gpt-image-1.5, dynamic pricing based on size and quality
+        is calculated using hardcoded fallback tables.
+        
+        NOTE: The actual pricing now comes from Wavespeed's pricing API
+        on the backend. This method provides fallback/client-side estimation.
+        """
+        from services.pricing import usd_to_credits
+        
         key = (model_key or "").strip().lower().replace("_", "-").replace(" ", "-")
         res = (resolution or "").strip().lower()
         if res in {"4k", "4096", "4096x4096", "4096*4096"}:
             res = "4k"
+        
+        # Use base_price from API (already converted to credits)
+        # These are fallback values in case base_price is not set
         if key == "seedream-v4":
-            return 27
+            return base_price if base_price > 0 else usd_to_credits(0.027)
+        if key == "nano-banana":
+            return base_price if base_price > 0 else usd_to_credits(0.038)
         if key == "nano-banana-pro":
-            return 240 if res == "4k" else 140
+            # Dynamic price based on resolution
+            if res == "4k":
+                return base_price if base_price > 0 else usd_to_credits(0.24)
+            return base_price if base_price > 0 else usd_to_credits(0.14)
         if key == "gpt-image-1.5":
             price = GenerationService._price_from_size(
                 size or resolution,
@@ -113,6 +134,11 @@ class GenerationService:
         quality: str | None,
         is_image_to_image: bool = False,
     ) -> int | None:
+        """Calculate price based on size and quality for gpt-image-1.5.
+        
+        Prices are in credits ($1 = 1000 credits).
+        These values match Wavespeed's pricing for gpt-image-1.5.
+        """
         if not size:
             size = "auto"
         normalized = size.lower().replace("x", "*")
@@ -123,6 +149,9 @@ class GenerationService:
             return None
         size_key = normalized
         quality_key = (quality or "medium").lower()
+        
+        # Prices in credits ($1 = 1000 credits)
+        # Based on Wavespeed's gpt-image-1.5 pricing
         t2i_prices = {
             "low": {
                 "1024*1024": 9,
@@ -184,6 +213,25 @@ class GenerationService:
             except Exception:
                 logger.warning("Failed to cache models")
         return GenerationService._normalize_models(raw_models)
+
+    @staticmethod
+    async def get_average_model_price() -> int:
+        """Get average price across all active models.
+        
+        Used for calculating estimated generations on profile and payment pages.
+        
+        Returns:
+            Average price in credits, or 0 if no models available
+        """
+        try:
+            models = await GenerationService.get_models()
+            prices = [model.price for model in models if model.price > 0]
+            if not prices:
+                return 0
+            return int(sum(prices) / len(prices))
+        except Exception:
+            logger.warning("Failed to get average model price")
+            return 0
 
     @staticmethod
     def _normalize_models(raw_models: list[dict]) -> list[NormalizedModel]:

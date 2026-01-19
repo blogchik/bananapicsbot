@@ -34,6 +34,13 @@ from app.schemas.generation import (
 )
 from app.services.ledger import get_user_balance
 from app.services.model_options import get_model_parameter_options_from_wavespeed
+from app.services.pricing import (
+    build_pricing_cache_key,
+    get_cached_price,
+    get_model_price_from_wavespeed,
+    set_cached_price,
+    usd_to_credits,
+)
 from app.services.redis_client import get_redis
 from app.services.users import get_or_create_user, get_user_by_telegram_id
 
@@ -108,7 +115,8 @@ def get_active_model(db: Session, model_id: int) -> ModelCatalog:
 
 
 def _credits_from_usd(value: Decimal) -> int:
-    return int((value * Decimal("1000")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    """Convert USD to credits. Deprecated: use usd_to_credits from pricing module."""
+    return usd_to_credits(value)
 
 
 _GPT_IMAGE_1_5_T2I_PRICES: dict[str, dict[str, int]] = {
@@ -175,16 +183,77 @@ async def _dynamic_price_for_model(
     quality: str | None,
     settings,
     is_image_to_image: bool = False,
+    aspect_ratio: str | None = None,
 ) -> int | None:
+    """Get dynamic price for model using Wavespeed pricing API.
+    
+    Fetches real-time pricing from Wavespeed's pricing endpoint and converts
+    USD to credits using the formula: $1 = 1000 credits.
+    
+    Falls back to hardcoded prices if API is unavailable.
+    """
     if not model_key:
         return None
     key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
+    
+    # Build cache key for this pricing request
+    cache_key = build_pricing_cache_key(
+        model_id=key,
+        size=size,
+        aspect_ratio=aspect_ratio,
+        resolution=resolution,
+        quality=quality,
+        is_i2i=is_image_to_image,
+    )
+    
+    # Check cache first
+    cached_price = await get_cached_price(cache_key)
+    if cached_price is not None:
+        return cached_price
+    
+    # Map model key to Wavespeed model ID
+    model_id_map = {
+        "seedream-v4": "bytedance/seedream-v4" if not is_image_to_image else "bytedance/seedream-v4/edit",
+        "nano-banana": "google/nano-banana/text-to-image" if not is_image_to_image else "google/nano-banana/edit",
+        "nano-banana-pro": "google/nano-banana-pro/text-to-image" if not is_image_to_image else "google/nano-banana-pro/edit",
+        "gpt-image-1.5": "openai/gpt-image-1.5/text-to-image" if not is_image_to_image else "openai/gpt-image-1.5/edit",
+    }
+    
+    wavespeed_model_id = model_id_map.get(key)
+    if wavespeed_model_id:
+        # Build inputs for pricing request
+        inputs: dict[str, object] = {"prompt": "test"}
+        if size:
+            inputs["size"] = size
+        if aspect_ratio:
+            inputs["aspect_ratio"] = aspect_ratio
+        if resolution:
+            inputs["resolution"] = resolution
+        if quality:
+            inputs["quality"] = quality
+        
+        # Try fetching from Wavespeed pricing API
+        client = wavespeed_client()
+        price = await get_model_price_from_wavespeed(client, wavespeed_model_id, inputs)
+        if price is not None:
+            await set_cached_price(cache_key, price)
+            return price
+    
+    # Fallback to hardcoded prices if API fails
     if key == "seedream-v4":
-        return _credits_from_usd(Decimal("0.027"))
+        price = usd_to_credits(Decimal("0.027"))
+        await set_cached_price(cache_key, price)
+        return price
+    if key == "nano-banana":
+        price = usd_to_credits(Decimal("0.038"))
+        await set_cached_price(cache_key, price)
+        return price
     if key == "nano-banana-pro":
         res = (resolution or "").lower()
         usd = Decimal("0.24") if res == "4k" else Decimal("0.14")
-        return _credits_from_usd(usd)
+        price = usd_to_credits(usd)
+        await set_cached_price(cache_key, price)
+        return price
     if key == "gpt-image-1.5":
         size_value = _normalize_gpt_image_size(size)
         quality_value = (quality or "medium").lower()
@@ -199,7 +268,9 @@ async def _dynamic_price_for_model(
             or quality_prices.get("1024*1024")
             or _GPT_IMAGE_1_5_T2I_PRICES["medium"]["1024*1024"]
         )
-        return _credits_from_price_units(int(price_units))
+        price = _credits_from_price_units(int(price_units))
+        await set_cached_price(cache_key, price)
+        return price
     return None
 
 
@@ -211,9 +282,15 @@ async def get_generation_price(
     quality: str | None,
     settings,
     is_image_to_image: bool = False,
+    aspect_ratio: str | None = None,
 ) -> int:
+    """Get generation price for a model with given parameters.
+    
+    Tries to get dynamic price from Wavespeed pricing API first,
+    falls back to database price if not available.
+    """
     dynamic_price = await _dynamic_price_for_model(
-        model.key, size, resolution, quality, settings, is_image_to_image
+        model.key, size, resolution, quality, settings, is_image_to_image, aspect_ratio
     )
     if dynamic_price is not None:
         return dynamic_price
@@ -575,6 +652,7 @@ async def submit_generation(
         payload.quality,
         settings,
         is_image_to_image=bool(reference_urls),
+        aspect_ratio=payload.aspect_ratio,
     )
     model_options = await get_model_parameter_options_from_wavespeed(model.key)
     validate_model_options(
