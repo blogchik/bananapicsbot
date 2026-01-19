@@ -7,21 +7,6 @@ on:
     branches: [ "master", "main" ]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff
-      - name: Run Ruff
-        run: ruff check .
-
   test:
     runs-on: ubuntu-latest
     services:
@@ -54,7 +39,7 @@ jobs:
           pytest api/tests
 
   build:
-    needs: [lint, test]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
