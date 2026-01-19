@@ -223,6 +223,7 @@ async def select_model(
     # Get dynamic price from API
     is_i2i = bool(data.get("reference_urls") or data.get("reference_file_ids"))
     price = await GenerationService.get_dynamic_price(
+        telegram_id=call.from_user.id,
         model_id=selected.id,
         model_key=selected.key,
         size=size,
@@ -502,6 +503,7 @@ async def select_resolution(
     await state.update_data(resolution=resolution)
     data = await state.get_data()
     price = await GenerationService.get_dynamic_price(
+        telegram_id=call.from_user.id,
         model_id=int(data.get("model_id") or 0),
         model_key=data.get("model_key"),
         size=data.get("size"),
@@ -585,6 +587,7 @@ async def select_quality(
     await state.update_data(quality=quality)
     data = await state.get_data()
     price = await GenerationService.get_dynamic_price(
+        telegram_id=call.from_user.id,
         model_id=int(data.get("model_id") or 0),
         model_key=data.get("model_key"),
         size=data.get("size"),
@@ -708,6 +711,7 @@ async def back_to_generation(
         
         # Get dynamic price from API
         price = await GenerationService.get_dynamic_price(
+            telegram_id=call.from_user.id,
             model_id=int(data.get("model_id") or 0),
             model_key=data.get("model_key"),
             size=size,
@@ -783,6 +787,7 @@ async def submit_generation(
     
     # Get dynamic price from API
     price = await GenerationService.get_dynamic_price(
+        telegram_id=call.from_user.id,
         model_id=int(model_id or 0),
         model_key=data.get("model_key"),
         size=data.get("size"),

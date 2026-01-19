@@ -320,6 +320,20 @@ async def calculate_generation_price(
 ) -> GenerationPriceOut:
     """Get dynamic generation price from Wavespeed pricing API."""
     
+    # Rate limiting: 60 requests per minute per user
+    redis = await get_redis()
+    rate_key = f"rate_limit:price:{payload.telegram_id}"
+    current = await redis.incr(rate_key)
+    if current == 1:
+        await redis.expire(rate_key, 60)
+    
+    if current > 60:
+        logger.warning("Rate limit exceeded", user_id=payload.telegram_id, count=current)
+        raise HTTPException(
+            status_code=429,
+            detail="Too many pricing requests. Please wait a moment."
+        )
+    
     # Get model from database
     model = db.execute(
         select(ModelCatalog)

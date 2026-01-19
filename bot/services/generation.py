@@ -123,6 +123,7 @@ class GenerationService:
 
     @staticmethod
     async def get_dynamic_price(
+        telegram_id: int,
         model_id: int,
         model_key: str | None = None,
         size: str | None = None,
@@ -139,6 +140,7 @@ class GenerationService:
         Falls back to calculate_generation_price if API fails.
         
         Args:
+            telegram_id: User Telegram ID for rate limiting
             model_id: Database model ID
             model_key: Model key for fallback calculation
             size: Size parameter
@@ -156,6 +158,7 @@ class GenerationService:
         
         try:
             price_data = await container.api_client.get_generation_price(
+                telegram_id=telegram_id,
                 model_id=model_id,
                 size=size,
                 aspect_ratio=aspect_ratio,

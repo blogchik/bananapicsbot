@@ -164,6 +164,7 @@ class ApiClient:
 
     async def get_generation_price(
         self,
+        telegram_id: int,
         model_id: int,
         size: str | None = None,
         aspect_ratio: str | None = None,
@@ -186,6 +187,7 @@ class ApiClient:
             "POST",
             "/api/v1/generations/price",
             json={
+                "telegram_id": telegram_id,
                 "model_id": model_id,
                 "size": size,
                 "aspect_ratio": aspect_ratio,
