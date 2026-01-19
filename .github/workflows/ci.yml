@@ -53,18 +53,12 @@ jobs:
         run: |
           pytest api/tests
 
-  build-api:
+  build:
     needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build API Docker image
-        run: docker build -t bananapics-api ./api
-
-  build-bot:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build Bot Docker image
-        run: docker build -t bananapics-bot ./bot
+      - name: Create .env file
+        run: cp .env.example .env
+      - name: Build all services
+        run: docker compose build

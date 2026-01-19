@@ -309,6 +309,7 @@ async def process_reference_batch(
     message: Message,
     state: FSMContext,
     files: list[tuple[str, str | None]],
+    _: LocalizationFunction,
 ) -> None:
     user = message.from_user
     if not user:
@@ -358,7 +359,7 @@ async def process_reference_batch(
             reference_file_ids=reference_file_ids,
         )
 
-    await handle_prompt_message(message, state)
+    await handle_prompt_message(message, state, _)
 
 
 async def queue_media_group_item(
@@ -366,6 +367,7 @@ async def queue_media_group_item(
     state: FSMContext,
     file_id: str,
     filename: str | None,
+    _: LocalizationFunction,
 ) -> None:
     media_group_id = message.media_group_id
     if not media_group_id:
@@ -380,6 +382,7 @@ async def queue_media_group_item(
             "state": state,
             "last_message": message,
             "task": None,
+            "loc": _,
         }
         MEDIA_GROUP_BUFFERS[key] = entry
 
@@ -406,6 +409,7 @@ async def process_media_group(key: tuple[int, str]) -> None:
     last_message = entry.get("last_message")
     state = entry.get("state")
     files = entry.get("files")
+    _ = entry.get("loc")
 
     if not isinstance(prompt_message, Message) or not isinstance(state, FSMContext):
         if isinstance(last_message, Message):
@@ -422,14 +426,18 @@ async def process_media_group(key: tuple[int, str]) -> None:
         )
         return
 
-    await process_reference_batch(prompt_message, state, files)
+    if _ is None:
+         # Fallback if loc is missing (should not happen with new logical flow)
+         return
+
+    await process_reference_batch(prompt_message, state, files, _)
 
 
 @router.message(F.photo)
-async def handle_reference_photo(message: Message, state: FSMContext) -> None:
+async def handle_reference_photo(message: Message, state: FSMContext, _: LocalizationFunction) -> None:
     photo = message.photo[-1]
     if message.media_group_id:
-        await queue_media_group_item(message, state, photo.file_id, None)
+        await queue_media_group_item(message, state, photo.file_id, None, _)
         return
     if not message.caption:
         await message.answer(
@@ -437,11 +445,11 @@ async def handle_reference_photo(message: Message, state: FSMContext) -> None:
             reply_to_message_id=message.message_id,
         )
         return
-    await process_reference_batch(message, state, [(photo.file_id, None)])
+    await process_reference_batch(message, state, [(photo.file_id, None)], _)
 
 
 @router.message(F.document)
-async def handle_reference_document(message: Message, state: FSMContext) -> None:
+async def handle_reference_document(message: Message, state: FSMContext, _: LocalizationFunction) -> None:
     document = message.document
     if not document:
         return
@@ -452,7 +460,7 @@ async def handle_reference_document(message: Message, state: FSMContext) -> None
         )
         return
     if message.media_group_id:
-        await queue_media_group_item(message, state, document.file_id, document.file_name)
+        await queue_media_group_item(message, state, document.file_id, document.file_name, _)
         return
     if not message.caption:
         await message.answer(
@@ -464,11 +472,12 @@ async def handle_reference_document(message: Message, state: FSMContext) -> None
         message,
         state,
         [(document.file_id, document.file_name)],
+        _,
     )
 
 
 @router.message(F.text & ~F.text.startswith("/"))
-async def handle_prompt_message(message: Message, state: FSMContext) -> None:
+async def handle_prompt_message(message: Message, state: FSMContext, _: LocalizationFunction) -> None:
     user = message.from_user
     if not user:
         return
@@ -621,7 +630,7 @@ async def open_model_menu(call: CallbackQuery, state: FSMContext, _) -> None:
 
 
 @router.callback_query(F.data.startswith("gen:model:set:"))
-async def select_model(call: CallbackQuery, state: FSMContext) -> None:
+async def select_model(call: CallbackQuery, state: FSMContext, _: LocalizationFunction) -> None:
     await call.answer()
     data = await state.get_data()
     prompt = data.get("prompt")
@@ -713,7 +722,7 @@ async def select_model(call: CallbackQuery, state: FSMContext) -> None:
 
 
 @router.callback_query(F.data == "gen:size:menu")
-async def open_size_menu(call: CallbackQuery, state: FSMContext) -> None:
+async def open_size_menu(call: CallbackQuery, state: FSMContext, _: LocalizationFunction) -> None:
     data = await state.get_data()
     supports_size = data.get("supports_size")
     size_options = data.get("size_options") or []
@@ -814,7 +823,7 @@ async def select_size(call: CallbackQuery, state: FSMContext) -> None:
 
 
 @router.callback_query(F.data == "gen:ratio:menu")
-async def open_ratio_menu(call: CallbackQuery, state: FSMContext) -> None:
+async def open_ratio_menu(call: CallbackQuery, state: FSMContext, _: LocalizationFunction) -> None:
     data = await state.get_data()
     aspect_ratio_options = data.get("aspect_ratio_options") or []
     show_size, show_aspect, show_resolution = get_support_flags(
@@ -1138,7 +1147,6 @@ async def poll_generation_status(
     prompt_message_id: int | None,
     _: LocalizationFunction,
 ) -> None:
-    last_label = None
     consecutive_errors = 0
     import time
     start_time = time.time()
@@ -1237,7 +1245,7 @@ async def poll_generation_status(
 
 
 @router.callback_query(F.data == "gen:submit")
-async def submit_generation(call: CallbackQuery, state: FSMContext) -> None:
+async def submit_generation(call: CallbackQuery, state: FSMContext, _: LocalizationFunction) -> None:
     await call.answer()
     data = await state.get_data()
     prompt = data.get("prompt")

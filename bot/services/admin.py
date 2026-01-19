@@ -153,7 +153,7 @@ class AdminService:
 
         return payments
 
-        return unrefunded
+
 
     @staticmethod
     async def refund_single_transaction(
