@@ -235,6 +235,33 @@ class ApiClient:
             json=payload,
         )
 
+    async def get_generation_price(
+        self,
+        telegram_id: int,
+        model_id: int,
+        size: str | None = None,
+        aspect_ratio: str | None = None,
+        resolution: str | None = None,
+        quality: str | None = None,
+        input_fidelity: str | None = None,
+        is_image_to_image: bool = False,
+    ) -> dict:
+        """Get dynamic generation price from API."""
+        return await self._request(
+            "POST",
+            "/api/v1/generations/price",
+            json={
+                "telegram_id": telegram_id,
+                "model_id": model_id,
+                "size": size,
+                "aspect_ratio": aspect_ratio,
+                "resolution": resolution,
+                "quality": quality,
+                "input_fidelity": input_fidelity,
+                "is_image_to_image": is_image_to_image,
+            },
+        )
+
     async def refresh_generation(
         self,
         request_id: int,
