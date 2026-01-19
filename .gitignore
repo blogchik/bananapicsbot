@@ -11,6 +11,8 @@ ENV/
 
 # Environment files
 .env
+.env.prod
+.env.dev
 
 # Editor
 .vscode/
