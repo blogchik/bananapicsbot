@@ -73,7 +73,7 @@ services:
       - "6479:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
     networks:
       - app_net
     restart: unless-stopped

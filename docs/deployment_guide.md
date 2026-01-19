@@ -57,6 +57,29 @@ git push origin main
 
 ## Muammolar yuzaga kelsa (Troubleshooting)
 
+### PostgreSQL Parol Xatoligi (`FATAL: password authentication failed`)
+
+Agar siz `.env` faylida va `docker-compose.yml` da ma'lumotlar bazasi parolini o'zgartirsangiz, lekin serverda baza allaqachon yaratilgan bo'lsa, Docker **eski parolni** saqlab qoladi. Chunki baza faqat birinchi marta ishga tushganda `.env` dan parolni o'qiydi.
+
+**Yechim 1: Parolni qo'lda yangilash (Ma'lumotlar saqlanib qoladi)**
+Serverga kiring va quyidagi buyruqni bering (yangi parolni qo'ying):
+
+```bash
+cd ~/bananapicsbot
+docker compose exec db psql -U bananapics -c "ALTER USER bananapics WITH PASSWORD 'YANGI_PAROL';"
+```
+
+**Yechim 2: Bazani o'chirib qayta yaratish (Ma'lumotlar o'chib ketadi!)**
+Agar baza bo'sh bo'lsa yoki ma'lumotlar muhim bo'lmasa:
+
+```bash
+cd ~/bananapicsbot
+docker compose down -v
+docker compose up -d
+```
+
+### Boshqa muammolar
+
 - **SSH Permission Denied**: `SSH_KEY` noto'g'ri kiritilgan yoki serverda `~/.ssh/authorized_keys` ga Public Key qo'shilmagan bo'lishi mumkin.
 - **Docker Login Failed**: GitHub Actions avtomatik ravishda `GITHUB_TOKEN` dan foydalanadi, lekin serverda `docker` o'rnatilmagan bo'lsa xato beradi.
 - **Database Ulanish Xatosi**: `PROD_ENV_FILE` ichida `DATABASE_URL` to'g'ri ko'rsatilganligini tekshiring. Docker ichida `localhost` o'rniga `db` (servis nomi) ishlatilishi kerak.
