@@ -220,18 +220,24 @@ async def select_model(
     if resolution and selected.resolution_options and resolution not in selected.resolution_options:
         resolution = None
 
+    # Get dynamic price from API
+    is_i2i = bool(data.get("reference_urls") or data.get("reference_file_ids"))
+    price = await GenerationService.get_dynamic_price(
+        model_id=selected.id,
+        model_key=selected.key,
+        size=size,
+        aspect_ratio=aspect_ratio,
+        resolution=resolution,
+        quality=quality,
+        is_image_to_image=is_i2i,
+        base_price=selected.price,
+    )
+
     await state.update_data(
         model_id=selected.id,
         model_name=selected.name,
         model_key=selected.key,
-        price=GenerationService.calculate_generation_price(
-            selected.key,
-            selected.price,
-            size,
-            resolution,
-            quality,
-            is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
-        ),
+        price=price,
         size=size,
         aspect_ratio=aspect_ratio,
         resolution=resolution,
@@ -495,13 +501,15 @@ async def select_resolution(
 
     await state.update_data(resolution=resolution)
     data = await state.get_data()
-    price = GenerationService.calculate_generation_price(
-        data.get("model_key"),
-        int(data.get("price") or 0),
-        data.get("size"),
-        resolution,
-        data.get("quality"),
+    price = await GenerationService.get_dynamic_price(
+        model_id=int(data.get("model_id") or 0),
+        model_key=data.get("model_key"),
+        size=data.get("size"),
+        aspect_ratio=data.get("aspect_ratio"),
+        resolution=resolution,
+        quality=data.get("quality"),
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
+        base_price=int(data.get("price") or 0),
     )
     await state.update_data(price=price)
 
@@ -576,13 +584,15 @@ async def select_quality(
 
     await state.update_data(quality=quality)
     data = await state.get_data()
-    price = GenerationService.calculate_generation_price(
-        data.get("model_key"),
-        int(data.get("price") or 0),
-        data.get("size"),
-        data.get("resolution"),
-        quality,
+    price = await GenerationService.get_dynamic_price(
+        model_id=int(data.get("model_id") or 0),
+        model_key=data.get("model_key"),
+        size=data.get("size"),
+        aspect_ratio=data.get("aspect_ratio"),
+        resolution=data.get("resolution"),
+        quality=quality,
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
+        base_price=int(data.get("price") or 0),
     )
     await state.update_data(price=price)
 
@@ -695,13 +705,17 @@ async def back_to_generation(
         resolution = data.get("resolution")
         quality = data.get("quality")
         input_fidelity = data.get("input_fidelity")
-        price = GenerationService.calculate_generation_price(
-            data.get("model_key"),
-            int(data.get("price") or 0),
-            size,
-            resolution,
-            data.get("quality"),
+        
+        # Get dynamic price from API
+        price = await GenerationService.get_dynamic_price(
+            model_id=int(data.get("model_id") or 0),
+            model_key=data.get("model_key"),
+            size=size,
+            aspect_ratio=aspect_ratio,
+            resolution=resolution,
+            quality=quality,
             is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
+            base_price=int(data.get("price") or 0),
         )
         show_size = data.get("supports_size") and bool(data.get("size_options"))
         show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
@@ -765,15 +779,18 @@ async def submit_generation(
     prompt = data.get("prompt")
     model_id = data.get("model_id")
     model_name = data.get("model_name", "-")
-    price = data.get("price", 0)
     resolution = data.get("resolution")
-    price = GenerationService.calculate_generation_price(
-        data.get("model_key"),
-        int(price or 0),
-        data.get("size"),
-        resolution,
-        data.get("quality"),
+    
+    # Get dynamic price from API
+    price = await GenerationService.get_dynamic_price(
+        model_id=int(model_id or 0),
+        model_key=data.get("model_key"),
+        size=data.get("size"),
+        aspect_ratio=data.get("aspect_ratio"),
+        resolution=resolution,
+        quality=data.get("quality"),
         is_image_to_image=bool(data.get("reference_urls") or data.get("reference_file_ids")),
+        base_price=int(data.get("price") or 0),
     )
 
     if not prompt or not model_id:

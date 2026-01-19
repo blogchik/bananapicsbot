@@ -90,16 +90,10 @@ class GenerationService:
         quality: str | None,
         is_image_to_image: bool = False,
     ) -> int:
-        """Calculate generation price for a model.
+        """Calculate generation price (sync fallback).
         
-        Prices are fetched from API (via base_price from NormalizedModel)
-        and converted using $1 = 1000 credits formula.
-        
-        For gpt-image-1.5, dynamic pricing based on size and quality
-        is calculated using hardcoded fallback tables.
-        
-        NOTE: The actual pricing now comes from Wavespeed's pricing API
-        on the backend. This method provides fallback/client-side estimation.
+        DEPRECATED: Use get_dynamic_price() for real-time API pricing.
+        This method is kept for backward compatibility.
         """
         from services.pricing import usd_to_credits
         
@@ -108,17 +102,16 @@ class GenerationService:
         if res in {"4k", "4096", "4096x4096", "4096*4096"}:
             res = "4k"
         
-        # Use base_price from API (already converted to credits)
-        # These are fallback values in case base_price is not set
+        # Fallback hardcoded prices
         if key == "seedream-v4":
             return base_price if base_price > 0 else usd_to_credits(0.027)
         if key == "nano-banana":
             return base_price if base_price > 0 else usd_to_credits(0.038)
         if key == "nano-banana-pro":
-            # Dynamic price based on resolution
+            from services.pricing import usd_to_credits as convert_usd
             if res == "4k":
-                return base_price if base_price > 0 else usd_to_credits(0.24)
-            return base_price if base_price > 0 else usd_to_credits(0.14)
+                return convert_usd(0.24)
+            return convert_usd(0.14)
         if key == "gpt-image-1.5":
             price = GenerationService._price_from_size(
                 size or resolution,
@@ -127,6 +120,87 @@ class GenerationService:
             )
             return price if price is not None else base_price
         return base_price
+
+    @staticmethod
+    async def get_dynamic_price(
+        model_id: int,
+        model_key: str | None = None,
+        size: str | None = None,
+        aspect_ratio: str | None = None,
+        resolution: str | None = None,
+        quality: str | None = None,
+        input_fidelity: str | None = None,
+        is_image_to_image: bool = False,
+        base_price: int = 0,
+    ) -> int:
+        """Get dynamic generation price from Wavespeed pricing API.
+        
+        This method calls the API which fetches real-time pricing from Wavespeed.
+        Falls back to calculate_generation_price if API fails.
+        
+        Args:
+            model_id: Database model ID
+            model_key: Model key for fallback calculation
+            size: Size parameter
+            aspect_ratio: Aspect ratio parameter
+            resolution: Resolution parameter
+            quality: Quality parameter
+            input_fidelity: Input fidelity parameter
+            is_image_to_image: Whether this is image-to-image mode
+            base_price: Base price for fallback calculation
+        
+        Returns:
+            Price in credits
+        """
+        container = get_container()
+        
+        try:
+            price_data = await container.api_client.get_generation_price(
+                model_id=model_id,
+                size=size,
+                aspect_ratio=aspect_ratio,
+                resolution=resolution,
+                quality=quality,
+                input_fidelity=input_fidelity,
+                is_image_to_image=is_image_to_image,
+            )
+            
+            price_credits = int(price_data.get("price_credits", 0))
+            price_usd = price_data.get("price_usd", 0)
+            cached = price_data.get("cached", False)
+            
+            logger.info(
+                "Got dynamic price from API",
+                model_id=model_id,
+                model_key=model_key,
+                size=size,
+                aspect_ratio=aspect_ratio,
+                resolution=resolution,
+                quality=quality,
+                is_i2i=is_image_to_image,
+                price_credits=price_credits,
+                price_usd=price_usd,
+                cached=cached,
+            )
+            
+            return price_credits
+            
+        except Exception as exc:
+            logger.warning(
+                "Failed to get dynamic price from API, using fallback",
+                model_id=model_id,
+                model_key=model_key,
+                error=str(exc),
+            )
+            # Fallback to sync calculation
+            return GenerationService.calculate_generation_price(
+                model_key=model_key,
+                base_price=base_price,
+                size=size,
+                resolution=resolution,
+                quality=quality,
+                is_image_to_image=is_image_to_image,
+            )
 
     @staticmethod
     def _price_from_size(

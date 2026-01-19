@@ -32,6 +32,7 @@ from app.schemas.generation import (
     GenerationSubmitIn,
     GenerationSubmitOut,
 )
+from app.schemas.pricing import GenerationPriceIn, GenerationPriceOut
 from app.services.ledger import get_user_balance
 from app.services.model_options import get_model_parameter_options_from_wavespeed
 from app.services.pricing import (
@@ -310,6 +311,196 @@ async def get_generation_price(
     if not price:
         raise HTTPException(status_code=400, detail="Model price not found")
     return int(price.unit_price)
+
+
+@router.post("/generations/price", response_model=GenerationPriceOut)
+async def calculate_generation_price(
+    payload: GenerationPriceIn,
+    db: Session = Depends(db_session_dep),
+) -> GenerationPriceOut:
+    """Get dynamic generation price from Wavespeed pricing API."""
+    
+    # Get model from database
+    model = db.execute(
+        select(ModelCatalog)
+        .where(ModelCatalog.id == payload.model_id, ModelCatalog.is_active.is_(True))
+    ).scalar_one_or_none()
+    
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+    
+    logger.info(
+        "Calculating generation price",
+        model_id=payload.model_id,
+        model_key=model.key,
+        size=payload.size,
+        aspect_ratio=payload.aspect_ratio,
+        resolution=payload.resolution,
+        quality=payload.quality,
+        is_i2i=payload.is_image_to_image,
+    )
+    
+    # Build cache key
+    cache_key = build_pricing_cache_key(
+        model_id=model.key,
+        size=payload.size,
+        aspect_ratio=payload.aspect_ratio,
+        resolution=payload.resolution,
+        quality=payload.quality,
+        is_i2i=payload.is_image_to_image,
+    )
+    
+    # Check cache first
+    cached_price = await get_cached_price(cache_key)
+    if cached_price is not None:
+        price_usd = float(cached_price) / 1000
+        logger.info(
+            "Using cached price",
+            model_key=model.key,
+            price_credits=cached_price,
+            price_usd=price_usd,
+            cache_key=cache_key,
+        )
+        return GenerationPriceOut(
+            model_id=model.id,
+            model_key=model.key,
+            price_credits=cached_price,
+            price_usd=price_usd,
+            is_dynamic=True,
+            cached=True,
+        )
+    
+    # Try to get price from Wavespeed pricing API
+    wavespeed_model_id = _get_wavespeed_model_id(model.key, payload.is_image_to_image)
+    price_credits = None
+    price_usd = None
+    
+    if wavespeed_model_id:
+        # Build inputs for pricing request
+        inputs: dict[str, object] = {"prompt": "test"}
+        if payload.size:
+            inputs["size"] = payload.size
+        if payload.aspect_ratio:
+            inputs["aspect_ratio"] = payload.aspect_ratio
+        if payload.resolution:
+            inputs["resolution"] = payload.resolution
+        if payload.quality:
+            inputs["quality"] = payload.quality
+        if payload.input_fidelity:
+            inputs["input_fidelity"] = payload.input_fidelity
+        
+        try:
+            client = wavespeed_client()
+            response = await client.get_model_pricing(wavespeed_model_id, inputs)
+            
+            if response.code == 200 and response.data:
+                price_usd = float(response.data.get("unit_price", 0))
+                price_credits = usd_to_credits(price_usd)
+                
+                logger.info(
+                    "Got price from Wavespeed API",
+                    model_key=model.key,
+                    wavespeed_model_id=wavespeed_model_id,
+                    inputs=inputs,
+                    price_usd=price_usd,
+                    price_credits=price_credits,
+                )
+                
+                # Cache the price
+                await set_cached_price(cache_key, price_credits)
+            else:
+                logger.warning(
+                    "Wavespeed pricing API returned error",
+                    model_key=model.key,
+                    code=response.code,
+                    message=response.message,
+                )
+        except Exception as exc:
+            logger.warning(
+                "Failed to get price from Wavespeed API",
+                model_key=model.key,
+                error=str(exc),
+            )
+    
+    # Fallback to hardcoded prices if API failed
+    if price_credits is None:
+        price_credits = await _get_fallback_price(
+            model.key,
+            payload.size,
+            payload.resolution,
+            payload.quality,
+            payload.is_image_to_image,
+        )
+        price_usd = float(price_credits) / 1000
+        
+        logger.info(
+            "Using fallback price",
+            model_key=model.key,
+            price_credits=price_credits,
+            price_usd=price_usd,
+        )
+    
+    if price_credits is None:
+        raise HTTPException(status_code=400, detail="Unable to calculate price")
+    
+    return GenerationPriceOut(
+        model_id=model.id,
+        model_key=model.key,
+        price_credits=price_credits,
+        price_usd=price_usd,
+        is_dynamic=True,
+        cached=False,
+    )
+
+
+def _get_wavespeed_model_id(model_key: str, is_image_to_image: bool = False) -> str | None:
+    """Map model key to Wavespeed model ID."""
+    key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
+    model_id_map = {
+        "seedream-v4": "bytedance/seedream-v4" if not is_image_to_image else "bytedance/seedream-v4/edit",
+        "nano-banana": "google/nano-banana/text-to-image" if not is_image_to_image else "google/nano-banana/edit",
+        "nano-banana-pro": "google/nano-banana-pro/text-to-image" if not is_image_to_image else "google/nano-banana-pro/edit",
+        "gpt-image-1.5": "openai/gpt-image-1.5/text-to-image" if not is_image_to_image else "openai/gpt-image-1.5/edit",
+    }
+    return model_id_map.get(key)
+
+
+async def _get_fallback_price(
+    model_key: str,
+    size: str | None,
+    resolution: str | None,
+    quality: str | None,
+    is_image_to_image: bool = False,
+) -> int | None:
+    """Get fallback price if Wavespeed API is unavailable."""
+    key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
+    res = (resolution or "").strip().lower()
+    if res in {"4k", "4096", "4096x4096", "4096*4096"}:
+        res = "4k"
+    
+    if key == "seedream-v4":
+        return usd_to_credits(Decimal("0.027"))
+    if key == "nano-banana":
+        return usd_to_credits(Decimal("0.038"))
+    if key == "nano-banana-pro":
+        usd = Decimal("0.24") if res == "4k" else Decimal("0.14")
+        return usd_to_credits(usd)
+    if key == "gpt-image-1.5":
+        size_value = _normalize_gpt_image_size(size)
+        quality_value = (quality or "medium").lower()
+        prices = _get_gpt_image_prices(is_image_to_image)
+        quality_prices = (
+            prices.get(quality_value)
+            or prices.get("medium")
+            or _GPT_IMAGE_1_5_T2I_PRICES["medium"]
+        )
+        price_units = (
+            quality_prices.get(size_value)
+            or quality_prices.get("1024*1024")
+            or _GPT_IMAGE_1_5_T2I_PRICES["medium"]["1024*1024"]
+        )
+        return _credits_from_price_units(int(price_units))
+    return None
 
 
 def trial_available(db: Session, user_id: int) -> bool:
