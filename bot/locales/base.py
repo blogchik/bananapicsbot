@@ -64,23 +64,16 @@ class TranslationKey(str, Enum):
     BTN_START = "btn_start"
     BTN_GENERATION = "btn_generation"
     BTN_WATERMARK = "btn_watermark"
-    BTN_WEBAPP = "btn_webapp"
 
     # Command descriptions
     CMD_HOME = "cmd_home"
     CMD_PROFILE = "cmd_profile"
     CMD_TOPUP = "cmd_topup"
     CMD_REFERRAL = "cmd_referral"
-    CMD_WEBAPP = "cmd_webapp"
 
     # Home menus
     GEN_MENU_TEXT = "gen_menu_text"
     WM_MENU_TEXT = "wm_menu_text"
-
-    # WebApp
-    WEBAPP_TITLE = "webapp_title"
-    WEBAPP_DESCRIPTION = "webapp_description"
-    WEBAPP_BUTTON = "webapp_button"
 
     # Generation
     GEN_SETTINGS_TITLE = "gen_settings_title"
