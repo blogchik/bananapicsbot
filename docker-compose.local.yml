@@ -1,0 +1,109 @@
+services:
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    # Local build - no image pull
+    env_file:
+      - .env.local
+    networks:
+      - app_net
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    # Local build - no image pull
+    env_file:
+      - .env.local
+    environment:
+      RUN_MIGRATIONS: "true"
+    ports:
+      - "9000:9000"
+    networks:
+      - app_net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/api/v1/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    # Local build - no image pull
+    command: ["celery", "-A", "app.worker.celery", "worker", "--loglevel", "info", "--concurrency", "4"]
+    env_file:
+      - .env.local
+    environment:
+      RUN_MIGRATIONS: "false"
+    networks:
+      - app_net
+    depends_on:
+      - api
+      - redis
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    # Local build - no image pull
+    command: ["celery", "-A", "app.worker.celery", "beat", "--loglevel", "info"]
+    env_file:
+      - .env.local
+    environment:
+      RUN_MIGRATIONS: "false"
+    networks:
+      - app_net
+    depends_on:
+      - celery-worker
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6479:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass "localpassword123"
+    networks:
+      - app_net
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bananapics
+      POSTGRES_PASSWORD: localpassword123
+      POSTGRES_DB: bananapics
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bananapics -d bananapics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:
+
+networks:
+  app_net:

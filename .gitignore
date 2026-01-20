@@ -13,6 +13,7 @@ ENV/
 .env
 .env.prod
 .env.dev
+.env.local
 
 # Editor
 .vscode/
