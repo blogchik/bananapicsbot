@@ -158,6 +158,7 @@ def process_generation(
                 _notify_user_generation_failed(
                     chat_id, message_id,
                     _build_timeout_message(language),
+                    request.cost or 0,
                     language,
                 )
                 return {"status": "timeout", "generation_id": generation_request_id}
@@ -194,9 +195,12 @@ def process_generation(
                 return {"status": "completed", "generation_id": generation_request_id}
 
             elif status_value == "failed":
-                error_msg = response.message or "Generation failed"
+                # Get error message from response data first, fallback to response message
+                error_msg = response.data.get("error") or response.message or "Generation failed"
                 _mark_generation_failed(generation_request_id, error_msg)
-                _notify_user_generation_failed(chat_id, message_id, error_msg, language)
+                _notify_user_generation_failed(
+                    chat_id, message_id, error_msg, request.cost or 0, language
+                )
                 logger.warning(
                     "Generation failed",
                     generation_id=generation_request_id,
@@ -407,6 +411,7 @@ def _notify_user_generation_failed(
     chat_id: int,
     message_id: int,
     error_message: str,
+    refunded_credits: int,
     language: str,
 ) -> None:
     """Notify user that generation failed."""
@@ -414,7 +419,7 @@ def _notify_user_generation_failed(
         return
 
     try:
-        text = _build_failure_message(language, error_message)
+        text = _build_failure_message(language, error_message, refunded_credits)
         run_async(_edit_telegram_message(chat_id, message_id, text))
     except Exception as e:
         logger.error("Failed to send failure notification", error=str(e))
@@ -462,15 +467,25 @@ def _build_result_caption(
     )
 
 
-def _build_failure_message(language: str, error_message: str) -> str:
+def _build_failure_message(language: str, error_message: str, refunded_credits: int = 0) -> str:
+    """Build failure message with error details and refund info."""
     safe_error = _escape_html(error_message)
+    
+    # Build base message
     if get_text and TranslationKey:
-        return get_text(
+        message = get_text(
             TranslationKey.GEN_ERROR,
             language,
             {"error": safe_error},
         )
-    return f"Generation failed\nReason: {safe_error}"
+    else:
+        message = f"❌ Generatsiya muvaffaqiyatsiz\n\nSabab: {safe_error}"
+    
+    # Add refund info if credits were refunded
+    if refunded_credits > 0:
+        message += f"\n\n💰 {refunded_credits} credit qaytarildi"
+    
+    return message
 
 
 def _build_timeout_message(language: str) -> str:
