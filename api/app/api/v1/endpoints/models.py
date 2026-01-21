@@ -3,6 +3,7 @@ import asyncio
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.deps.db import db_session_dep
 from app.schemas.model_catalog import (
     ModelCatalogOut,
@@ -12,12 +13,17 @@ from app.schemas.model_catalog import (
 )
 from app.services.model_options import get_model_parameter_options_from_wavespeed
 from app.services.models import list_active_models, list_active_prices_for_models
+from app.services.pricing import apply_price_markup
 
 router = APIRouter()
 
 
 @router.get("/models", response_model=list[ModelCatalogWithPricesOut])
 async def list_models(db: Session = Depends(db_session_dep)) -> list[ModelCatalogWithPricesOut]:
+    """List all active models with prices (including admin markup)."""
+    settings = get_settings()
+    markup = settings.generation_price_markup
+    
     models = list_active_models(db)
     prices_by_model = list_active_prices_for_models(db, [model.id for model in models])
     options_list = await asyncio.gather(
@@ -48,7 +54,9 @@ async def list_models(db: Session = Depends(db_session_dep)) -> list[ModelCatalo
             ModelCatalogWithPricesOut(
                 model=model_out,
                 prices=[
-                    ModelPriceOut.model_validate(price)
+                    ModelPriceOut.model_validate(price).model_copy(
+                        update={"unit_price": apply_price_markup(int(price.unit_price), markup)}
+                    )
                     for price in prices_by_model.get(model.id, [])
                 ],
             )
