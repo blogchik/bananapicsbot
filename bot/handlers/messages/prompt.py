@@ -73,15 +73,26 @@ async def handle_prompt_message(
     if len(prompt) > BotConstants.MAX_PROMPT_LENGTH:
         prompt = prompt[:BotConstants.MAX_PROMPT_LENGTH]
 
+    # Show loading indicator immediately
+    loading_msg = await message.answer("⏳")
+
     # Get models
     try:
         models = await GenerationService.get_models()
     except Exception as e:
         logger.warning("Failed to get models", error=str(e))
+        try:
+            await loading_msg.delete()
+        except TelegramBadRequest:
+            pass
         await message.answer(_(TranslationKey.ERROR_CONNECTION, None))
         return
 
     if not models:
+        try:
+            await loading_msg.delete()
+        except TelegramBadRequest:
+            pass
         await message.answer(_(TranslationKey.MODEL_NOT_FOUND, None))
         return
 
@@ -204,6 +215,12 @@ async def handle_prompt_message(
         reply_markup=menu,
         reply_to_message_id=message.message_id,
     )
+
+    # Delete loading indicator
+    try:
+        await loading_msg.delete()
+    except TelegramBadRequest:
+        pass
 
     await state.update_data(menu_message_id=msg.message_id)
     await GenerationService.save_generation_defaults(
