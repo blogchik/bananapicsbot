@@ -141,6 +141,21 @@ class TranslationKey(str, Enum):
     WM_FAILED = "wm_failed"
     WM_SUCCESS = "wm_success"
 
+    # Image tools
+    TOOL_UPSCALE_BUTTON = "tool_upscale_button"
+    TOOL_DENOISE_BUTTON = "tool_denoise_button"
+    TOOL_RESTORE_BUTTON = "tool_restore_button"
+    TOOL_ENHANCE_BUTTON = "tool_enhance_button"
+    TOOL_UPSCALE_PROCESSING = "tool_upscale_processing"
+    TOOL_DENOISE_PROCESSING = "tool_denoise_processing"
+    TOOL_RESTORE_PROCESSING = "tool_restore_processing"
+    TOOL_ENHANCE_PROCESSING = "tool_enhance_processing"
+    TOOL_UPSCALE_SUCCESS = "tool_upscale_success"
+    TOOL_DENOISE_SUCCESS = "tool_denoise_success"
+    TOOL_RESTORE_SUCCESS = "tool_restore_success"
+    TOOL_ENHANCE_SUCCESS = "tool_enhance_success"
+    TOOL_FAILED = "tool_failed"
+
     # Payments
     TOPUP_TITLE = "topup_title"
     TOPUP_DESCRIPTION = "topup_description"

@@ -267,4 +267,18 @@ TRANSLATIONS: dict[str, str] = {
     "wm_processing": "Removing watermark...",
     "wm_failed": "Failed. Please try again.",
     "wm_success": "Done! Cost: {cost} cr.",
+    # Image tools
+    "tool_upscale_button": "🔍 Upscale 4K ({price} cr)",
+    "tool_denoise_button": "🔇 Denoise ({price} cr)",
+    "tool_restore_button": "🔧 Restore ({price} cr)",
+    "tool_enhance_button": "✨ Enhance ({price} cr)",
+    "tool_upscale_processing": "Upscaling image...",
+    "tool_denoise_processing": "Removing noise...",
+    "tool_restore_processing": "Restoring image...",
+    "tool_enhance_processing": "Enhancing image...",
+    "tool_upscale_success": "Done! Cost: {cost} cr.",
+    "tool_denoise_success": "Done! Cost: {cost} cr.",
+    "tool_restore_success": "Done! Cost: {cost} cr.",
+    "tool_enhance_success": "Done! Cost: {cost} cr.",
+    "tool_failed": "Failed. Please try again.",
 }

@@ -42,6 +42,11 @@ class WavespeedClient:
         self._qwen_t2i_model = "wavespeed-ai/qwen-image/text-to-image"
         self._qwen_i2i_model = "wavespeed-ai/qwen-image/edit"
         self._watermark_remover_model = "wavespeed-ai/image-watermark-remover"
+        # Image tools
+        self._upscaler_model = "wavespeed-ai/ultimate-image-upscaler"
+        self._denoise_model = "topaz/image/denoise"
+        self._restore_model = "topaz/image/restore"
+        self._enhance_model = "topaz/image/enhance"
 
         self._model_map: dict[str, dict[str, str]] = {
             "seedream-v4": {
@@ -327,6 +332,121 @@ class WavespeedClient:
             payload["output_format"] = output_format
         return await self._submit_model(
             self._watermark_remover_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_upscaler(
+        self,
+        image: str,
+        target_resolution: str = "4k",
+        output_format: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = True,
+    ) -> WavespeedResponse:
+        """Submit image to Ultimate Image Upscaler.
+        
+        Args:
+            image: Image URL
+            target_resolution: 2k, 4k, or 8k
+            output_format: jpeg, png, or webp
+        """
+        payload: dict[str, Any] = {
+            "image": image,
+            "target_resolution": target_resolution,
+            "enable_base64_output": enable_base64_output,
+        }
+        if output_format:
+            payload["output_format"] = output_format
+        return await self._submit_model(
+            self._upscaler_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_denoise(
+        self,
+        image: str,
+        model: str = "Normal",
+        output_format: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = True,
+    ) -> WavespeedResponse:
+        """Submit image to Topaz Denoise.
+        
+        Args:
+            image: Image URL
+            model: Normal, Strong, or Extreme
+            output_format: jpeg, jpg, or png
+        """
+        payload: dict[str, Any] = {
+            "image": image,
+            "model": model,
+            "enable_base64_output": enable_base64_output,
+        }
+        if output_format:
+            payload["output_format"] = output_format
+        return await self._submit_model(
+            self._denoise_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_restore(
+        self,
+        image: str,
+        model: str = "Dust-Scratch",
+        output_format: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = True,
+    ) -> WavespeedResponse:
+        """Submit image to Topaz Restore.
+        
+        Args:
+            image: Image URL
+            model: Dust-Scratch or Dust-Scratch V2
+            output_format: jpeg, jpg, png, tiff, or tif
+        """
+        payload: dict[str, Any] = {
+            "image": image,
+            "model": model,
+            "enable_base64_output": enable_base64_output,
+        }
+        if output_format:
+            payload["output_format"] = output_format
+        return await self._submit_model(
+            self._restore_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_enhance(
+        self,
+        image: str,
+        size: str = "1080*1080",
+        model: str = "Standard V2",
+        output_format: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = True,
+    ) -> WavespeedResponse:
+        """Submit image to Topaz Enhance.
+        
+        Args:
+            image: Image URL
+            size: Output size (e.g., 1080*1080, up to 4096*4096)
+            model: Standard V2, Low Resolution V2, CGI, High Fidelity V2, Text Refine
+            output_format: jpeg, jpg, or png
+        """
+        payload: dict[str, Any] = {
+            "image": image,
+            "size": size,
+            "model": model,
+            "enable_base64_output": enable_base64_output,
+        }
+        if output_format:
+            payload["output_format"] = output_format
+        return await self._submit_model(
+            self._enhance_model,
             payload,
             enable_sync_mode=enable_sync_mode,
         )

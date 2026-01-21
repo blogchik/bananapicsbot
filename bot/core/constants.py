@@ -45,6 +45,10 @@ class BotConstants:
 
     # Tools pricing
     WATERMARK_REMOVE_COST: Final[int] = 12
+    UPSCALE_COST: Final[int] = 60
+    DENOISE_COST: Final[int] = 20
+    RESTORE_COST: Final[int] = 20
+    ENHANCE_COST: Final[int] = 30
 
 
 # Callback data prefixes

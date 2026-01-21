@@ -306,6 +306,67 @@ class ApiClient:
             json={"telegram_id": telegram_id, "image_url": image_url},
         )
 
+    async def upscale_image(
+        self, telegram_id: int, image_url: str, target_resolution: str = "4k"
+    ) -> dict:
+        """Upscale image to higher resolution."""
+        return await self._request(
+            "POST",
+            "/api/v1/tools/upscale",
+            json={
+                "telegram_id": telegram_id,
+                "image_url": image_url,
+                "target_resolution": target_resolution,
+            },
+        )
+
+    async def denoise_image(
+        self, telegram_id: int, image_url: str, model: str = "Normal"
+    ) -> dict:
+        """Remove noise from image."""
+        return await self._request(
+            "POST",
+            "/api/v1/tools/denoise",
+            json={
+                "telegram_id": telegram_id,
+                "image_url": image_url,
+                "model": model,
+            },
+        )
+
+    async def restore_image(
+        self, telegram_id: int, image_url: str, model: str = "Dust-Scratch"
+    ) -> dict:
+        """Restore old photo by removing dust and scratches."""
+        return await self._request(
+            "POST",
+            "/api/v1/tools/restore",
+            json={
+                "telegram_id": telegram_id,
+                "image_url": image_url,
+                "model": model,
+            },
+        )
+
+    async def enhance_image(
+        self,
+        telegram_id: int,
+        image_url: str,
+        size: str = "1080*1080",
+        model: str = "Standard V2",
+    ) -> dict:
+        """Enhance image with AI upscaling and sharpening."""
+        return await self._request(
+            "POST",
+            "/api/v1/tools/enhance",
+            json={
+                "telegram_id": telegram_id,
+                "image_url": image_url,
+                "size": size,
+                "model": model,
+            },
+        )
+
     # Payment endpoints
     async def get_stars_options(self) -> dict:
         """Get stars payment options."""

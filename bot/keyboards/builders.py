@@ -109,6 +109,26 @@ class WatermarkCallback:
         return f"wm:remove:{message_id}"
 
 
+class ImageToolCallback:
+    """Image tool callback data patterns."""
+
+    @staticmethod
+    def upscale(message_id: int) -> str:
+        return f"tool:upscale:{message_id}"
+
+    @staticmethod
+    def denoise(message_id: int) -> str:
+        return f"tool:denoise:{message_id}"
+
+    @staticmethod
+    def restore(message_id: int) -> str:
+        return f"tool:restore:{message_id}"
+
+    @staticmethod
+    def enhance(message_id: int) -> str:
+        return f"tool:enhance:{message_id}"
+
+
 class TopupCallback:
     """Top-up callback data patterns."""
 

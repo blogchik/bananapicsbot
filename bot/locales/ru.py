@@ -267,4 +267,18 @@ TRANSLATIONS: dict[str, str] = {
     "wm_processing": "Удаляем водяной знак...",
     "wm_failed": "Ошибка. Попробуйте еще раз.",
     "wm_success": "Готово! Стоимость: {cost} кр.",
+    # Image tools
+    "tool_upscale_button": "🔍 Увеличить 4K ({price} кр)",
+    "tool_denoise_button": "🔇 Убрать шум ({price} кр)",
+    "tool_restore_button": "🔧 Восстановить ({price} кр)",
+    "tool_enhance_button": "✨ Улучшить ({price} кр)",
+    "tool_upscale_processing": "Увеличиваем изображение...",
+    "tool_denoise_processing": "Убираем шум...",
+    "tool_restore_processing": "Восстанавливаем изображение...",
+    "tool_enhance_processing": "Улучшаем изображение...",
+    "tool_upscale_success": "Готово! Стоимость: {cost} кр.",
+    "tool_denoise_success": "Готово! Стоимость: {cost} кр.",
+    "tool_restore_success": "Готово! Стоимость: {cost} кр.",
+    "tool_enhance_success": "Готово! Стоимость: {cost} кр.",
+    "tool_failed": "Ошибка. Попробуйте еще раз.",
 }

@@ -22,6 +22,16 @@
 - **Model konfiguratsiya:** parametrlar va variantlar `/api/v1/models` javobidagi `model.options` orqali keladi, bot shunga moslashadi.
 - **Broadcast:** Admin broadcast menyusidan yangi broadcast yaratadi, xabar yuboradi (text/photo/video/audio/sticker), filter tanlaydi (all/active_7d/active_30d/with_balance/paid_users/new_users), ixtiyoriy inline button qo'shadi, preview ko'radi va tasdiqlaydi. Celery worker rate limit bilan yuboradi (20 msg/sec). Progress va statistika real-time ko'rinadi (sent/failed/blocked). Broadcast bekor qilish mumkin.
 
+### Image Tools
+
+User rasm yuborib, unga turli xil ishlov berish toollarni tanlay oladi:
+
+- **Watermark Remover** (12 credit) — rasmdan watermark olib tashlaydi
+- **Upscale 4K** (60 credit) — rasmni 2K/4K/8K gacha kattalashtiradi (Ultimate Image Upscaler)
+- **Denoise** (20 credit) — rasmdan shovqin olib tashlaydi (Topaz AI, Normal/Strong/Extreme)
+- **Restore** (20 credit) — eski rasmlarni tiklaydi, chang va tirnalishlarni olib tashlaydi (Topaz AI)
+- **Enhance** (30 credit) — rasmni yaxshilaydi, keskinlashtiradi va upscale qiladi (Topaz AI)
+
 ## Reja
 
 - Qo'shimcha modellar va narxlar boshqaruvi.

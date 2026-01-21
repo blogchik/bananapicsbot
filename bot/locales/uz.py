@@ -243,4 +243,18 @@ TRANSLATIONS: dict[str, str] = {
     "wm_processing": "Watermark olib tashlanmoqda...",
     "wm_failed": "Xatolik yuz berdi. Qayta urinib ko'ring.",
     "wm_success": "Tayyor! Sarf: {cost} kr.",
+    # Image tools
+    "tool_upscale_button": "🔍 Upscale 4K ({price} kr)",
+    "tool_denoise_button": "🔇 Denoise ({price} kr)",
+    "tool_restore_button": "🔧 Restore ({price} kr)",
+    "tool_enhance_button": "✨ Enhance ({price} kr)",
+    "tool_upscale_processing": "Rasm kattalashtirish...",
+    "tool_denoise_processing": "Shovqin tozalash...",
+    "tool_restore_processing": "Rasm tiklash...",
+    "tool_enhance_processing": "Rasm yaxshilash...",
+    "tool_upscale_success": "Tayyor! Sarf: {cost} kr.",
+    "tool_denoise_success": "Tayyor! Sarf: {cost} kr.",
+    "tool_restore_success": "Tayyor! Sarf: {cost} kr.",
+    "tool_enhance_success": "Tayyor! Sarf: {cost} kr.",
+    "tool_failed": "Xatolik yuz berdi. Qayta urinib ko'ring.",
 }

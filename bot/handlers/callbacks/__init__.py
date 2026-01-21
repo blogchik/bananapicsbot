@@ -3,6 +3,7 @@
 from aiogram import Router
 
 from .generation import router as generation_router
+from .image_tools import router as image_tools_router
 from .navigation import router as navigation_router
 from .referral import router as referral_router
 from .settings import router as settings_router
@@ -13,6 +14,7 @@ callbacks_router = Router(name="callbacks")
 callbacks_router.include_router(navigation_router)
 callbacks_router.include_router(generation_router)
 callbacks_router.include_router(watermark_router)
+callbacks_router.include_router(image_tools_router)
 callbacks_router.include_router(settings_router)
 callbacks_router.include_router(referral_router)
 

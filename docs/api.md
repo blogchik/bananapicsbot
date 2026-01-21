@@ -89,8 +89,15 @@ app/
 ### Models
 
 - `GET /api/v1/models` - aktiv modellar ro'yxati, narxlari va parametr/metadata (quality, avg duration). Model options (size/aspect_ratio/resolution) Wavespeed docs sahifalaridan olinadi va cache qilinadi (parallel fetch).
-- `POST /api/v1/tools/watermark-remove` - watermark remover (12 credit), input: `telegram_id`, `image_url`, optional `output_format`
 - `GET /api/v1/sizes` - size variantlari
+
+### Tools (Image Processing)
+
+- `POST /api/v1/tools/watermark-remove` - watermark remover (12 credit), input: `telegram_id`, `image_url`, optional `output_format`
+- `POST /api/v1/tools/upscale` - image upscaler (60 credit), input: `telegram_id`, `image_url`, optional `target_resolution` (2k/4k/8k), `output_format`
+- `POST /api/v1/tools/denoise` - noise removal (20 credit), input: `telegram_id`, `image_url`, optional `model` (Normal/Strong/Extreme), `output_format`
+- `POST /api/v1/tools/restore` - old photo restoration (20 credit), input: `telegram_id`, `image_url`, optional `model` (Dust-Scratch/Dust-Scratch V2), `output_format`
+- `POST /api/v1/tools/enhance` - image enhancement (30 credit), input: `telegram_id`, `image_url`, optional `size`, `model` (Standard V2/Low Resolution V2/CGI/High Fidelity V2/Text Refine), `output_format`
 
 ### Payments
 
