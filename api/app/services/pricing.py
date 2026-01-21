@@ -65,6 +65,27 @@ def credits_to_usd(credits_amount: int) -> Decimal:
     return Decimal(str(credits_amount)) / Decimal(str(CREDITS_PER_USD))
 
 
+def apply_price_markup(base_price: int, markup: int = 0) -> int:
+    """Apply admin-configured markup to base price.
+    
+    Args:
+        base_price: Base price in credits from Wavespeed
+        markup: Markup amount in credits to add
+    
+    Returns:
+        Final price with markup applied
+    
+    Examples:
+        >>> apply_price_markup(240, 40)
+        280
+        >>> apply_price_markup(100, 0)
+        100
+    """
+    if markup < 0:
+        markup = 0
+    return base_price + markup
+
+
 async def get_cached_price(cache_key: str) -> int | None:
     """Get cached price value.
     
@@ -144,6 +165,7 @@ async def get_model_price_from_wavespeed(
     wavespeed_client,
     model_id: str,
     inputs: dict[str, Any] | None = None,
+    markup: int = 0,
 ) -> int | None:
     """Fetch model price from Wavespeed pricing API.
     
@@ -151,9 +173,10 @@ async def get_model_price_from_wavespeed(
         wavespeed_client: WavespeedClient instance
         model_id: Full model identifier (e.g., "bytedance/seedream-v4")
         inputs: Optional input parameters
+        markup: Markup amount in credits to add to base price
     
     Returns:
-        Price in credits, or None if fetch failed
+        Price in credits with markup applied, or None if fetch failed
     """
     try:
         response = await wavespeed_client.get_model_pricing(model_id, inputs)
@@ -175,7 +198,8 @@ async def get_model_price_from_wavespeed(
             )
             return None
         
-        return usd_to_credits(float(unit_price))
+        base_price = usd_to_credits(float(unit_price))
+        return apply_price_markup(base_price, markup)
     except Exception as exc:
         logger.warning(
             "Wavespeed pricing request failed",

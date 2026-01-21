@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # App info
     app_name: str = "Bananapics API"
-    app_version: str = "0.1.0"
+    app_version: str = "0.1.2"
     api_prefix: str = "/api/v1"
     environment: str = "local"
     debug: bool = False
@@ -76,6 +76,7 @@ class Settings(BaseSettings):
 
     # Generations
     max_parallel_generations_per_user: int = 2
+    generation_price_markup: int = 0  # Credits to add to base Wavespeed price
 
     # Admin
     admin_telegram_ids: str = ""

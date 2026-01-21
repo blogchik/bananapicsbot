@@ -190,6 +190,7 @@ Open Telegram and send `/start` to your bot.
 | `STARS_EXCHANGE_DENOMINATOR` | Exchange rate denominator         | `70`                      |
 | `REFERRAL_BONUS_PERCENT`     | Referral bonus percentage         | `10`                      |
 | `REFERRAL_JOIN_BONUS`        | Bonus credits when referral joins | `20`                      |
+| `GENERATION_PRICE_MARKUP`    | Admin markup added to base prices | `40`                      |
 
 See [docs/env.md](docs/env.md) for complete configuration reference.
 
@@ -558,7 +559,7 @@ For questions or issues:
 
 ## 📋 Project Status
 
-**Current Version:** 0.1.0
+**Current Version:** 0.1.2
 
 **Status:** Production Ready ✅
 

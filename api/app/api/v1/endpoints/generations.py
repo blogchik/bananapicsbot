@@ -36,6 +36,7 @@ from app.schemas.pricing import GenerationPriceIn, GenerationPriceOut
 from app.services.ledger import get_user_balance
 from app.services.model_options import get_model_parameter_options_from_wavespeed
 from app.services.pricing import (
+    apply_price_markup,
     build_pricing_cache_key,
     get_cached_price,
     get_model_price_from_wavespeed,
@@ -191,11 +192,16 @@ async def _dynamic_price_for_model(
     Fetches real-time pricing from Wavespeed's pricing endpoint and converts
     USD to credits using the formula: $1 = 1000 credits.
     
+    Applies admin-configured markup from settings.generation_price_markup.
+    
     Falls back to hardcoded prices if API is unavailable.
     """
     if not model_key:
         return None
     key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
+    
+    # Get markup from settings
+    markup = settings.generation_price_markup
     
     # Build cache key for this pricing request
     cache_key = build_pricing_cache_key(
@@ -207,7 +213,7 @@ async def _dynamic_price_for_model(
         is_i2i=is_image_to_image,
     )
     
-    # Check cache first
+    # Check cache first (cache contains prices with markup already applied)
     cached_price = await get_cached_price(cache_key)
     if cached_price is not None:
         return cached_price
@@ -233,10 +239,10 @@ async def _dynamic_price_for_model(
         if quality:
             inputs["quality"] = quality
         
-        # Try fetching from Wavespeed pricing API
+        # Try fetching from Wavespeed pricing API (with markup)
         try:
             client = wavespeed_client()
-            price = await get_model_price_from_wavespeed(client, wavespeed_model_id, inputs)
+            price = await get_model_price_from_wavespeed(client, wavespeed_model_id, inputs, markup)
             if price is not None:
                 await set_cached_price(cache_key, price)
                 return price
@@ -248,19 +254,22 @@ async def _dynamic_price_for_model(
                 error=str(exc),
             )
     
-    # Fallback to hardcoded prices if API fails
+    # Fallback to hardcoded prices if API fails (apply markup to fallbacks too)
     if key == "seedream-v4":
-        price = usd_to_credits(Decimal("0.027"))
+        base_price = usd_to_credits(Decimal("0.027"))
+        price = apply_price_markup(base_price, markup)
         await set_cached_price(cache_key, price)
         return price
     if key == "nano-banana":
-        price = usd_to_credits(Decimal("0.038"))
+        base_price = usd_to_credits(Decimal("0.038"))
+        price = apply_price_markup(base_price, markup)
         await set_cached_price(cache_key, price)
         return price
     if key == "nano-banana-pro":
         res = (resolution or "").lower()
         usd = Decimal("0.24") if res == "4k" else Decimal("0.14")
-        price = usd_to_credits(usd)
+        base_price = usd_to_credits(usd)
+        price = apply_price_markup(base_price, markup)
         await set_cached_price(cache_key, price)
         return price
     if key == "gpt-image-1.5":
@@ -277,7 +286,8 @@ async def _dynamic_price_for_model(
             or quality_prices.get("1024*1024")
             or _GPT_IMAGE_1_5_T2I_PRICES["medium"]["1024*1024"]
         )
-        price = _credits_from_price_units(int(price_units))
+        base_price = _credits_from_price_units(int(price_units))
+        price = apply_price_markup(base_price, markup)
         await set_cached_price(cache_key, price)
         return price
     return None
@@ -297,12 +307,16 @@ async def get_generation_price(
     
     Tries to get dynamic price from Wavespeed pricing API first,
     falls back to database price if not available.
+    
+    Applies admin-configured markup from settings.generation_price_markup.
     """
     dynamic_price = await _dynamic_price_for_model(
         model.key, size, resolution, quality, settings, is_image_to_image, aspect_ratio
     )
     if dynamic_price is not None:
         return dynamic_price
+    
+    # Fallback to database price if dynamic pricing unavailable
     price = db.execute(
         select(ModelPrice)
         .where(ModelPrice.model_id == model.id, ModelPrice.is_active.is_(True))
@@ -310,7 +324,11 @@ async def get_generation_price(
     ).scalar_one_or_none()
     if not price:
         raise HTTPException(status_code=400, detail="Model price not found")
-    return int(price.unit_price)
+    
+    # Apply markup to database price as well
+    base_price = int(price.unit_price)
+    markup = settings.generation_price_markup
+    return apply_price_markup(base_price, markup)
 
 
 @router.post("/generations/price", response_model=GenerationPriceOut)
@@ -319,6 +337,9 @@ async def calculate_generation_price(
     db: Session = Depends(db_session_dep),
 ) -> GenerationPriceOut:
     """Get dynamic generation price from Wavespeed pricing API."""
+    
+    settings = get_settings()
+    markup = settings.generation_price_markup
     
     # Rate limiting: 60 requests per minute per user
     redis = await get_redis()
@@ -352,6 +373,7 @@ async def calculate_generation_price(
         resolution=payload.resolution,
         quality=payload.quality,
         is_i2i=payload.is_image_to_image,
+        markup=markup,
     )
     
     # Build cache key
@@ -364,7 +386,7 @@ async def calculate_generation_price(
         is_i2i=payload.is_image_to_image,
     )
     
-    # Check cache first
+    # Check cache first (cache already contains markup)
     cached_price = await get_cached_price(cache_key)
     if cached_price is not None:
         price_usd = float(cached_price) / 1000
@@ -409,18 +431,24 @@ async def calculate_generation_price(
             
             if response.code == 200 and response.data:
                 price_usd = float(response.data.get("unit_price", 0))
-                price_credits = usd_to_credits(price_usd)
+                base_price = usd_to_credits(price_usd)
+                price_credits = apply_price_markup(base_price, markup)
                 
                 logger.info(
                     "Got price from Wavespeed API",
                     model_key=model.key,
                     wavespeed_model_id=wavespeed_model_id,
                     inputs=inputs,
-                    price_usd=price_usd,
-                    price_credits=price_credits,
+                    base_price_usd=price_usd,
+                    base_price_credits=base_price,
+                    markup=markup,
+                    final_price_credits=price_credits,
                 )
                 
-                # Cache the price
+                # Update price_usd to reflect final price with markup
+                price_usd = float(price_credits) / 1000
+                
+                # Cache the price (with markup included)
                 await set_cached_price(cache_key, price_credits)
             else:
                 logger.warning(
@@ -436,7 +464,7 @@ async def calculate_generation_price(
                 error=str(exc),
             )
     
-    # Fallback to hardcoded prices if API failed
+    # Fallback to hardcoded prices if API failed (markup applied in _get_fallback_price)
     if price_credits is None:
         price_credits = await _get_fallback_price(
             model.key,
@@ -444,6 +472,7 @@ async def calculate_generation_price(
             payload.resolution,
             payload.quality,
             payload.is_image_to_image,
+            markup,
         )
         price_usd = float(price_credits) / 1000
         
@@ -452,6 +481,7 @@ async def calculate_generation_price(
             model_key=model.key,
             price_credits=price_credits,
             price_usd=price_usd,
+            markup=markup,
         )
     
     if price_credits is None:
@@ -485,20 +515,36 @@ async def _get_fallback_price(
     resolution: str | None,
     quality: str | None,
     is_image_to_image: bool = False,
+    markup: int = 0,
 ) -> int | None:
-    """Get fallback price if Wavespeed API is unavailable."""
+    """Get fallback price if Wavespeed API is unavailable.
+    
+    Args:
+        model_key: Model key identifier
+        size: Size parameter
+        resolution: Resolution parameter
+        quality: Quality parameter
+        is_image_to_image: Whether this is image-to-image mode
+        markup: Markup amount in credits to add to base price
+        
+    Returns:
+        Final price with markup applied, or None if model not recognized
+    """
     key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
     res = (resolution or "").strip().lower()
     if res in {"4k", "4096", "4096x4096", "4096*4096"}:
         res = "4k"
     
     if key == "seedream-v4":
-        return usd_to_credits(Decimal("0.027"))
+        base_price = usd_to_credits(Decimal("0.027"))
+        return apply_price_markup(base_price, markup)
     if key == "nano-banana":
-        return usd_to_credits(Decimal("0.038"))
+        base_price = usd_to_credits(Decimal("0.038"))
+        return apply_price_markup(base_price, markup)
     if key == "nano-banana-pro":
         usd = Decimal("0.24") if res == "4k" else Decimal("0.14")
-        return usd_to_credits(usd)
+        base_price = usd_to_credits(usd)
+        return apply_price_markup(base_price, markup)
     if key == "gpt-image-1.5":
         size_value = _normalize_gpt_image_size(size)
         quality_value = (quality or "medium").lower()
@@ -513,7 +559,8 @@ async def _get_fallback_price(
             or quality_prices.get("1024*1024")
             or _GPT_IMAGE_1_5_T2I_PRICES["medium"]["1024*1024"]
         )
-        return _credits_from_price_units(int(price_units))
+        base_price = _credits_from_price_units(int(price_units))
+        return apply_price_markup(base_price, markup)
     return None
 
 

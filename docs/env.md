@@ -61,6 +61,7 @@
 - `STARS_EXCHANGE_DENOMINATOR`: Kredit kursi denominator.
 - `REFERRAL_BONUS_PERCENT`: Referral bonus foizi (round up).
 - `REFERRAL_JOIN_BONUS`: Yangi referral qo'shilganda beriluvchi credit bonus.
+- `GENERATION_PRICE_MARKUP`: Admin tomonidan belgilanadigan narx qo'shimchasi (creditlarda). Wavespeed narxiga qo'shiladi.
 
 ## Redis
 
@@ -110,7 +111,7 @@ SENTRY_DSN=
 # API Configuration
 # ===================
 APP_NAME=Bananapics API
-APP_VERSION=0.1.0
+APP_VERSION=0.1.2
 API_PREFIX=/api/v1
 ENVIRONMENT=local
 CORS_ORIGINS=
@@ -141,6 +142,11 @@ STARS_EXCHANGE_NUMERATOR=1000
 STARS_EXCHANGE_DENOMINATOR=70
 REFERRAL_BONUS_PERCENT=10
 REFERRAL_JOIN_BONUS=20
+
+# Generation pricing markup (in credits)
+# This amount is added to the base Wavespeed price for each generation
+# Example: If Wavespeed price is 240 credits and markup is 40, user pays 280 credits
+GENERATION_PRICE_MARKUP=40
 
 # ===================
 # Redis (API)
