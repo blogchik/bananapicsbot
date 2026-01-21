@@ -39,6 +39,8 @@ class WavespeedClient:
         self._nano_banana_pro_i2i_model = "google/nano-banana-pro/edit"
         self._gpt_image_1_5_t2i_model = "openai/gpt-image-1.5/text-to-image"
         self._gpt_image_1_5_i2i_model = "openai/gpt-image-1.5/edit"
+        self._qwen_t2i_model = "wavespeed-ai/qwen-image/text-to-image"
+        self._qwen_i2i_model = "wavespeed-ai/qwen-image/edit"
         self._watermark_remover_model = "wavespeed-ai/image-watermark-remover"
 
         self._model_map: dict[str, dict[str, str]] = {
@@ -57,6 +59,10 @@ class WavespeedClient:
             "gpt-image-1.5": {
                 "t2i": self._gpt_image_1_5_t2i_model,
                 "i2i": self._gpt_image_1_5_i2i_model,
+            },
+            "qwen": {
+                "t2i": self._qwen_t2i_model,
+                "i2i": self._qwen_i2i_model,
             },
         }
 
@@ -262,6 +268,46 @@ class WavespeedClient:
             payload["input_fidelity"] = input_fidelity
         return await self._submit_model(
             self._gpt_image_1_5_i2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_qwen_t2i(
+        self,
+        prompt: str,
+        size: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = False,
+    ) -> WavespeedResponse:
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "enable_base64_output": enable_base64_output,
+        }
+        if size:
+            payload["size"] = size
+        return await self._submit_model(
+            self._qwen_t2i_model,
+            payload,
+            enable_sync_mode=enable_sync_mode,
+        )
+
+    async def submit_qwen_i2i(
+        self,
+        prompt: str,
+        images: list[str],
+        size: str | None = None,
+        enable_base64_output: bool = False,
+        enable_sync_mode: bool = False,
+    ) -> WavespeedResponse:
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "image": images[0] if images else "",
+            "enable_base64_output": enable_base64_output,
+        }
+        if size:
+            payload["size"] = size
+        return await self._submit_model(
+            self._qwen_i2i_model,
             payload,
             enable_sync_mode=enable_sync_mode,
         )

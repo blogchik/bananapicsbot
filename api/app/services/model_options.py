@@ -58,6 +58,16 @@ MODEL_DOCS: dict[str, dict[str, dict[str, str]]] = {
             "model_uuid": "openai/gpt-image-1.5/edit",
         },
     },
+    "qwen": {
+        "t2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/wavespeed-ai/qwen-image-text-to-image",
+            "model_uuid": "wavespeed-ai/qwen-image/text-to-image",
+        },
+        "i2i": {
+            "url": "https://wavespeed.ai/docs/docs-api/wavespeed-ai/qwen-image-edit",
+            "model_uuid": "wavespeed-ai/qwen-image/edit",
+        },
+    },
 }
 
 

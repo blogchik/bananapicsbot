@@ -4,6 +4,7 @@ from app.core.constants import (
     ASPECT_RATIO_OPTIONS,
     GPT_IMAGE_1_5_SIZE_OPTIONS,
     NANO_BANANA_PRO_RESOLUTIONS,
+    QWEN_SIZE_OPTIONS,
     SIZE_OPTIONS,
 )
 
@@ -64,6 +65,14 @@ MODEL_PARAMETER_OPTIONS: dict[str, ModelParameterOptions] = {
         size_options=GPT_IMAGE_1_5_SIZE_OPTIONS,
         quality_options=["low", "medium", "high"],
         input_fidelity_options=["low", "high"],
+    ),
+    "qwen": ModelParameterOptions(
+        supports_size=True,
+        quality_stars=4,
+        avg_duration_seconds_min=5,
+        avg_duration_seconds_max=10,
+        avg_duration_text="5-10 sec",
+        size_options=QWEN_SIZE_OPTIONS,
     ),
 }
 

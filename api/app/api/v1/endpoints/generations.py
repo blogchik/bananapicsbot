@@ -884,6 +884,22 @@ async def submit_wavespeed_generation(
             enable_base64_output=False,
             enable_sync_mode=False,
         )
+    if model_key == "qwen":
+        qwen_size = size or resolution
+        if reference_urls:
+            return await client.submit_qwen_i2i(
+                prompt=prompt,
+                images=reference_urls,
+                size=qwen_size,
+                enable_base64_output=False,
+                enable_sync_mode=False,
+            )
+        return await client.submit_qwen_t2i(
+            prompt=prompt,
+            size=qwen_size,
+            enable_base64_output=False,
+            enable_sync_mode=False,
+        )
     raise HTTPException(status_code=400, detail="Unsupported model")
 
 

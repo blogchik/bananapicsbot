@@ -177,6 +177,7 @@ Mavjud modellar:
 - `gpt-image-1.5` - size/quality bo'yicha dinamik narx:
   - t2i: low 0.009/0.013, medium 0.034/0.051, high 0.133/0.200 (1024*1024 / 1024*1536,1536\*1024)
   - i2i: low 0.009/0.034/0.013 (1024*1024 / 1024*1536 / 1536\*1024), medium 0.034/0.051, high 0.133/0.200
+- `qwen` - 20 credit (size parametri, t2i va i2i qo'llaydi)
 
 ## Middlewarelar
 

@@ -204,6 +204,7 @@ See [docs/env.md](docs/env.md) for complete configuration reference.
 - **nano-banana** - 38 credits (aspect ratio)
 - **nano-banana-pro** - 140-240 credits (aspect ratio, resolution)
 - **gpt-image-1.5** - Dynamic pricing (quality, input fidelity)
+- **qwen** - 20 credits (size parameter, bilingual text rendering)
 
 **Generation Types:**
 
