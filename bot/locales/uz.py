@@ -104,7 +104,7 @@ TRANSLATIONS: dict[str, str] = {
 
     # Referral
     "referral_title": "🤝 Referral",
-    "referral_info": "Do'stlaringizni taklif qiling va ularning to'lovlaridan {percent}% bonus oling.\nReferral faqat yangi userlar uchun ishlaydi.",
+    "referral_info": "Do'stlaringizni taklif qiling va bonus oling:\n• Qo'shilganda darhol 20 credit\n• To'lovlaridan {percent}% bonus\n\nReferral faqat yangi userlar uchun ishlaydi.",
     "referral_link": "Link: {link}",
     "referral_count": "Referallar: {count}",
     "referral_bonus": "Yig'ilgan bonus: {total} credit",
@@ -130,9 +130,9 @@ TRANSLATIONS: dict[str, str] = {
     "topup_disabled": "To'lovlar hozircha yopiq.",
 
     # Referral
-    "referral_description": "Do'stlaringizni taklif qiling va ularning to'lovlaridan {percent}% bonus oling.\nReferral faqat yangi userlar uchun ishlaydi.",
+    "referral_description": "Do'stlaringizni taklif qiling va bonus oling:\n• Qo'shilganda darhol 20 credit\n• To'lovlaridan {percent}% bonus\n\nReferral faqat yangi userlar uchun ishlaydi.",
     "referral_bonus_total": "Yig'ilgan bonus: {total} credit",
-    "referral_new_applied": "👤 Yangi referral qo'shildi.\nUning to'lovlaridan {percent}% bonus olasiz.",
+    "referral_new_applied": "🎉 Yangi referral qo'shildi!\n+20 credit bonus olasiz\nUning to'lovlaridan {percent}% bonus ham olasiz.",
 
     # Settings
     "settings_title": "⚙️ Sozlamalar",

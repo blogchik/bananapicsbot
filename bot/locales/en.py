@@ -123,7 +123,7 @@ TRANSLATIONS: dict[str, str] = {
 
     # Referral
     "referral_title": "🤝 Referral",
-    "referral_info": "Invite friends and earn {percent}% bonus from their payments.\nReferral works only for new users.",
+    "referral_info": "Invite friends and earn bonuses:\n• 20 credits immediately when they join\n• {percent}% bonus from their payments\n\nReferral works only for new users.",
     "referral_link": "Link: {link}",
     "referral_count": "Referrals: {count}",
     "referral_bonus": "Total bonus earned: {total} credit",
@@ -152,11 +152,11 @@ TRANSLATIONS: dict[str, str] = {
 
     # Referral
     "referral_title": "🤝 Referral",
-    "referral_description": "Invite friends and earn {percent}% bonus from their payments.\nReferral works only for new users.",
+    "referral_description": "Invite friends and earn bonuses:\n• 20 credits immediately when they join\n• {percent}% bonus from their payments\n\nReferral works only for new users.",
     "referral_link": "Link: {link}",
     "referral_count": "Referrals: {count}",
     "referral_bonus_total": "Total bonus earned: {total} credits",
-    "referral_new_applied": "👤 New referral added.\nYou will earn {percent}% bonus from their payments.",
+    "referral_new_applied": "🎉 New referral added!\n+20 credits bonus\nYou'll also earn {percent}% bonus from their payments.",
 
     # Settings
     "settings_title": "⚙️ Settings",

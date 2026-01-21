@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     stars_exchange_numerator: int = 1000
     stars_exchange_denominator: int = 70
     referral_bonus_percent: int = 10
+    referral_join_bonus: int = 20
 
     # Celery
     celery_broker_url: str = ""

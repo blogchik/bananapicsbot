@@ -153,42 +153,43 @@ Open Telegram and send `/start` to your bot.
 
 ### Core Configuration
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `BOT_TOKEN` | Telegram bot token | - | ✅ |
-| `WAVESPEED_API_KEY` | Wavespeed API key | - | ✅ |
-| `ADMIN_IDS` | Admin user IDs (comma-separated) | - | ✅ |
-| `DEFAULT_LANGUAGE` | Default language (uz/ru/en) | `uz` | ❌ |
+| Variable            | Description                      | Default | Required |
+| ------------------- | -------------------------------- | ------- | -------- |
+| `BOT_TOKEN`         | Telegram bot token               | -       | ✅       |
+| `WAVESPEED_API_KEY` | Wavespeed API key                | -       | ✅       |
+| `ADMIN_IDS`         | Admin user IDs (comma-separated) | -       | ✅       |
+| `DEFAULT_LANGUAGE`  | Default language (uz/ru/en)      | `uz`    | ❌       |
 
 ### Bot Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BOT_MODE` | Bot mode (polling/webhook) | `polling` |
-| `REDIS_URL` | Redis connection URL | `redis://redis:6379/0` |
-| `API_BASE_URL` | API base URL | `http://api:9000` |
-| `RATE_LIMIT_MESSAGES` | Messages per minute limit | `30` |
-| `RATE_LIMIT_CALLBACKS` | Callbacks per minute limit | `60` |
+| Variable               | Description                | Default                |
+| ---------------------- | -------------------------- | ---------------------- |
+| `BOT_MODE`             | Bot mode (polling/webhook) | `polling`              |
+| `REDIS_URL`            | Redis connection URL       | `redis://redis:6379/0` |
+| `API_BASE_URL`         | API base URL               | `http://api:9000`      |
+| `RATE_LIMIT_MESSAGES`  | Messages per minute limit  | `30`                   |
+| `RATE_LIMIT_CALLBACKS` | Callbacks per minute limit | `60`                   |
 
 ### API Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `API_PREFIX` | API prefix path | `/api/v1` |
-| `ENVIRONMENT` | Environment (local/staging/prod) | `local` |
-| `RATE_LIMIT_RPS` | Requests per second | `5` |
-| `MAX_PARALLEL_GENERATIONS_PER_USER` | Max parallel generations | `2` |
+| Variable                            | Description                      | Default   |
+| ----------------------------------- | -------------------------------- | --------- |
+| `API_PREFIX`                        | API prefix path                  | `/api/v1` |
+| `ENVIRONMENT`                       | Environment (local/staging/prod) | `local`   |
+| `RATE_LIMIT_RPS`                    | Requests per second              | `5`       |
+| `MAX_PARALLEL_GENERATIONS_PER_USER` | Max parallel generations         | `2`       |
 
 ### Payment Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `STARS_ENABLED` | Enable Stars payments | `true` |
-| `STARS_MIN_AMOUNT` | Minimum Stars amount | `70` |
-| `STARS_PRESETS` | Payment presets (comma-separated) | `70,140,210,350,700,1400` |
-| `STARS_EXCHANGE_NUMERATOR` | Exchange rate numerator | `1000` |
-| `STARS_EXCHANGE_DENOMINATOR` | Exchange rate denominator | `70` |
-| `REFERRAL_BONUS_PERCENT` | Referral bonus percentage | `10` |
+| Variable                     | Description                       | Default                   |
+| ---------------------------- | --------------------------------- | ------------------------- |
+| `STARS_ENABLED`              | Enable Stars payments             | `true`                    |
+| `STARS_MIN_AMOUNT`           | Minimum Stars amount              | `70`                      |
+| `STARS_PRESETS`              | Payment presets (comma-separated) | `70,140,210,350,700,1400` |
+| `STARS_EXCHANGE_NUMERATOR`   | Exchange rate numerator           | `1000`                    |
+| `STARS_EXCHANGE_DENOMINATOR` | Exchange rate denominator         | `70`                      |
+| `REFERRAL_BONUS_PERCENT`     | Referral bonus percentage         | `10`                      |
+| `REFERRAL_JOIN_BONUS`        | Bonus credits when referral joins | `20`                      |
 
 See [docs/env.md](docs/env.md) for complete configuration reference.
 
@@ -230,7 +231,8 @@ See [docs/env.md](docs/env.md) for complete configuration reference.
 ### Referral Program
 
 - 🔗 **Unique Referral Links** - Each user gets a personal link
-- 🎁 **Automatic Bonuses** - 10% bonus on referral payments (rounded up)
+- 🎁 **Join Bonus** - 20 credits awarded immediately when someone joins via referral
+- 💰 **Payment Commission** - 10% bonus on all referral payments (rounded up)
 - 📊 **Statistics** - Track referral count and total bonuses
 - 🔔 **Notifications** - Real-time alerts for new referrals
 - 🛡️ **Fraud Prevention** - One-time referral binding, self-referral protection
@@ -240,12 +242,14 @@ See [docs/env.md](docs/env.md) for complete configuration reference.
 Access via `/admin` command (admin users only):
 
 **📊 Statistics**
+
 - Overview: Users, generations, revenue
 - User analytics: Active users (7d/30d), growth trends
 - Generation analytics: Success rate, model usage
 - Revenue tracking: Total revenue, average per user
 
 **👥 User Management**
+
 - Search users by ID or username
 - View detailed user profiles
 - Ban/unban users
@@ -253,11 +257,13 @@ Access via `/admin` command (admin users only):
 - View user history
 
 **💰 Credit Management**
+
 - Add/remove credits from user balance
 - View credit transaction history
 - Bulk credit operations
 
 **📢 Broadcast System**
+
 - Create targeted broadcasts
 - Filter recipients: All users, Active (7d/30d), With balance, Paid users, New users
 - Support for text, photo, video, audio, stickers
@@ -267,6 +273,7 @@ Access via `/admin` command (admin users only):
 - View broadcast history and statistics
 
 **💸 Refund System**
+
 - **Credit Refunds** - Refund credits for failed generations
 - **Stars Refunds** - Refund Telegram Stars payments via API
   - View user's unrefunded payments
@@ -277,11 +284,13 @@ Access via `/admin` command (admin users only):
 ### Internationalization
 
 **Supported Languages:**
+
 - 🇺🇿 Uzbek (uz)
 - 🇷🇺 Russian (ru)
 - 🇬🇧 English (en)
 
 **Features:**
+
 - Auto-detection from Telegram language settings
 - User-configurable language in settings
 - Consistent UI across all languages
@@ -294,25 +303,30 @@ Access via `/admin` command (admin users only):
 The API is available at `http://localhost:9000/api/v1`
 
 **Health & Info:**
+
 - `GET /health` - Health check
 - `GET /info` - API information
 
 **Users:**
+
 - `POST /users/sync` - Sync user from Telegram
 - `GET /users/{telegram_id}/balance` - Get user balance
 - `GET /users/{telegram_id}/trial` - Get trial status
 
 **Generations:**
+
 - `POST /generations/submit` - Start generation
 - `GET /generations/active` - Get active generation
 - `GET /generations/{id}` - Get generation status
 - `GET /generations/{id}/results` - Get generation results
 
 **Payments:**
+
 - `GET /payments/stars/options` - Get payment options
 - `POST /payments/stars/confirm` - Confirm payment
 
 **Admin:**
+
 - `GET /admin/stats` - Get statistics
 - `GET /admin/users` - List users
 - `POST /admin/credits` - Adjust credits
@@ -358,27 +372,32 @@ docker compose exec api alembic -c /app/alembic.ini downgrade -1
 ### Debugging
 
 **Bot Logs:**
+
 ```bash
 docker compose logs -f bot
 ```
 
 **API Logs:**
+
 ```bash
 docker compose logs -f api
 ```
 
 **Celery Logs:**
+
 ```bash
 docker compose logs -f celery-worker
 docker compose logs -f celery-beat
 ```
 
 **Database Access:**
+
 ```bash
 docker compose exec db psql -U bananapics -d bananapics
 ```
 
 **Redis CLI:**
+
 ```bash
 docker compose exec redis redis-cli
 ```
@@ -395,6 +414,7 @@ docker compose exec redis redis-cli
 - ✅ Structured logging with Sentry integration
 
 **Best Practices:**
+
 - Never commit `.env` file
 - Rotate tokens regularly
 - Use strong database passwords
@@ -423,6 +443,7 @@ docker compose exec redis redis-cli ping
 ### Metrics
 
 The system tracks:
+
 - User activity (registrations, active users)
 - Generation statistics (success rate, model usage)
 - Payment metrics (revenue, average transaction)
@@ -432,6 +453,7 @@ The system tracks:
 ### Alerts
 
 Configure Sentry for:
+
 - Uncaught exceptions
 - Payment failures
 - API errors
@@ -469,12 +491,14 @@ WEBHOOK_SECRET=your_random_secret
 ### Scaling
 
 **Horizontal Scaling:**
+
 - Run multiple bot instances (Redis FSM allows this)
 - Scale Celery workers based on load
 - Use Redis Cluster for high availability
 - Use PostgreSQL replication
 
 **Vertical Scaling:**
+
 - Increase Celery worker concurrency
 - Adjust rate limits
 - Optimize database queries
@@ -527,6 +551,7 @@ Copyright 2026 Jabborov Abduroziq
 ## 📞 Support
 
 For questions or issues:
+
 - Create an issue in this repository
 - Check documentation in `docs/` folder
 - Review existing issues and discussions
@@ -538,6 +563,7 @@ For questions or issues:
 **Status:** Production Ready ✅
 
 **Roadmap:**
+
 - [ ] Additional payment methods
 - [ ] More image generation models
 - [ ] Generation history and favorites

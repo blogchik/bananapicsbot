@@ -12,16 +12,19 @@
 - `DEFAULT_LANGUAGE`: Default til kodi (default: `uz`).
 
 ### Rate Limiting (Bot)
+
 - `RATE_LIMIT_MESSAGES`: Daqiqada ruxsat etilgan xabarlar soni (default: `30`).
 - `RATE_LIMIT_CALLBACKS`: Daqiqada ruxsat etilgan callback soni (default: `60`).
 
 ### Webhook Mode
+
 - `WEBHOOK_URL`: Webhook uchun tashqi URL.
 - `WEBHOOK_SECRET`: Webhook secret token (optional).
 - `WEBHOOK_HOST`: Webhook server host (default: `0.0.0.0`).
 - `WEBHOOK_PORT`: Webhook server port (default: `8443`).
 
 ### Logging & Monitoring
+
 - `LOG_LEVEL`: Log darajasi (`DEBUG`, `INFO`, `WARNING`, `ERROR`, default: `INFO`).
 - `SENTRY_DSN`: Sentry DSN error tracking uchun.
 
@@ -57,6 +60,7 @@
 - `STARS_EXCHANGE_NUMERATOR`: Kredit kursi numerator.
 - `STARS_EXCHANGE_DENOMINATOR`: Kredit kursi denominator.
 - `REFERRAL_BONUS_PERCENT`: Referral bonus foizi (round up).
+- `REFERRAL_JOIN_BONUS`: Yangi referral qo'shilganda beriluvchi credit bonus.
 
 ## Redis
 
@@ -136,6 +140,7 @@ STARS_PRESETS=70,140,210,350,700,1400
 STARS_EXCHANGE_NUMERATOR=1000
 STARS_EXCHANGE_DENOMINATOR=70
 REFERRAL_BONUS_PERCENT=10
+REFERRAL_JOIN_BONUS=20
 
 # ===================
 # Redis (API)
