@@ -46,7 +46,7 @@ async def referral_handler(
     bonus_total = int(info.get("referral_credits_total", 0))
 
     text = (
-        f"{_(TranslationKey.REFERRAL_TITLE, None)}\n"
+        f"<b>{_(TranslationKey.REFERRAL_TITLE, None)}</b>\n\n"
         f"{_(TranslationKey.REFERRAL_DESCRIPTION, {'percent': bonus_percent})}\n\n"
         f"{_(TranslationKey.REFERRAL_LINK, {'link': link})}\n\n"
         f"{_(TranslationKey.REFERRAL_COUNT, {'count': referrals_count})}\n"

@@ -52,7 +52,7 @@ def get_referral_stats(db: Session, user_id: int) -> tuple[int, int]:
     total_bonus = db.execute(
         select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(
             LedgerEntry.user_id == user_id,
-            LedgerEntry.entry_type == "referral_bonus",
+            LedgerEntry.entry_type.in_(["referral_bonus", "referral_join_bonus"]),
         )
     ).scalar_one()
     return int(referrals_count), int(total_bonus)
