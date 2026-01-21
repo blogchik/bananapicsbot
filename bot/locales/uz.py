@@ -3,8 +3,8 @@
 TRANSLATIONS: dict[str, str] = {
     # Common
     "welcome": "👋 Xush kelibsiz, {name}!\n\n🍌 Banana Pics — sun’iy intellekt asosida ishlaydigan rasm yaratish va tahrirlash boti.\n\nBu yerda siz:\n• 🖼 Matndan rasm yaratasiz (Text → Image)\n• 🔁 Rasmlarni AI yordamida o‘zgartirasiz (Image → Image)\n• 💧 Watermarklarni avtomatik olib tashlaysiz\n\n📌 Tayyor namunalarni kanalimizda ko‘rishingiz mumkin:\n@Banana_Pics\n\n🚀 Boshlash uchun:\nRasmga izoh (caption) bilan yuboring yoki matnli prompt yozing.\nBir nechta rasmlarni albom sifatida ham yuborish mumkin.",
-    "welcome_back": "Qaytganingiz bilan! 😊",
-    "start_info": "Iltimos, generatsiyani boshlash uchun matnli prompt, prompt+rasm yoki captionli albom yuboring 👇\n\n❗ Rasm va promptni bitta xabarda yuboring.",
+    "welcome_back": "Qaytganingiz bilan!",
+    "start_info": "Generatsiyani boshlash uchun matnli prompt, prompt+rasm yoki captionli albom yuboring.\n\nRasm va promptni bitta xabarda yuboring.",
     "error_generic": "Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.",
     "error_connection": "Server bilan ulanishda xatolik. Keyinroq urinib ko'ring.",
     "back": "⬅️ Orqaga",
