@@ -42,6 +42,10 @@ def run_async(coro):
         loop.close()
 
 
+# Track last known status per generation to avoid redundant updates
+_generation_last_status: dict[int, str] = {}
+
+
 @shared_task(bind=True, max_retries=3)
 def process_generation(
     self,
@@ -209,6 +213,10 @@ def process_generation(
                 return {"status": "failed", "generation_id": generation_request_id}
 
             # Still running, continue polling
+            # Update user with current status if it changed
+            _update_user_generation_status(
+                chat_id, message_id, status_value, language
+            )
             logger.debug(
                 "Generation still running",
                 generation_id=generation_request_id,
@@ -492,6 +500,51 @@ def _build_timeout_message(language: str) -> str:
     if get_text and TranslationKey:
         return get_text(TranslationKey.GEN_TIMEOUT, language)
     return "Generation timeout. Please try again."
+
+
+def _update_user_generation_status(
+    chat_id: int,
+    message_id: int,
+    status: str,
+    language: str,
+) -> None:
+    """Update user's status message with current generation status."""
+    global _generation_last_status
+    
+    # Get unique key for this generation
+    status_key = (chat_id, message_id)
+    last_status = _generation_last_status.get(status_key)
+    
+    # Only update if status actually changed
+    if last_status == status:
+        return
+    
+    # Update tracking
+    _generation_last_status[status_key] = status
+    
+    # Build status message based on Wavespeed status
+    if status in ("processing", "in_progress", "running"):
+        if get_text and TranslationKey:
+            text = get_text(TranslationKey.GEN_PROCESSING, language)
+        else:
+            text = "⏳ Holat: Jarayonda"
+    elif status in ("in_queue", "queued", "pending"):
+        if get_text and TranslationKey:
+            text = get_text(TranslationKey.GEN_IN_QUEUE, language)
+        else:
+            text = "⏳ Holat: Navbatda"
+    else:
+        # Unknown status, don't update
+        return
+    
+    # Update message
+    if not settings.bot_token:
+        return
+    
+    try:
+        run_async(_edit_telegram_message(chat_id, message_id, text))
+    except Exception as e:
+        logger.debug(f"Failed to update status message: {e}")
 
 
 def _resolve_language(input_params: dict | None, telegram_id: int | None) -> str:
