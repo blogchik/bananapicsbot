@@ -43,7 +43,7 @@ TRANSLATIONS: dict[str, str] = {
     "cmd_profile": "Profil",
     "cmd_topup": "Balans to'ldirish",
     "cmd_referral": "Referral",
-    "gen_menu_text": "🖼 Rasm generatsiya qilish\n\nBu yerda siz AI yordamida rasm yarata olasiz. \n\nQanday ishlaydi: \n• ✍️ Matn yozing — rasm yaratiladi\n• 📷 Rasm + matn yuboring — rasm o‘zgartiriladi\n• 📁 Bir nechta rasmni albom qilib yuborish mumkin\n\n👉 Boshlash uchun: \nMatn yozing yoki rasmga caption qo‘shib yuboring.",
+    "gen_menu_text": "Rasm generatsiya qilish\n\nAI yordamida rasm yarating:\n• Matn yozing — rasm yaratiladi\n• Rasm + matn yuboring — rasm o'zgartiriladi\n• Bir nechta rasmni albom qilib yuborish mumkin\n\nMatn yozing yoki rasmga caption qo'shib yuboring.",
     "wm_menu_text": "💧 Watermark o‘chirish\n\nRasmdagi watermarklarni avtomatik olib tashlash. \n\nQanday ishlaydi: \n• Faqat rasm yuboring\n• AI watermarkni tozalaydi\n• Qo‘shimcha sozlama kerak emas\n\n📷 Rasmni hoziroq yuboring.",
 
     # Generation
@@ -239,8 +239,8 @@ TRANSLATIONS: dict[str, str] = {
     "gen_quality_not_available": "Bu modelda sifat mavjud emas.",
     "gen_input_fidelity_not_available": "Bu modelda input fidelity mavjud emas.",
     "wm_menu_title": "Ushbu rasm bilan nimalar qilmoqchisiz?",
-    "wm_remove_button": "Watermark Remover ({price} kr)",
+    "wm_remove_button": "💧 Watermark Remover ({price} kr)",
     "wm_processing": "Watermark olib tashlanmoqda...",
-    "wm_failed": "Watermark olib tashlashda xatolik. Qayta urinib ko'ring.",
-    "wm_success": "Watermark olib tashlandi. Sarf: {cost} kr.",
+    "wm_failed": "Xatolik yuz berdi. Qayta urinib ko'ring.",
+    "wm_success": "Tayyor! Sarf: {cost} kr.",
 }

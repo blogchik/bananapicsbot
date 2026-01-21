@@ -51,7 +51,7 @@ TRANSLATIONS: dict[str, str] = {
     "cmd_profile": "Profile",
     "cmd_topup": "Top up balance",
     "cmd_referral": "Referral",
-    "gen_menu_text": "🖼 Image Generation\n\nHere you can generate images using AI. \n\nHow it works: \n• ✍️ Write a text — an image will be generated\n• 📷 Send an image with a caption — the image will be transformed\n• 📁 You can send multiple images as an album\n\n👉 To get started: \nWrite a text prompt or send an image with a caption.",
+    "gen_menu_text": "Image Generation\n\nGenerate images using AI:\n• Write a text — an image will be generated\n• Send an image with a caption — the image will be transformed\n• You can send multiple images as an album\n\nWrite a text prompt or send an image with a caption.",
     "wm_menu_text": "💧 Watermark Removal\n\nAutomatically remove watermarks from images. \n\nHow it works: \n• Just send an image\n• AI removes the watermark\n• No additional settings required\n\n📷 Send your image now.",
 
     # Generation
@@ -263,8 +263,8 @@ TRANSLATIONS: dict[str, str] = {
     "gen_quality_not_available": "Quality not available for this model.",
     "gen_input_fidelity_not_available": "Input fidelity not available for this model.",
     "wm_menu_title": "What would you like to do with this image?",
-    "wm_remove_button": "Watermark Remover ({price} cr)",
+    "wm_remove_button": "💧 Watermark Remover ({price} cr)",
     "wm_processing": "Removing watermark...",
-    "wm_failed": "Failed to remove watermark. Please try again.",
-    "wm_success": "Watermark removed. Cost: {cost} cr.",
+    "wm_failed": "Failed. Please try again.",
+    "wm_success": "Done! Cost: {cost} cr.",
 }
