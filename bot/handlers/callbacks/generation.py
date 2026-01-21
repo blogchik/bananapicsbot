@@ -113,6 +113,8 @@ def model_emoji(model: NormalizedModel) -> str:
         return "🔥"
     if key == "seedream-v4":
         return "☁️"
+    if key == "qwen":
+        return "🔮"
     return "✨"
 
 
