@@ -3,9 +3,8 @@
 from typing import Callable
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from locales import TranslationKey
-
 from keyboards.builders import MenuCallback, SettingsCallback
+from locales import TranslationKey
 
 
 class ProfileKeyboard:

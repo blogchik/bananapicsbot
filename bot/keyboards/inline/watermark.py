@@ -4,9 +4,8 @@ from typing import Callable
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from core.constants import BotConstants
-from locales import TranslationKey
-
 from keyboards.builders import ImageToolCallback, WatermarkCallback
+from locales import TranslationKey
 
 
 class WatermarkKeyboard:
