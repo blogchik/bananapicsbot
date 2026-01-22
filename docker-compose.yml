@@ -68,19 +68,6 @@ services:
       - celery-worker
     restart: unless-stopped
 
-  webapp:
-    build:
-      context: ./webapp
-    image: ghcr.io/blogchik/bananapicsbot/webapp:${IMAGE_TAG:-latest}
-    ports:
-      - "3033:80"
-    networks:
-      - app_net
-    depends_on:
-      api:
-        condition: service_healthy
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     ports:

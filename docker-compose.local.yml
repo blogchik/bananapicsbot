@@ -72,20 +72,6 @@ services:
       - celery-worker
     restart: unless-stopped
 
-  webapp:
-    build:
-      context: ./webapp
-      dockerfile: Dockerfile
-    # Local build - no image pull
-    ports:
-      - "3033:80"
-    networks:
-      - app_net
-    depends_on:
-      api:
-        condition: service_healthy
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     ports:
