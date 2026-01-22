@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - QWEN model support with size parameter for text-to-image and image-to-image generation
 - QWEN model emoji representation in generation callbacks
 - Comprehensive project documentation in CLAUDE.md with architecture patterns, linting, and testing guidelines
+- Legal documents: Privacy Policy, Terms of Service, and User Agreement
 
 ### Changed
 - Replaced global mutable dict with Redis for generation status tracking (improved concurrency and reliability)
@@ -26,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing permissions for security job in CI/CD workflow
 - Fixed generation status tracking race conditions with Redis-based solution
+- Added `psycopg2-binary` dependency for entrypoint database wait script
+- Added `start_period: 60s` to API health check to allow time for database migrations
+- Increased health check retries from 5 to 10 for more stability during deployment
 
 ### Improved
 - CI/CD workflow now includes:
