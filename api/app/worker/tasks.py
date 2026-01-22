@@ -1220,9 +1220,7 @@ def send_daily_report():
 
             # User Statistics
             total_users = session.query(func.count(User.id)).scalar() or 0
-            new_users_today = (
-                session.query(func.count(User.id)).filter(User.created_at >= yesterday).scalar() or 0
-            )
+            new_users_today = session.query(func.count(User.id)).filter(User.created_at >= yesterday).scalar() or 0
             active_users_today = (
                 session.query(func.count(User.id)).filter(User.last_active_at >= yesterday).scalar() or 0
             )
