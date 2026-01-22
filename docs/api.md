@@ -148,6 +148,7 @@ Tasks:
 - `send_broadcast_message` - individual broadcast messages
 - `process_broadcast` - broadcast orchestration
 - `cleanup_expired_generations` - hourly cleanup
+- `send_daily_report` - daily admin statistics report (24 soatda bir marta)
 
 ## Ledger balans
 

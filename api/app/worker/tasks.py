@@ -1180,3 +1180,269 @@ def cleanup_expired_generations():
         logger.error("Generation cleanup failed", error=str(e))
 
     return {"cleaned_up": cleaned_count}
+
+
+@shared_task
+def send_daily_report():
+    """Send daily statistics report to admin users.
+
+    This task runs once per day to send:
+    1. User statistics (total, new, active)
+    2. Generation statistics (total, success rate, popular models)
+    3. Financial statistics (revenue, spending, refunds)
+    4. System health metrics
+    """
+    from datetime import timedelta
+
+    from sqlalchemy import and_, desc, func
+
+    from app.db.models import (
+        GenerationRequest,
+        GenerationResult,
+        GenerationStatus,
+        LedgerEntry,
+        ModelCatalog,
+        User,
+    )
+    from app.db.session import sync_session_factory
+
+    logger.info("Generating daily admin report")
+
+    if not settings.admin_ids_list:
+        logger.warning("No admin IDs configured, skipping daily report")
+        return {"error": "No admin recipients configured"}
+
+    try:
+        with sync_session_factory() as session:
+            # Calculate date range for "today" (last 24 hours)
+            now = datetime.utcnow()
+            yesterday = now - timedelta(days=1)
+
+            # User Statistics
+            total_users = session.query(func.count(User.id)).scalar() or 0
+            new_users_today = (
+                session.query(func.count(User.id)).filter(User.created_at >= yesterday).scalar() or 0
+            )
+            active_users_today = (
+                session.query(func.count(User.id)).filter(User.last_active_at >= yesterday).scalar() or 0
+            )
+            banned_users = session.query(func.count(User.id)).filter(User.is_banned == True).scalar() or 0
+
+            # Generation Statistics
+            total_generations_today = (
+                session.query(func.count(GenerationRequest.id))
+                .filter(GenerationRequest.created_at >= yesterday)
+                .scalar()
+                or 0
+            )
+            successful_generations = (
+                session.query(func.count(GenerationRequest.id))
+                .filter(
+                    and_(
+                        GenerationRequest.created_at >= yesterday,
+                        GenerationRequest.status == GenerationStatus.completed,
+                    )
+                )
+                .scalar()
+                or 0
+            )
+            failed_generations = (
+                session.query(func.count(GenerationRequest.id))
+                .filter(
+                    and_(
+                        GenerationRequest.created_at >= yesterday,
+                        GenerationRequest.status == GenerationStatus.failed,
+                    )
+                )
+                .scalar()
+                or 0
+            )
+
+            # Top models used today
+            top_models = (
+                session.query(ModelCatalog.name, func.count(GenerationRequest.id).label("count"))
+                .join(GenerationRequest, GenerationRequest.model_id == ModelCatalog.id)
+                .filter(GenerationRequest.created_at >= yesterday)
+                .group_by(ModelCatalog.id, ModelCatalog.name)
+                .order_by(desc("count"))
+                .limit(3)
+                .all()
+            )
+
+            # Financial Statistics
+            total_deposits = (
+                session.query(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                .filter(
+                    and_(
+                        LedgerEntry.created_at >= yesterday,
+                        LedgerEntry.entry_type == "deposit",
+                    )
+                )
+                .scalar()
+                or 0
+            )
+            total_spent = (
+                session.query(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                .filter(
+                    and_(
+                        LedgerEntry.created_at >= yesterday,
+                        LedgerEntry.entry_type == "generation",
+                    )
+                )
+                .scalar()
+                or 0
+            )
+            total_refunds = (
+                session.query(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                .filter(
+                    and_(
+                        LedgerEntry.created_at >= yesterday,
+                        LedgerEntry.entry_type == "refund",
+                    )
+                )
+                .scalar()
+                or 0
+            )
+            referral_bonuses = (
+                session.query(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                .filter(
+                    and_(
+                        LedgerEntry.created_at >= yesterday,
+                        LedgerEntry.entry_type.in_(["referral_bonus", "referral_join_bonus"]),
+                    )
+                )
+                .scalar()
+                or 0
+            )
+
+            # Calculate net revenue (deposits - refunds - referral bonuses)
+            net_revenue = total_deposits - abs(total_refunds) - abs(referral_bonuses)
+
+            # System health
+            avg_duration = (
+                session.query(func.avg(GenerationResult.duration_ms))
+                .join(GenerationRequest, GenerationResult.request_id == GenerationRequest.id)
+                .filter(
+                    and_(
+                        GenerationRequest.created_at >= yesterday,
+                        GenerationRequest.status == GenerationStatus.completed,
+                        GenerationResult.duration_ms.isnot(None),
+                    )
+                )
+                .scalar()
+            )
+            avg_duration_sec = round(avg_duration / 1000, 1) if avg_duration else 0
+
+        # Format the report
+        report_text = _format_daily_report(
+            date=now.strftime("%Y-%m-%d"),
+            total_users=total_users,
+            new_users=new_users_today,
+            active_users=active_users_today,
+            banned_users=banned_users,
+            total_generations=total_generations_today,
+            successful_generations=successful_generations,
+            failed_generations=failed_generations,
+            top_models=top_models,
+            total_deposits=total_deposits,
+            total_spent=abs(total_spent),
+            total_refunds=abs(total_refunds),
+            referral_bonuses=abs(referral_bonuses),
+            net_revenue=net_revenue,
+            avg_duration_sec=avg_duration_sec,
+        )
+
+        # Send to all admins
+        sent_count = 0
+        for admin_id in settings.admin_ids_list:
+            try:
+                _send_telegram_report(admin_id, report_text)
+                sent_count += 1
+                logger.info("Daily report sent to admin", admin_id=admin_id)
+            except Exception as e:
+                logger.error("Failed to send daily report to admin", admin_id=admin_id, error=str(e))
+
+        logger.info("Daily report sent", admins_count=sent_count)
+        return {"sent_to": sent_count, "admins": len(settings.admin_ids_list)}
+
+    except Exception as e:
+        logger.error("Failed to generate daily report", error=str(e))
+        return {"error": str(e)}
+
+
+def _format_daily_report(
+    date: str,
+    total_users: int,
+    new_users: int,
+    active_users: int,
+    banned_users: int,
+    total_generations: int,
+    successful_generations: int,
+    failed_generations: int,
+    top_models: list,
+    total_deposits: int,
+    total_spent: int,
+    total_refunds: int,
+    referral_bonuses: int,
+    net_revenue: int,
+    avg_duration_sec: float,
+) -> str:
+    """Format the daily report as HTML text."""
+    success_rate = (successful_generations / total_generations * 100) if total_generations > 0 else 0
+
+    # Format top models
+    top_models_text = ""
+    if top_models:
+        for i, (model_name, count) in enumerate(top_models, 1):
+            top_models_text += f"{i}. {model_name}: {count}\n"
+    else:
+        top_models_text = "No generations today\n"
+
+    report = f"""📊 <b>Daily Report</b> - {date}
+
+👥 <b>User Statistics</b>
+├ Total Users: {total_users:,}
+├ New Users (24h): +{new_users}
+├ Active Users (24h): {active_users}
+└ Banned Users: {banned_users}
+
+🎨 <b>Generation Statistics</b>
+├ Total Generations: {total_generations}
+├ Successful: {successful_generations} ({success_rate:.1f}%)
+├ Failed: {failed_generations}
+└ Avg Duration: {avg_duration_sec}s
+
+🏆 <b>Top Models (24h)</b>
+{top_models_text}
+💰 <b>Financial Statistics (Credits)</b>
+├ Deposits: +{total_deposits:,}
+├ Generation Spent: {total_spent:,}
+├ Refunds: {total_refunds:,}
+├ Referral Bonuses: {referral_bonuses:,}
+└ <b>Net Revenue: {net_revenue:,}</b>
+
+⏰ <i>Generated at {datetime.utcnow().strftime("%H:%M UTC")}</i>"""
+
+    return report
+
+
+def _send_telegram_report(admin_id: int, text: str) -> None:
+    """Send report message to admin via Telegram."""
+    bot_token = settings.bot_token
+    if not bot_token:
+        raise ValueError("BOT_TOKEN not configured")
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+    with httpx.Client(timeout=10.0) as client:
+        response = client.post(
+            url,
+            json={
+                "chat_id": admin_id,
+                "text": text,
+                "parse_mode": "HTML",
+            },
+        )
+        data = response.json()
+        if not data.get("ok"):
+            raise Exception(f"Telegram API error: {data.get('description', 'Unknown error')}")

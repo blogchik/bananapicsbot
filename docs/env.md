@@ -40,6 +40,7 @@
 - `RATE_LIMIT_BURST`: Qisqa burst limiti.
 - `RUN_MIGRATIONS`: API startida migratsiyalarni avtomatik ishga tushirish.
 - `BOT_TOKEN`: Bot tokeni (Celery broadcast tasklari uchun - API tomonida).
+- `ADMIN_TELEGRAM_IDS`: Admin Telegram ID lari, vergul bilan ajratilgan (API uchun, kunlik hisobotlar uchun).
 - `MAX_PARALLEL_GENERATIONS_PER_USER`: Bitta user uchun parallel generatsiyalar limiti (default: `2`).
 
 ## Wavespeed Provider
@@ -119,6 +120,7 @@ RATE_LIMIT_ENABLED=true
 RATE_LIMIT_RPS=5
 RATE_LIMIT_BURST=10
 RUN_MIGRATIONS=true
+ADMIN_TELEGRAM_IDS=686980246
 MAX_PARALLEL_GENERATIONS_PER_USER=2
 
 # ===================

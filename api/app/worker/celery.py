@@ -38,5 +38,9 @@ celery_app.conf.update(
             "task": "app.worker.tasks.cleanup_expired_generations",
             "schedule": 3600.0,  # Every hour
         },
+        "send-daily-report": {
+            "task": "app.worker.tasks.send_daily_report",
+            "schedule": 86400.0,  # Every 24 hours (daily)
+        },
     },
 )
