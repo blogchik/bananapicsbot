@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **CVE-2024-53981**: Updated `python-multipart` from 0.0.9 to 0.0.18 to fix DoS vulnerability via malformed `multipart/form-data` boundary
+
 ### Added
 - Image processing tools with 5 new features:
   - Watermark remover (12 credits) - removes watermarks from images
