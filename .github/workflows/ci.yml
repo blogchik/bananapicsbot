@@ -101,6 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     permissions:
+      actions: read
       contents: read
       security-events: write
     steps:
@@ -116,7 +117,7 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
@@ -197,8 +198,11 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
-          IMAGE_TAG: sha-${{ github.sha }}
         run: |
+          # Create short SHA for image tag (matches docker/metadata-action format)
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="sha-${SHORT_SHA}"
+
           # Create .env file from secret
           echo "$PROD_ENV_FILE" > .env.prod
 
@@ -209,7 +213,7 @@ jobs:
           # Deploy with specific image tag
           ssh $SSH_USERNAME@$SSH_HOST "cd ~/bananapicsbot && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
-            export IMAGE_TAG=$IMAGE_TAG && \
+            export IMAGE_TAG=${IMAGE_TAG} && \
             docker compose pull api bot && \
             docker compose up -d --remove-orphans && \
             docker image prune -f"
@@ -224,8 +228,9 @@ jobs:
 
       - name: Deployment summary
         run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image Tag:** sha-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag:** sha-${SHORT_SHA}" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployed at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
