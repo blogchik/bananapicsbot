@@ -134,7 +134,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [api, bot]
+        service: [api, bot, webapp]
 
     steps:
       - uses: actions/checkout@v4
@@ -214,7 +214,7 @@ jobs:
           ssh $SSH_USERNAME@$SSH_HOST "cd ~/bananapicsbot && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
             export IMAGE_TAG=${IMAGE_TAG} && \
-            docker compose pull api bot && \
+            docker compose pull api bot webapp && \
             docker compose up -d --remove-orphans && \
             docker image prune -f"
 
