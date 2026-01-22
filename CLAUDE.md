@@ -43,13 +43,31 @@ docker compose exec db psql -U bananapics -d bananapics
 docker compose exec redis redis-cli
 ```
 
+### Linting & Formatting
+```bash
+# Check code (ruff configured in ruff.toml, line length: 120)
+ruff check bot/ api/
+
+# Auto-fix issues
+ruff check --fix bot/ api/
+
+# Format code
+ruff format bot/ api/
+```
+
 ### Testing (API)
 ```bash
 # Install test dependencies
 pip install -r api/requirements-test.txt
 
-# Run tests
+# Run all tests
 pytest api/
+
+# Run single test file
+pytest api/tests/unit/test_pricing.py
+
+# Run with verbose output
+pytest api/ -v
 ```
 
 ## Architecture
@@ -124,15 +142,37 @@ Entry types: `deposit`, `generation`, `admin_adjustment`, `referral_bonus`, `ref
 - L2 (Redis): 300s TTL, shared across processes
 - User profiles: 5 min, Balances: 1 min, Model catalog: 10 min
 
+### Celery Tasks (Async/Sync Boundary)
+Celery tasks are synchronous. Use `run_async()` wrapper for async code:
+```python
+# In api/app/worker/tasks.py
+@shared_task
+def process_generation(request_id: str):
+    run_async(_process_generation_async(request_id))
+```
+Tasks use `sync_session_factory` for database access. Rate limit: 20 Telegram messages/second.
+
+### Repository Pattern (API)
+All database operations go through repositories in `api/app/infrastructure/repositories/`:
+- Base repository provides generic CRUD with async SQLAlchemy
+- Specific repos: `user.py`, `generation.py`, `ledger.py`, `model.py`, `payment.py`
+- Always use `AsyncSession` from dependency injection
+
 ## Key Entry Points
 - `bot/main.py` - Bot entry point
 - `bot/core/container.py` - Bot DI container
 - `api/app/main.py` - FastAPI entry point
 - `api/app/worker/celery.py` - Celery app and tasks
 
+### Middleware Order (Bot)
+Order matters (outer to inner): `LoggingMiddleware` → `ErrorHandlerMiddleware` → `I18nMiddleware` → `ThrottlingMiddleware` → `UserContextMiddleware`
+
 ## Environment
 Required variables: `BOT_TOKEN`, `WAVESPEED_API_KEY`, `ADMIN_IDS`
 Copy `.env.example` to `.env` before running.
+
+## CI/CD
+GitHub Actions workflow in `.github/workflows/ci.yml`. Deploys via SSH with `docker compose up`.
 
 ## Documentation
 Keep `docs/` in sync with code changes:
