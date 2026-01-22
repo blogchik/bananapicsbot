@@ -16,7 +16,6 @@ def format_user_name(user: User) -> str:
 
 
 async def send_profile(message: Message, user: User, _) -> None:
-
     settings = load_settings()
     client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
 
@@ -39,11 +38,7 @@ async def send_profile(message: Message, user: User, _) -> None:
         trial_status = "yo'q"
 
     text = f"{_(TranslationKey.PROFILE_TITLE)}\n" + _(TranslationKey.PROFILE_INFO).format(
-        name=name,
-        username=username,
-        user_id=user.id,
-        balance=balance,
-        trial=trial_status
+        name=name, username=username, user_id=user.id, balance=balance, trial=trial_status
     )
 
     await message.answer(text, reply_markup=profile_menu())

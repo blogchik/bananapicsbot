@@ -12,6 +12,7 @@ logger = get_logger(__name__)
 @dataclass
 class UserProfile:
     """User profile data."""
+
     telegram_id: int
     balance: int
     trial_available: bool

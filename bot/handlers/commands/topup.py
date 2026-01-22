@@ -43,10 +43,13 @@ async def topup_handler(
     except Exception as e:
         logger.warning("Failed to get average generation price", error=str(e))
         avg_price = None
-    rate_line = _(TranslationKey.TOPUP_EXCHANGE_RATE, {
-        "numerator": numerator,
-        "denominator": denominator,
-    })
+    rate_line = _(
+        TranslationKey.TOPUP_EXCHANGE_RATE,
+        {
+            "numerator": numerator,
+            "denominator": denominator,
+        },
+    )
     lines = [
         _(TranslationKey.TOPUP_TITLE, None),
         _(TranslationKey.TOPUP_DESCRIPTION, None),

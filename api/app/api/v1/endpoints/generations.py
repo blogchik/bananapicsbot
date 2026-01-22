@@ -158,11 +158,7 @@ _GPT_IMAGE_1_5_I2I_PRICES: dict[str, dict[str, int]] = {
 
 
 def _credits_from_price_units(value: int) -> int:
-    return int(
-        (Decimal(value) / Decimal("1000")).quantize(
-            Decimal("1"), rounding=ROUND_HALF_UP
-        )
-    )
+    return int((Decimal(value) / Decimal("1000")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 def _normalize_gpt_image_size(size: str | None) -> str:
@@ -188,21 +184,21 @@ async def _dynamic_price_for_model(
     aspect_ratio: str | None = None,
 ) -> int | None:
     """Get dynamic price for model using Wavespeed pricing API.
-    
+
     Fetches real-time pricing from Wavespeed's pricing endpoint and converts
     USD to credits using the formula: $1 = 1000 credits.
-    
+
     Applies admin-configured markup from settings.generation_price_markup.
-    
+
     Falls back to hardcoded prices if API is unavailable.
     """
     if not model_key:
         return None
     key = model_key.strip().lower().replace("_", "-").replace(" ", "-")
-    
+
     # Get markup from settings
     markup = settings.generation_price_markup
-    
+
     # Build cache key for this pricing request
     cache_key = build_pricing_cache_key(
         model_id=key,
@@ -212,20 +208,22 @@ async def _dynamic_price_for_model(
         quality=quality,
         is_i2i=is_image_to_image,
     )
-    
+
     # Check cache first (cache contains prices with markup already applied)
     cached_price = await get_cached_price(cache_key)
     if cached_price is not None:
         return cached_price
-    
+
     # Map model key to Wavespeed model ID
     model_id_map = {
         "seedream-v4": "bytedance/seedream-v4" if not is_image_to_image else "bytedance/seedream-v4/edit",
         "nano-banana": "google/nano-banana/text-to-image" if not is_image_to_image else "google/nano-banana/edit",
-        "nano-banana-pro": "google/nano-banana-pro/text-to-image" if not is_image_to_image else "google/nano-banana-pro/edit",
+        "nano-banana-pro": "google/nano-banana-pro/text-to-image"
+        if not is_image_to_image
+        else "google/nano-banana-pro/edit",
         "gpt-image-1.5": "openai/gpt-image-1.5/text-to-image" if not is_image_to_image else "openai/gpt-image-1.5/edit",
     }
-    
+
     wavespeed_model_id = model_id_map.get(key)
     if wavespeed_model_id:
         # Build inputs for pricing request
@@ -238,7 +236,7 @@ async def _dynamic_price_for_model(
             inputs["resolution"] = resolution
         if quality:
             inputs["quality"] = quality
-        
+
         # Try fetching from Wavespeed pricing API (with markup)
         try:
             client = wavespeed_client()
@@ -253,7 +251,7 @@ async def _dynamic_price_for_model(
                 model_key=key,
                 error=str(exc),
             )
-    
+
     # Fallback to hardcoded prices if API fails (apply markup to fallbacks too)
     if key == "seedream-v4":
         base_price = usd_to_credits(Decimal("0.027"))
@@ -276,11 +274,7 @@ async def _dynamic_price_for_model(
         size_value = _normalize_gpt_image_size(size)
         quality_value = (quality or "medium").lower()
         prices = _get_gpt_image_prices(is_image_to_image)
-        quality_prices = (
-            prices.get(quality_value)
-            or prices.get("medium")
-            or _GPT_IMAGE_1_5_T2I_PRICES["medium"]
-        )
+        quality_prices = prices.get(quality_value) or prices.get("medium") or _GPT_IMAGE_1_5_T2I_PRICES["medium"]
         price_units = (
             quality_prices.get(size_value)
             or quality_prices.get("1024*1024")
@@ -304,10 +298,10 @@ async def get_generation_price(
     aspect_ratio: str | None = None,
 ) -> int:
     """Get generation price for a model with given parameters.
-    
+
     Tries to get dynamic price from Wavespeed pricing API first,
     falls back to database price if not available.
-    
+
     Applies admin-configured markup from settings.generation_price_markup.
     """
     dynamic_price = await _dynamic_price_for_model(
@@ -315,7 +309,7 @@ async def get_generation_price(
     )
     if dynamic_price is not None:
         return dynamic_price
-    
+
     # Fallback to database price if dynamic pricing unavailable
     price = db.execute(
         select(ModelPrice)
@@ -324,7 +318,7 @@ async def get_generation_price(
     ).scalar_one_or_none()
     if not price:
         raise HTTPException(status_code=400, detail="Model price not found")
-    
+
     # Apply markup to database price as well
     base_price = int(price.unit_price)
     markup = settings.generation_price_markup
@@ -337,33 +331,29 @@ async def calculate_generation_price(
     db: Session = Depends(db_session_dep),
 ) -> GenerationPriceOut:
     """Get dynamic generation price from Wavespeed pricing API."""
-    
+
     settings = get_settings()
     markup = settings.generation_price_markup
-    
+
     # Rate limiting: 60 requests per minute per user
     redis = await get_redis()
     rate_key = f"rate_limit:price:{payload.telegram_id}"
     current = await redis.incr(rate_key)
     if current == 1:
         await redis.expire(rate_key, 60)
-    
+
     if current > 60:
         logger.warning("Rate limit exceeded", user_id=payload.telegram_id, count=current)
-        raise HTTPException(
-            status_code=429,
-            detail="Too many pricing requests. Please wait a moment."
-        )
-    
+        raise HTTPException(status_code=429, detail="Too many pricing requests. Please wait a moment.")
+
     # Get model from database
     model = db.execute(
-        select(ModelCatalog)
-        .where(ModelCatalog.id == payload.model_id, ModelCatalog.is_active.is_(True))
+        select(ModelCatalog).where(ModelCatalog.id == payload.model_id, ModelCatalog.is_active.is_(True))
     ).scalar_one_or_none()
-    
+
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
-    
+
     logger.info(
         "Calculating generation price",
         model_id=payload.model_id,
@@ -375,7 +365,7 @@ async def calculate_generation_price(
         is_i2i=payload.is_image_to_image,
         markup=markup,
     )
-    
+
     # Build cache key
     cache_key = build_pricing_cache_key(
         model_id=model.key,
@@ -385,7 +375,7 @@ async def calculate_generation_price(
         quality=payload.quality,
         is_i2i=payload.is_image_to_image,
     )
-    
+
     # Check cache first (cache already contains markup)
     cached_price = await get_cached_price(cache_key)
     if cached_price is not None:
@@ -405,12 +395,12 @@ async def calculate_generation_price(
             is_dynamic=True,
             cached=True,
         )
-    
+
     # Try to get price from Wavespeed pricing API
     wavespeed_model_id = _get_wavespeed_model_id(model.key, payload.is_image_to_image)
     price_credits = None
     price_usd = None
-    
+
     if wavespeed_model_id:
         # Build inputs for pricing request
         inputs: dict[str, object] = {"prompt": "test"}
@@ -424,16 +414,16 @@ async def calculate_generation_price(
             inputs["quality"] = payload.quality
         if payload.input_fidelity:
             inputs["input_fidelity"] = payload.input_fidelity
-        
+
         try:
             client = wavespeed_client()
             response = await client.get_model_pricing(wavespeed_model_id, inputs)
-            
+
             if response.code == 200 and response.data:
                 price_usd = float(response.data.get("unit_price", 0))
                 base_price = usd_to_credits(price_usd)
                 price_credits = apply_price_markup(base_price, markup)
-                
+
                 logger.info(
                     "Got price from Wavespeed API",
                     model_key=model.key,
@@ -444,10 +434,10 @@ async def calculate_generation_price(
                     markup=markup,
                     final_price_credits=price_credits,
                 )
-                
+
                 # Update price_usd to reflect final price with markup
                 price_usd = float(price_credits) / 1000
-                
+
                 # Cache the price (with markup included)
                 await set_cached_price(cache_key, price_credits)
             else:
@@ -463,7 +453,7 @@ async def calculate_generation_price(
                 model_key=model.key,
                 error=str(exc),
             )
-    
+
     # Fallback to hardcoded prices if API failed (markup applied in _get_fallback_price)
     if price_credits is None:
         price_credits = await _get_fallback_price(
@@ -475,7 +465,7 @@ async def calculate_generation_price(
             markup,
         )
         price_usd = float(price_credits) / 1000
-        
+
         logger.info(
             "Using fallback price",
             model_key=model.key,
@@ -483,10 +473,10 @@ async def calculate_generation_price(
             price_usd=price_usd,
             markup=markup,
         )
-    
+
     if price_credits is None:
         raise HTTPException(status_code=400, detail="Unable to calculate price")
-    
+
     return GenerationPriceOut(
         model_id=model.id,
         model_key=model.key,
@@ -503,7 +493,9 @@ def _get_wavespeed_model_id(model_key: str, is_image_to_image: bool = False) -> 
     model_id_map = {
         "seedream-v4": "bytedance/seedream-v4" if not is_image_to_image else "bytedance/seedream-v4/edit",
         "nano-banana": "google/nano-banana/text-to-image" if not is_image_to_image else "google/nano-banana/edit",
-        "nano-banana-pro": "google/nano-banana-pro/text-to-image" if not is_image_to_image else "google/nano-banana-pro/edit",
+        "nano-banana-pro": "google/nano-banana-pro/text-to-image"
+        if not is_image_to_image
+        else "google/nano-banana-pro/edit",
         "gpt-image-1.5": "openai/gpt-image-1.5/text-to-image" if not is_image_to_image else "openai/gpt-image-1.5/edit",
     }
     return model_id_map.get(key)
@@ -518,7 +510,7 @@ async def _get_fallback_price(
     markup: int = 0,
 ) -> int | None:
     """Get fallback price if Wavespeed API is unavailable.
-    
+
     Args:
         model_key: Model key identifier
         size: Size parameter
@@ -526,7 +518,7 @@ async def _get_fallback_price(
         quality: Quality parameter
         is_image_to_image: Whether this is image-to-image mode
         markup: Markup amount in credits to add to base price
-        
+
     Returns:
         Final price with markup applied, or None if model not recognized
     """
@@ -534,7 +526,7 @@ async def _get_fallback_price(
     res = (resolution or "").strip().lower()
     if res in {"4k", "4096", "4096x4096", "4096*4096"}:
         res = "4k"
-    
+
     if key == "seedream-v4":
         base_price = usd_to_credits(Decimal("0.027"))
         return apply_price_markup(base_price, markup)
@@ -549,11 +541,7 @@ async def _get_fallback_price(
         size_value = _normalize_gpt_image_size(size)
         quality_value = (quality or "medium").lower()
         prices = _get_gpt_image_prices(is_image_to_image)
-        quality_prices = (
-            prices.get(quality_value)
-            or prices.get("medium")
-            or _GPT_IMAGE_1_5_T2I_PRICES["medium"]
-        )
+        quality_prices = prices.get(quality_value) or prices.get("medium") or _GPT_IMAGE_1_5_T2I_PRICES["medium"]
         price_units = (
             quality_prices.get(size_value)
             or quality_prices.get("1024*1024")
@@ -565,9 +553,7 @@ async def _get_fallback_price(
 
 
 def trial_available(db: Session, user_id: int) -> bool:
-    trial = db.execute(
-        select(TrialUse).where(TrialUse.user_id == user_id)
-    ).scalar_one_or_none()
+    trial = db.execute(select(TrialUse).where(TrialUse.user_id == user_id)).scalar_one_or_none()
     return trial is None
 
 
@@ -579,7 +565,8 @@ def get_active_generation(db: Session, user_id: int) -> GenerationRequest | None
         GenerationStatus.running,
     ]
     return db.execute(
-        select(GenerationRequest).where(
+        select(GenerationRequest)
+        .where(
             GenerationRequest.user_id == user_id,
             GenerationRequest.status.in_(active_statuses),
         )
@@ -605,12 +592,8 @@ def count_active_generations(db: Session, user_id: int) -> int:
     return int(result or 0)
 
 
-def get_request_for_user(
-    db: Session, request_id: int, telegram_id: int
-) -> GenerationRequest:
-    request = db.execute(
-        select(GenerationRequest).where(GenerationRequest.id == request_id)
-    ).scalar_one_or_none()
+def get_request_for_user(db: Session, request_id: int, telegram_id: int) -> GenerationRequest:
+    request = db.execute(select(GenerationRequest).where(GenerationRequest.id == request_id)).scalar_one_or_none()
     if not request:
         raise HTTPException(status_code=404, detail="Generation not found")
     user = get_user_by_telegram_id(db, telegram_id)
@@ -715,11 +698,7 @@ async def notify_admins_low_balance(
     except Exception:
         pass
 
-    text = (
-        "Wavespeed balance low. "
-        f"balance={balance:.4f} threshold={threshold:.4f}. "
-        "Generations paused."
-    )
+    text = f"Wavespeed balance low. balance={balance:.4f} threshold={threshold:.4f}. Generations paused."
     async with httpx.AsyncClient(timeout=10.0) as client:
         for admin_id in settings.admin_ids_list:
             try:
@@ -779,27 +758,17 @@ def rollback_generation_cost(db: Session, request: GenerationRequest) -> None:
 
 
 def rollback_trial_use(db: Session, request_id: int) -> None:
-    trial = db.execute(
-        select(TrialUse).where(TrialUse.request_id == request_id)
-    ).scalar_one_or_none()
+    trial = db.execute(select(TrialUse).where(TrialUse.request_id == request_id)).scalar_one_or_none()
     if trial:
         db.delete(trial)
 
 
-def add_generation_results(
-    db: Session, request_id: int, outputs: list[str] | str | None
-) -> None:
+def add_generation_results(db: Session, request_id: int, outputs: list[str] | str | None) -> None:
     normalized = normalize_outputs(outputs)
     if not normalized:
         return
     existing = set(
-        db.execute(
-            select(GenerationResult.image_url).where(
-                GenerationResult.request_id == request_id
-            )
-        )
-        .scalars()
-        .all()
+        db.execute(select(GenerationResult.image_url).where(GenerationResult.request_id == request_id)).scalars().all()
     )
     for output in normalized:
         if output in existing:
@@ -986,11 +955,7 @@ async def submit_generation(
 
     for idx, url in enumerate(reference_urls):
         file_id = reference_file_ids[idx] if idx < len(reference_file_ids) else None
-        db.add(
-            GenerationReference(
-                request_id=request.id, url=url, telegram_file_id=file_id
-            )
-        )
+        db.add(GenerationReference(request_id=request.id, url=url, telegram_file_id=file_id))
 
     use_trial = trial_available(db, user.id)
     if use_trial:
@@ -1121,9 +1086,7 @@ async def refresh_generation(
 ) -> GenerationRequestOut:
     request = get_request_for_user(db, request_id, payload.telegram_id)
 
-    job = db.execute(
-        select(GenerationJob).where(GenerationJob.request_id == request.id)
-    ).scalar_one_or_none()
+    job = db.execute(select(GenerationJob).where(GenerationJob.request_id == request.id)).scalar_one_or_none()
     if not job or not job.provider_job_id:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -1163,9 +1126,7 @@ async def refresh_generation(
     db.refresh(request)
     request_out = GenerationRequestOut.model_validate(request)
     if job.error_message:
-        request_out = request_out.model_copy(
-            update={"error_message": job.error_message}
-        )
+        request_out = request_out.model_copy(update={"error_message": job.error_message})
     return request_out
 
 
@@ -1176,9 +1137,7 @@ async def get_generation_results(
     db: Session = Depends(db_session_dep),
 ) -> list[str]:
     request = get_request_for_user(db, request_id, telegram_id)
-    results = db.execute(
-        select(GenerationResult).where(GenerationResult.request_id == request.id)
-    ).scalars().all()
+    results = db.execute(select(GenerationResult).where(GenerationResult.request_id == request.id)).scalars().all()
     return [result.image_url for result in results if result.image_url]
 
 

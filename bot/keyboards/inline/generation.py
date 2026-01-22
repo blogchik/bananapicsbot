@@ -92,15 +92,17 @@ class GenerationKeyboard:
             )
 
         for i in range(0, len(param_buttons), 2):
-            rows.append(param_buttons[i:i + 2])
+            rows.append(param_buttons[i : i + 2])
 
         start_text = _(TranslationKey.GEN_START_BUTTON, {"price": price})
-        rows.append([
-            InlineKeyboardButton(
-                text=start_text,
-                callback_data=GenerationCallback.SUBMIT,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=start_text,
+                    callback_data=GenerationCallback.SUBMIT,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -117,19 +119,23 @@ class GenerationKeyboard:
             model_id = int(model["id"])
             name = str(model["name"])
             label = f"✅ {name}" if selected_id == model_id else name
-            rows.append([
-                InlineKeyboardButton(
-                    text=label,
-                    callback_data=GenerationCallback.model_set(model_id),
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=GenerationCallback.BACK,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=GenerationCallback.model_set(model_id),
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=GenerationCallback.BACK,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -145,17 +151,19 @@ class GenerationKeyboard:
         # Default option
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_size else default_text
-        rows.append([
-            InlineKeyboardButton(
-                text=default_label,
-                callback_data=GenerationCallback.size_set("default"),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=default_label,
+                    callback_data=GenerationCallback.size_set("default"),
+                )
+            ]
+        )
 
         # Size options in pairs
         for i in range(0, len(sizes), 2):
             row = []
-            for size in sizes[i:i + 2]:
+            for size in sizes[i : i + 2]:
                 label = f"✅ {size}" if size == selected_size else size
                 row.append(
                     InlineKeyboardButton(
@@ -165,12 +173,14 @@ class GenerationKeyboard:
                 )
             rows.append(row)
 
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=GenerationCallback.BACK,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=GenerationCallback.BACK,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -186,17 +196,19 @@ class GenerationKeyboard:
         # Default option
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_ratio else default_text
-        rows.append([
-            InlineKeyboardButton(
-                text=default_label,
-                callback_data=GenerationCallback.ratio_set("default"),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=default_label,
+                    callback_data=GenerationCallback.ratio_set("default"),
+                )
+            ]
+        )
 
         # Ratio options in pairs
         for i in range(0, len(ratios), 2):
             row = []
-            for ratio in ratios[i:i + 2]:
+            for ratio in ratios[i : i + 2]:
                 label = f"✅ {ratio}" if ratio == selected_ratio else ratio
                 row.append(
                     InlineKeyboardButton(
@@ -206,12 +218,14 @@ class GenerationKeyboard:
                 )
             rows.append(row)
 
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=GenerationCallback.BACK,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=GenerationCallback.BACK,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -227,29 +241,35 @@ class GenerationKeyboard:
         # Default option
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_resolution else default_text
-        rows.append([
-            InlineKeyboardButton(
-                text=default_label,
-                callback_data=GenerationCallback.resolution_set("default"),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=default_label,
+                    callback_data=GenerationCallback.resolution_set("default"),
+                )
+            ]
+        )
 
         # Resolution options
         for resolution in resolutions:
             label = f"✅ {resolution}" if resolution == selected_resolution else resolution
-            rows.append([
-                InlineKeyboardButton(
-                    text=label,
-                    callback_data=GenerationCallback.resolution_set(resolution),
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=GenerationCallback.BACK,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=GenerationCallback.resolution_set(resolution),
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=GenerationCallback.BACK,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -264,28 +284,34 @@ class GenerationKeyboard:
 
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_quality else default_text
-        rows.append([
-            InlineKeyboardButton(
-                text=default_label,
-                callback_data=GenerationCallback.quality_set("default"),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=default_label,
+                    callback_data=GenerationCallback.quality_set("default"),
+                )
+            ]
+        )
 
         for quality in qualities:
             label = f"✅ {quality}" if quality == selected_quality else quality
-            rows.append([
-                InlineKeyboardButton(
-                    text=label,
-                    callback_data=GenerationCallback.quality_set(quality),
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=GenerationCallback.BACK,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=GenerationCallback.quality_set(quality),
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=GenerationCallback.BACK,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -300,28 +326,34 @@ class GenerationKeyboard:
 
         default_text = _(TranslationKey.GEN_DEFAULT, None)
         default_label = f"✅ {default_text}" if not selected_value else default_text
-        rows.append([
-            InlineKeyboardButton(
-                text=default_label,
-                callback_data=GenerationCallback.input_fidelity_set("default"),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=default_label,
+                    callback_data=GenerationCallback.input_fidelity_set("default"),
+                )
+            ]
+        )
 
         for value in values:
             label = f"✅ {value}" if value == selected_value else value
-            rows.append([
-                InlineKeyboardButton(
-                    text=label,
-                    callback_data=GenerationCallback.input_fidelity_set(value),
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=GenerationCallback.BACK,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=GenerationCallback.input_fidelity_set(value),
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=GenerationCallback.BACK,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 

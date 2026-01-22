@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 class ErrorHandlerMiddleware(BaseMiddleware):
     """
     Global error handler middleware.
-    
+
     Catches exceptions and sends user-friendly messages.
     Logs errors for debugging.
     """

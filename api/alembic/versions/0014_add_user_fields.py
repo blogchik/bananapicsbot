@@ -5,6 +5,7 @@ Revises: 0013_add_referrals
 Create Date: 2024-01-15
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

@@ -1,4 +1,5 @@
 """Ledger repository implementation."""
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, Optional, Sequence
@@ -55,9 +56,9 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
 
     async def get_balance(self, telegram_id: int) -> Decimal:
         """Get user's current balance."""
-        query = select(
-            func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))
-        ).where(LedgerEntryModel.telegram_id == telegram_id)
+        query = select(func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))).where(
+            LedgerEntryModel.telegram_id == telegram_id
+        )
         result = await self.session.execute(query)
         return result.scalar() or Decimal("0")
 
@@ -69,18 +70,12 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
         limit: int = 50,
     ) -> Sequence[LedgerEntry]:
         """Get user's ledger entries."""
-        query = select(LedgerEntryModel).where(
-            LedgerEntryModel.telegram_id == telegram_id
-        )
+        query = select(LedgerEntryModel).where(LedgerEntryModel.telegram_id == telegram_id)
 
         if entry_type:
             query = query.where(LedgerEntryModel.entry_type == entry_type.value)
 
-        query = (
-            query.order_by(LedgerEntryModel.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        query = query.order_by(LedgerEntryModel.created_at.desc()).offset(offset).limit(limit)
 
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
@@ -91,9 +86,9 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
         since: Optional[datetime] = None,
     ) -> Decimal:
         """Get total amount by entry type."""
-        query = select(
-            func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))
-        ).where(LedgerEntryModel.entry_type == entry_type.value)
+        query = select(func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))).where(
+            LedgerEntryModel.entry_type == entry_type.value
+        )
 
         if since:
             query = query.where(LedgerEntryModel.created_at >= since)
@@ -151,7 +146,10 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
                 ).label("deposits"),
                 func.sum(
                     func.case(
-                        (LedgerEntryModel.entry_type == LedgerEntryType.GENERATION.value, func.abs(LedgerEntryModel.amount)),
+                        (
+                            LedgerEntryModel.entry_type == LedgerEntryType.GENERATION.value,
+                            func.abs(LedgerEntryModel.amount),
+                        ),
                         else_=Decimal("0"),
                     )
                 ).label("spent"),
@@ -179,9 +177,7 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
         balance = await self.get_balance(telegram_id)
 
         # Total deposited
-        deposit_query = select(
-            func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))
-        ).where(
+        deposit_query = select(func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))).where(
             and_(
                 LedgerEntryModel.telegram_id == telegram_id,
                 LedgerEntryModel.entry_type == LedgerEntryType.DEPOSIT.value,
@@ -191,9 +187,7 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
         total_deposited = deposit_result.scalar() or Decimal("0")
 
         # Total spent
-        spent_query = select(
-            func.coalesce(func.sum(func.abs(LedgerEntryModel.amount)), Decimal("0"))
-        ).where(
+        spent_query = select(func.coalesce(func.sum(func.abs(LedgerEntryModel.amount)), Decimal("0"))).where(
             and_(
                 LedgerEntryModel.telegram_id == telegram_id,
                 LedgerEntryModel.entry_type == LedgerEntryType.GENERATION.value,
@@ -203,9 +197,7 @@ class LedgerRepository(BaseRepository[LedgerEntryModel], ILedgerRepository):
         total_spent = spent_result.scalar() or Decimal("0")
 
         # Referral earnings
-        referral_query = select(
-            func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))
-        ).where(
+        referral_query = select(func.coalesce(func.sum(LedgerEntryModel.amount), Decimal("0"))).where(
             and_(
                 LedgerEntryModel.telegram_id == telegram_id,
                 LedgerEntryModel.entry_type == LedgerEntryType.REFERRAL_BONUS.value,

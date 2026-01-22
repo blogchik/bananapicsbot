@@ -34,14 +34,10 @@ class BotConstants:
     USER_CACHE_TTL_SECONDS: Final[int] = 60
 
     # Allowed image extensions
-    ALLOWED_IMAGE_EXTENSIONS: Final[tuple[str, ...]] = (
-        ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"
-    )
+    ALLOWED_IMAGE_EXTENSIONS: Final[tuple[str, ...]] = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif")
 
     # Queue statuses
-    QUEUE_STATUSES: Final[frozenset[str]] = frozenset({
-        "pending", "configuring", "queued", "created"
-    })
+    QUEUE_STATUSES: Final[frozenset[str]] = frozenset({"pending", "configuring", "queued", "created"})
 
     # Tools pricing
     WATERMARK_REMOVE_COST: Final[int] = 12

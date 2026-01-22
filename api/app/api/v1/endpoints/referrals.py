@@ -11,9 +11,7 @@ router = APIRouter()
 
 
 @router.get("/referrals/{telegram_id}", response_model=ReferralInfoOut)
-async def get_referral_info(
-    telegram_id: int, db: Session = Depends(db_session_dep)
-) -> ReferralInfoOut:
+async def get_referral_info(telegram_id: int, db: Session = Depends(db_session_dep)) -> ReferralInfoOut:
     user = get_user_by_telegram_id(db, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

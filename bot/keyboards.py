@@ -31,12 +31,8 @@ def topup_menu(presets: list[tuple[int, int]]) -> InlineKeyboardMarkup:
                 )
             )
         rows.append(row)
-    rows.append(
-        [InlineKeyboardButton(text="✍️ Boshqa summa", callback_data="topup:custom")]
-    )
-    rows.append(
-        [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="menu:profile")]
-    )
+    rows.append([InlineKeyboardButton(text="✍️ Boshqa summa", callback_data="topup:custom")])
+    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="menu:profile")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -121,9 +117,7 @@ def model_menu(models: list[dict], selected_id: int | None) -> InlineKeyboardMar
                 )
             ]
         )
-    rows.append(
-        [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")]
-    )
+    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -133,20 +127,14 @@ def size_menu(
 ) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     default_label = "✅ Default" if not selected_size else "Default"
-    rows.append(
-        [InlineKeyboardButton(text=default_label, callback_data="gen:size:set:default")]
-    )
+    rows.append([InlineKeyboardButton(text=default_label, callback_data="gen:size:set:default")])
     for i in range(0, len(sizes), 2):
         row = []
         for size in sizes[i : i + 2]:
             label = f"✅ {size}" if size == selected_size else size
-            row.append(
-                InlineKeyboardButton(text=label, callback_data=f"gen:size:set:{size}")
-            )
+            row.append(InlineKeyboardButton(text=label, callback_data=f"gen:size:set:{size}"))
         rows.append(row)
-    rows.append(
-        [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")]
-    )
+    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -175,9 +163,7 @@ def aspect_ratio_menu(
                 )
             )
         rows.append(row)
-    rows.append(
-        [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")]
-    )
+    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -198,11 +184,7 @@ def resolution_menu(
     for i in range(0, len(resolutions), 2):
         row = []
         for resolution in resolutions[i : i + 2]:
-            label = (
-                f"✅ {resolution}"
-                if resolution == selected_resolution
-                else resolution
-            )
+            label = f"✅ {resolution}" if resolution == selected_resolution else resolution
             row.append(
                 InlineKeyboardButton(
                     text=label,
@@ -210,7 +192,5 @@ def resolution_menu(
                 )
             )
         rows.append(row)
-    rows.append(
-        [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")]
-    )
+    rows.append([InlineKeyboardButton(text="⬅️ Orqaga", callback_data="gen:back")])
     return InlineKeyboardMarkup(inline_keyboard=rows)

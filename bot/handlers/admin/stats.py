@@ -136,9 +136,7 @@ async def admin_stats_generations(
         lines.append(_(TranslationKey.ADMIN_STATS_BY_MODEL, None))
         # Handle both dict format (with credits) and int format (legacy)
         sorted_models = sorted(
-            by_model.items(),
-            key=lambda x: x[1].get("count", x[1]) if isinstance(x[1], dict) else x[1],
-            reverse=True
+            by_model.items(), key=lambda x: x[1].get("count", x[1]) if isinstance(x[1], dict) else x[1], reverse=True
         )[:10]
         for model, data in sorted_models:
             if isinstance(data, dict):

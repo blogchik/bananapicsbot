@@ -68,9 +68,7 @@ def upgrade() -> None:
         )
     )
 
-    model_id = conn.execute(
-        sa.text("SELECT id FROM model_catalog WHERE key = 'gpt-image-1.5'")
-    ).scalar_one()
+    model_id = conn.execute(sa.text("SELECT id FROM model_catalog WHERE key = 'gpt-image-1.5'")).scalar_one()
 
     existing_price = conn.execute(
         sa.text(
@@ -101,7 +99,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        "DELETE FROM model_prices WHERE model_id IN (SELECT id FROM model_catalog WHERE key = 'gpt-image-1.5')"
-    )
+    op.execute("DELETE FROM model_prices WHERE model_id IN (SELECT id FROM model_catalog WHERE key = 'gpt-image-1.5')")
     op.execute("DELETE FROM model_catalog WHERE key = 'gpt-image-1.5'")

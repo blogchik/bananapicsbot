@@ -25,9 +25,7 @@ def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSO
     return error_response(request, exc.status_code, exc.detail, "http_error")
 
 
-def validation_exception_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     return error_response(request, 422, "Validation error", "validation_error")
 
 

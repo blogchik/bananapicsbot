@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 @dataclass
 class TrialStatus:
     """Trial status response."""
+
     trial_available: bool
     used_count: int
 
@@ -22,6 +23,7 @@ class TrialStatus:
 @dataclass
 class GenerationResult:
     """Generation submit result."""
+
     request_id: int
     public_id: str | None
     status: str
@@ -32,7 +34,7 @@ class GenerationResult:
 class ApiClient:
     """
     HTTP API client with connection pooling.
-    
+
     Features:
     - Connection pooling for better performance
     - Automatic retry on transient failures
@@ -306,9 +308,7 @@ class ApiClient:
             json={"telegram_id": telegram_id, "image_url": image_url},
         )
 
-    async def upscale_image(
-        self, telegram_id: int, image_url: str, target_resolution: str = "4k"
-    ) -> dict:
+    async def upscale_image(self, telegram_id: int, image_url: str, target_resolution: str = "4k") -> dict:
         """Upscale image to higher resolution."""
         return await self._request(
             "POST",
@@ -320,9 +320,7 @@ class ApiClient:
             },
         )
 
-    async def denoise_image(
-        self, telegram_id: int, image_url: str, model: str = "Normal"
-    ) -> dict:
+    async def denoise_image(self, telegram_id: int, image_url: str, model: str = "Normal") -> dict:
         """Remove noise from image."""
         return await self._request(
             "POST",
@@ -334,9 +332,7 @@ class ApiClient:
             },
         )
 
-    async def restore_image(
-        self, telegram_id: int, image_url: str, model: str = "Dust-Scratch"
-    ) -> dict:
+    async def restore_image(self, telegram_id: int, image_url: str, model: str = "Dust-Scratch") -> dict:
         """Restore old photo by removing dust and scratches."""
         return await self._request(
             "POST",
@@ -501,17 +497,20 @@ class ApiClient:
         # Transform to expected format
         transformed = []
         for user in users:
-            transformed.append({
-                "telegram_id": user.get("telegram_id"),
-                "username": user.get("username"),
-                "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip() or None,
-                "balance": int(user.get("balance", 0)),
-                "trial_credits": user.get("trial_remaining", 0),
-                "total_generations": user.get("generation_count", 0),
-                "created_at": user.get("created_at", "-"),
-                "last_active": user.get("last_active_at", "-"),
-                "is_banned": user.get("is_banned", False),
-            })
+            transformed.append(
+                {
+                    "telegram_id": user.get("telegram_id"),
+                    "username": user.get("username"),
+                    "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip()
+                    or None,
+                    "balance": int(user.get("balance", 0)),
+                    "trial_credits": user.get("trial_remaining", 0),
+                    "total_generations": user.get("generation_count", 0),
+                    "created_at": user.get("created_at", "-"),
+                    "last_active": user.get("last_active_at", "-"),
+                    "is_banned": user.get("is_banned", False),
+                }
+            )
         return transformed
 
     async def get_user_by_telegram_id(self, telegram_id: int) -> dict | None:
@@ -549,12 +548,15 @@ class ApiClient:
         # Transform users to expected format
         transformed_users = []
         for user in users:
-            transformed_users.append({
-                "telegram_id": user.get("telegram_id"),
-                "username": user.get("username"),
-                "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip() or None,
-                "balance": int(user.get("balance", 0)),
-            })
+            transformed_users.append(
+                {
+                    "telegram_id": user.get("telegram_id"),
+                    "username": user.get("username"),
+                    "full_name": f"{user.get('first_name', '') or ''} {user.get('last_name', '') or ''}".strip()
+                    or None,
+                    "balance": int(user.get("balance", 0)),
+                }
+            )
 
         return {
             "users": transformed_users,

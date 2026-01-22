@@ -6,7 +6,7 @@ from typing import Any
 class LocaleManager:
     """
     Locale manager singleton.
-    
+
     Handles translation loading and retrieval.
     """
 

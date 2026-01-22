@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class LoggingMiddleware(BaseMiddleware):
     """
     Middleware for logging all incoming updates.
-    
+
     Logs:
     - Update type and ID
     - User information

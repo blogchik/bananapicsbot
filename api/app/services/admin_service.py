@@ -1,4 +1,5 @@
 """Admin service for dashboard and statistics."""
+
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Sequence
 
@@ -35,25 +36,19 @@ class AdminService:
 
         # New today
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        new_today_query = select(func.count()).select_from(User).where(
-            User.created_at >= today_start
-        )
+        new_today_query = select(func.count()).select_from(User).where(User.created_at >= today_start)
         new_today_result = await self.session.execute(new_today_query)
         new_today = new_today_result.scalar() or 0
 
         # New this week
         week_ago = now - timedelta(days=7)
-        new_week_query = select(func.count()).select_from(User).where(
-            User.created_at >= week_ago
-        )
+        new_week_query = select(func.count()).select_from(User).where(User.created_at >= week_ago)
         new_week_result = await self.session.execute(new_week_query)
         new_week = new_week_result.scalar() or 0
 
         # New this month
         month_ago = now - timedelta(days=30)
-        new_month_query = select(func.count()).select_from(User).where(
-            User.created_at >= month_ago
-        )
+        new_month_query = select(func.count()).select_from(User).where(User.created_at >= month_ago)
         new_month_result = await self.session.execute(new_month_query)
         new_month = new_month_result.scalar() or 0
 
@@ -88,27 +83,33 @@ class AdminService:
         since = datetime.utcnow() - timedelta(days=days)
 
         # Total generations
-        total_query = select(func.count()).select_from(GenerationRequest).where(
-            GenerationRequest.created_at >= since
-        )
+        total_query = select(func.count()).select_from(GenerationRequest).where(GenerationRequest.created_at >= since)
         total_result = await self.session.execute(total_query)
         total = total_result.scalar() or 0
 
         # Completed
-        completed_query = select(func.count()).select_from(GenerationRequest).where(
-            and_(
-                GenerationRequest.created_at >= since,
-                GenerationRequest.status == GenerationStatus.completed,
+        completed_query = (
+            select(func.count())
+            .select_from(GenerationRequest)
+            .where(
+                and_(
+                    GenerationRequest.created_at >= since,
+                    GenerationRequest.status == GenerationStatus.completed,
+                )
             )
         )
         completed_result = await self.session.execute(completed_query)
         completed = completed_result.scalar() or 0
 
         # Failed
-        failed_query = select(func.count()).select_from(GenerationRequest).where(
-            and_(
-                GenerationRequest.created_at >= since,
-                GenerationRequest.status == GenerationStatus.failed,
+        failed_query = (
+            select(func.count())
+            .select_from(GenerationRequest)
+            .where(
+                and_(
+                    GenerationRequest.created_at >= since,
+                    GenerationRequest.status == GenerationStatus.failed,
+                )
             )
         )
         failed_result = await self.session.execute(failed_query)
@@ -135,9 +136,7 @@ class AdminService:
 
         # Helper to get stars paid for a period from PaymentLedger (excluding refunded)
         async def get_stars_since(start_date: datetime) -> float:
-            query = select(
-                func.coalesce(func.sum(PaymentLedger.stars_amount), 0)
-            ).where(
+            query = select(func.coalesce(func.sum(PaymentLedger.stars_amount), 0)).where(
                 and_(
                     PaymentLedger.created_at >= start_date,
                     PaymentLedger.is_refunded == False,  # Exclude refunded payments
@@ -148,9 +147,7 @@ class AdminService:
 
         # Helper to get refunded stars for a period
         async def get_refunded_since(start_date: datetime) -> float:
-            query = select(
-                func.coalesce(func.sum(PaymentLedger.stars_amount), 0)
-            ).where(
+            query = select(func.coalesce(func.sum(PaymentLedger.stars_amount), 0)).where(
                 and_(
                     PaymentLedger.created_at >= start_date,
                     PaymentLedger.is_refunded == True,
@@ -169,9 +166,7 @@ class AdminService:
         total_refunded = await get_refunded_since(since)
 
         # Total credits spent (generations - negative values)
-        spent_query = select(
-            func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0)
-        ).where(
+        spent_query = select(func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0)).where(
             and_(
                 LedgerEntry.created_at >= since,
                 LedgerEntry.entry_type == "generation",
@@ -197,10 +192,7 @@ class AdminService:
             .group_by(ModelCatalog.key)
         )
         by_model_result = await self.session.execute(by_model_query)
-        by_model = {
-            row.key: {"count": row.count, "credits": int(row.credits)}
-            for row in by_model_result.all()
-        }
+        by_model = {row.key: {"count": row.count, "credits": int(row.credits)} for row in by_model_result.all()}
 
         return {
             "total_deposits": total_stars,
@@ -263,25 +255,19 @@ class AdminService:
 
     async def get_user_balance(self, user_id: int) -> int:
         """Get user balance."""
-        query = select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(
-            LedgerEntry.user_id == user_id
-        )
+        query = select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(LedgerEntry.user_id == user_id)
         result = await self.session.execute(query)
         return result.scalar() or 0
 
     async def get_user_generation_count(self, user_id: int) -> int:
         """Get user's generation count."""
-        query = select(func.count()).select_from(GenerationRequest).where(
-            GenerationRequest.user_id == user_id
-        )
+        query = select(func.count()).select_from(GenerationRequest).where(GenerationRequest.user_id == user_id)
         result = await self.session.execute(query)
         return result.scalar() or 0
 
     async def get_user_referral_count(self, user_id: int) -> int:
         """Get user's referral count."""
-        query = select(func.count()).select_from(User).where(
-            User.referred_by_id == user_id
-        )
+        query = select(func.count()).select_from(User).where(User.referred_by_id == user_id)
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -322,10 +308,7 @@ class AdminService:
         )
 
         result = await self.session.execute(query)
-        return [
-            {"date": str(row.date), "count": row.count}
-            for row in result.all()
-        ]
+        return [{"date": str(row.date), "count": row.count} for row in result.all()]
 
     # ============ User Generations ============
 
@@ -355,14 +338,16 @@ class AdminService:
                 if model:
                     model_name = model.name
 
-            items.append({
-                "id": gen.id,
-                "public_id": gen.public_id,
-                "model": model_name,
-                "prompt": gen.prompt[:100] if gen.prompt else "",
-                "status": gen.status.value if gen.status else "unknown",
-                "created_at": gen.created_at.isoformat() if gen.created_at else None,
-            })
+            items.append(
+                {
+                    "id": gen.id,
+                    "public_id": gen.public_id,
+                    "model": model_name,
+                    "prompt": gen.prompt[:100] if gen.prompt else "",
+                    "status": gen.status.value if gen.status else "unknown",
+                    "created_at": gen.created_at.isoformat() if gen.created_at else None,
+                }
+            )
 
         return items
 
@@ -450,14 +435,16 @@ class AdminService:
 
         items = []
         for payment in payments:
-            items.append({
-                "id": payment.id,
-                "provider": payment.provider,
-                "currency": payment.currency,
-                "stars_amount": payment.stars_amount,
-                "credits_amount": payment.credits_amount,
-                "telegram_charge_id": payment.telegram_charge_id,
-                "created_at": payment.created_at.isoformat() if payment.created_at else None,
-            })
+            items.append(
+                {
+                    "id": payment.id,
+                    "provider": payment.provider,
+                    "currency": payment.currency,
+                    "stars_amount": payment.stars_amount,
+                    "credits_amount": payment.credits_amount,
+                    "telegram_charge_id": payment.telegram_charge_id,
+                    "created_at": payment.created_at.isoformat() if payment.created_at else None,
+                }
+            )
 
         return items

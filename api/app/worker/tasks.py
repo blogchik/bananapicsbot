@@ -1,4 +1,5 @@
 """Celery tasks."""
+
 import asyncio
 import mimetypes
 import os
@@ -10,7 +11,7 @@ from urllib.parse import unquote, urlparse
 
 import httpx
 from celery import shared_task
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.infrastructure.logging import get_logger
@@ -70,7 +71,7 @@ def process_generation(
     prompt_message_id: int | None = None,
 ):
     """Process image generation task with polling.
-    
+
     This task is responsible for:
     1. Polling Wavespeed API for status
     2. Updating generation status in DB
@@ -100,22 +101,16 @@ def process_generation(
     try:
         with sync_session_factory() as session:
             # Get generation request and job
-            request = session.query(GenerationRequest).filter(
-                GenerationRequest.id == generation_request_id
-            ).first()
+            request = session.query(GenerationRequest).filter(GenerationRequest.id == generation_request_id).first()
 
             if not request:
                 logger.error("Generation request not found", generation_id=generation_request_id)
                 return {"error": "Request not found"}
 
-            job = session.query(GenerationJob).filter(
-                GenerationJob.request_id == request.id
-            ).first()
+            job = session.query(GenerationJob).filter(GenerationJob.request_id == request.id).first()
 
             # Get model for caption
-            model = session.query(ModelCatalog).filter(
-                ModelCatalog.id == request.model_id
-            ).first()
+            model = session.query(ModelCatalog).filter(ModelCatalog.id == request.model_id).first()
             model_name = model.name if model else "Unknown"
 
             input_params = request.input_params or {}
@@ -170,12 +165,10 @@ def process_generation(
                     generation_id=generation_request_id,
                     elapsed=elapsed,
                 )
-                _mark_generation_failed(
-                    generation_request_id,
-                    "Polling timeout - generation took too long"
-                )
+                _mark_generation_failed(generation_request_id, "Polling timeout - generation took too long")
                 _notify_user_generation_failed(
-                    chat_id, message_id,
+                    chat_id,
+                    message_id,
                     _build_timeout_message(language),
                     request.cost or 0,
                     language,
@@ -201,8 +194,12 @@ def process_generation(
                 # Generation completed successfully
                 _complete_generation(generation_request_id, outputs)
                 _notify_user_generation_complete(
-                    chat_id, message_id,
-                    request.prompt, model_name, request.cost or 0, outputs,
+                    chat_id,
+                    message_id,
+                    request.prompt,
+                    model_name,
+                    request.cost or 0,
+                    outputs,
                     prompt_message_id,
                     language,
                 )
@@ -217,9 +214,7 @@ def process_generation(
                 # Get error message from response data first, fallback to response message
                 error_msg = response.data.get("error") or response.message or "Generation failed"
                 _mark_generation_failed(generation_request_id, error_msg)
-                _notify_user_generation_failed(
-                    chat_id, message_id, error_msg, request.cost or 0, language
-                )
+                _notify_user_generation_failed(chat_id, message_id, error_msg, request.cost or 0, language)
                 logger.warning(
                     "Generation failed",
                     generation_id=generation_request_id,
@@ -229,9 +224,7 @@ def process_generation(
 
             # Still running, continue polling
             # Update user with current status if it changed
-            _update_user_generation_status(
-                chat_id, message_id, status_value, language
-            )
+            _update_user_generation_status(chat_id, message_id, status_value, language)
             logger.debug(
                 "Generation still running",
                 generation_id=generation_request_id,
@@ -265,10 +258,10 @@ def _get_generation_outputs(session, request_id: int) -> list[str]:
     return [
         result.image_url
         for result in session.execute(
-            select(GenerationResult.image_url).where(
-                GenerationResult.request_id == request_id
-            )
-        ).scalars().all()
+            select(GenerationResult.image_url).where(GenerationResult.request_id == request_id)
+        )
+        .scalars()
+        .all()
         if result
     ]
 
@@ -280,11 +273,15 @@ def _refund_generation_cost(session, request) -> None:
     if not request.cost or request.cost <= 0:
         return
     refund_id = f"refund_{request.id}"
-    existing = session.query(LedgerEntry).filter(
-        LedgerEntry.user_id == request.user_id,
-        LedgerEntry.entry_type == "refund",
-        LedgerEntry.reference_id == refund_id,
-    ).first()
+    existing = (
+        session.query(LedgerEntry)
+        .filter(
+            LedgerEntry.user_id == request.user_id,
+            LedgerEntry.entry_type == "refund",
+            LedgerEntry.reference_id == refund_id,
+        )
+        .first()
+    )
     if existing:
         return
     session.add(
@@ -319,18 +316,14 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
 
     try:
         with sync_session_factory() as session:
-            request = session.query(GenerationRequest).filter(
-                GenerationRequest.id == request_id
-            ).first()
+            request = session.query(GenerationRequest).filter(GenerationRequest.id == request_id).first()
             if request:
                 request.status = GenerationStatus.failed
                 request.completed_at = datetime.utcnow()
                 _refund_generation_cost(session, request)
                 _rollback_trial_use(session, request.id)
 
-            job = session.query(GenerationJob).filter(
-                GenerationJob.request_id == request_id
-            ).first()
+            job = session.query(GenerationJob).filter(GenerationJob.request_id == request_id).first()
             if job:
                 job.status = JobStatus.failed
                 job.completed_at = datetime.utcnow()
@@ -354,34 +347,25 @@ def _complete_generation(request_id: int, outputs: list[str]) -> None:
 
     try:
         with sync_session_factory() as session:
-            request = session.query(GenerationRequest).filter(
-                GenerationRequest.id == request_id
-            ).first()
+            request = session.query(GenerationRequest).filter(GenerationRequest.id == request_id).first()
             if request:
                 request.status = GenerationStatus.completed
                 request.completed_at = datetime.utcnow()
 
-            job = session.query(GenerationJob).filter(
-                GenerationJob.request_id == request_id
-            ).first()
+            job = session.query(GenerationJob).filter(GenerationJob.request_id == request_id).first()
             if job:
                 job.status = JobStatus.completed
                 job.completed_at = datetime.utcnow()
 
             # Add results
             existing = set(
-                session.execute(
-                    select(GenerationResult.image_url).where(
-                        GenerationResult.request_id == request_id
-                    )
-                ).scalars().all()
+                session.execute(select(GenerationResult.image_url).where(GenerationResult.request_id == request_id))
+                .scalars()
+                .all()
             )
             for output in outputs:
                 if output and output not in existing:
-                    session.add(GenerationResult(
-                        request_id=request_id,
-                        image_url=output
-                    ))
+                    session.add(GenerationResult(request_id=request_id, image_url=output))
 
             session.commit()
     except Exception as e:
@@ -450,11 +434,7 @@ def _notify_user_generation_failed(
 
 def _escape_html(text: str) -> str:
     """Escape HTML special characters."""
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _format_model_hashtag(model_name: str) -> str:
@@ -482,18 +462,13 @@ def _build_result_caption(
                 "prompt": safe_prompt,
             },
         )
-    return (
-        f"Result ready\n"
-        f"Model: {hashtag}\n"
-        f"Credits: {cost}\n"
-        f"Prompt:\n<blockquote>{safe_prompt}</blockquote>"
-    )
+    return f"Result ready\nModel: {hashtag}\nCredits: {cost}\nPrompt:\n<blockquote>{safe_prompt}</blockquote>"
 
 
 def _build_failure_message(language: str, error_message: str, refunded_credits: int = 0) -> str:
     """Build failure message with error details and refund info."""
     safe_error = _escape_html(error_message)
-    
+
     # Build base message
     if get_text and TranslationKey:
         message = get_text(
@@ -503,11 +478,11 @@ def _build_failure_message(language: str, error_message: str, refunded_credits: 
         )
     else:
         message = f"❌ Generatsiya muvaffaqiyatsiz\n\nSabab: {safe_error}"
-    
+
     # Add refund info if credits were refunded
     if refunded_credits > 0:
         message += f"\n\n💰 {refunded_credits} credit qaytarildi"
-    
+
     return message
 
 
@@ -597,11 +572,14 @@ async def _edit_telegram_message(chat_id: int, message_id: int, text: str) -> No
     """Edit a Telegram message."""
     url = f"https://api.telegram.org/bot{settings.bot_token}/editMessageText"
     async with httpx.AsyncClient() as client:
-        await client.post(url, json={
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": text,
-        })
+        await client.post(
+            url,
+            json={
+                "chat_id": chat_id,
+                "message_id": message_id,
+                "text": text,
+            },
+        )
 
 
 async def _send_telegram_document(
@@ -622,9 +600,7 @@ async def _send_telegram_document(
         if prompt_message_id:
             data["reply_to_message_id"] = prompt_message_id
         try:
-            file_bytes, filename, content_type = await _download_output_file(
-                document_url
-            )
+            file_bytes, filename, content_type = await _download_output_file(document_url)
             files = {
                 "document": (
                     filename,
@@ -674,11 +650,7 @@ async def _download_output_file(url: str) -> tuple[bytes, str, str | None]:
         resp.raise_for_status()
         content_type = resp.headers.get("Content-Type")
         disposition = resp.headers.get("Content-Disposition")
-        filename = (
-            _extract_filename_from_disposition(disposition)
-            or _extract_filename_from_url(url)
-            or "result"
-        )
+        filename = _extract_filename_from_disposition(disposition) or _extract_filename_from_url(url) or "result"
         filename = os.path.basename(filename)
         filename = _ensure_extension(filename, content_type)
         return resp.content, filename, content_type
@@ -687,7 +659,7 @@ async def _download_output_file(url: str) -> tuple[bytes, str, str | None]:
 @shared_task(bind=True)
 def start_broadcast_task(self, broadcast_id: int):
     """Start a broadcast - prepare recipients and begin sending.
-    
+
     This task:
     1. Updates broadcast status to running
     2. Gets filtered user list
@@ -752,7 +724,7 @@ def start_broadcast_task(self, broadcast_id: int):
                     broadcast.status = BroadcastStatus.failed
                     broadcast.completed_at = datetime.utcnow()
                     session.commit()
-        except:
+        except Exception:
             pass
 
         return {"error": str(exc)}
@@ -773,24 +745,29 @@ def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[di
 
     elif filter_type == "active_7d":
         cutoff = now - timedelta(days=7)
-        users = session.query(User.telegram_id).filter(
-            User.is_banned == False,
-            User.last_active_at >= cutoff,
-        ).all()
+        users = (
+            session.query(User.telegram_id)
+            .filter(
+                User.is_banned == False,
+                User.last_active_at >= cutoff,
+            )
+            .all()
+        )
 
     elif filter_type == "active_30d":
         cutoff = now - timedelta(days=30)
-        users = session.query(User.telegram_id).filter(
-            User.is_banned == False,
-            User.last_active_at >= cutoff,
-        ).all()
+        users = (
+            session.query(User.telegram_id)
+            .filter(
+                User.is_banned == False,
+                User.last_active_at >= cutoff,
+            )
+            .all()
+        )
 
     elif filter_type == "with_balance":
         balance_subq = (
-            session.query(
-                LedgerEntry.user_id,
-                func.sum(LedgerEntry.amount).label("balance")
-            )
+            session.query(LedgerEntry.user_id, func.sum(LedgerEntry.amount).label("balance"))
             .group_by(LedgerEntry.user_id)
             .having(func.sum(LedgerEntry.amount) > 0)
             .subquery()
@@ -803,12 +780,7 @@ def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[di
         )
 
     elif filter_type == "paid_users":
-        paid_subq = (
-            session.query(LedgerEntry.user_id)
-            .filter(LedgerEntry.entry_type == "deposit")
-            .distinct()
-            .subquery()
-        )
+        paid_subq = session.query(LedgerEntry.user_id).filter(LedgerEntry.entry_type == "deposit").distinct().subquery()
         users = (
             session.query(User.telegram_id)
             .join(paid_subq, User.id == paid_subq.c.user_id)
@@ -818,10 +790,14 @@ def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[di
 
     elif filter_type == "new_users":
         cutoff = now - timedelta(days=7)
-        users = session.query(User.telegram_id).filter(
-            User.is_banned == False,
-            User.created_at >= cutoff,
-        ).all()
+        users = (
+            session.query(User.telegram_id)
+            .filter(
+                User.is_banned == False,
+                User.created_at >= cutoff,
+            )
+            .all()
+        )
 
     else:
         users = session.query(User.telegram_id).filter(User.is_banned == False).all()
@@ -829,7 +805,7 @@ def _get_filtered_user_ids(session, filter_type: str, filter_params: Optional[di
     return [u[0] for u in users]
 
 
-@shared_task(bind=True, max_retries=2, rate_limit='20/s')
+@shared_task(bind=True, max_retries=2, rate_limit="20/s")
 def send_broadcast_message(
     self,
     broadcast_id: int,
@@ -841,9 +817,11 @@ def send_broadcast_message(
     inline_button_url: Optional[str] = None,
 ):
     """Send broadcast message to a single user.
-    
+
     Rate limited to 20 messages per second by Celery.
     """
+    from sqlalchemy import update
+
     from app.db.models import Broadcast, BroadcastRecipient, BroadcastStatus, User
     from app.db.session import sync_session_factory
 
@@ -872,9 +850,7 @@ def send_broadcast_message(
             # Use atomic update to avoid race conditions
             if result["success"]:
                 session.execute(
-                    update(Broadcast)
-                    .where(Broadcast.id == broadcast_id)
-                    .values(sent_count=Broadcast.sent_count + 1)
+                    update(Broadcast).where(Broadcast.id == broadcast_id).values(sent_count=Broadcast.sent_count + 1)
                 )
                 status = "sent"
             elif result.get("blocked"):
@@ -914,9 +890,7 @@ def send_broadcast_message(
             broadcast = session.query(Broadcast).filter(Broadcast.id == broadcast_id).first()
             if broadcast:
                 total_processed = (
-                    (broadcast.sent_count or 0) +
-                    (broadcast.failed_count or 0) +
-                    (broadcast.blocked_count or 0)
+                    (broadcast.sent_count or 0) + (broadcast.failed_count or 0) + (broadcast.blocked_count or 0)
                 )
                 if total_processed >= broadcast.total_users and broadcast.status != BroadcastStatus.completed:
                     broadcast.status = BroadcastStatus.completed
@@ -965,9 +939,7 @@ def send_broadcast_message(
                 broadcast = session.query(Broadcast).filter(Broadcast.id == broadcast_id).first()
                 if broadcast:
                     total_processed = (
-                        (broadcast.sent_count or 0) +
-                        (broadcast.failed_count or 0) +
-                        (broadcast.blocked_count or 0)
+                        (broadcast.sent_count or 0) + (broadcast.failed_count or 0) + (broadcast.blocked_count or 0)
                     )
                     if total_processed >= broadcast.total_users and broadcast.status != BroadcastStatus.completed:
                         broadcast.status = BroadcastStatus.completed
@@ -1020,6 +992,7 @@ def _notify_admin_broadcast_completed(
 
     try:
         import httpx
+
         with httpx.Client(timeout=10.0) as client:
             response = client.post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
@@ -1057,11 +1030,7 @@ def _send_telegram_message(
     # Build inline keyboard if button provided
     reply_markup = None
     if inline_button_text and inline_button_url:
-        reply_markup = {
-            "inline_keyboard": [[
-                {"text": inline_button_text, "url": inline_button_url}
-            ]]
-        }
+        reply_markup = {"inline_keyboard": [[{"text": inline_button_text, "url": inline_button_url}]]}
 
     try:
         with httpx.Client(timeout=30.0) as client:
@@ -1141,7 +1110,7 @@ def _send_telegram_message(
 @shared_task
 def cleanup_expired_generations():
     """Cleanup expired/stuck generations.
-    
+
     This task runs periodically to:
     1. Find stuck generations (pending/running > 10 minutes)
     2. Mark them as failed
@@ -1156,6 +1125,7 @@ def cleanup_expired_generations():
         JobStatus,
     )
     from app.db.session import sync_session_factory
+
     logger.info("Running generation cleanup")
 
     # Generations stuck for more than 10 minutes
@@ -1172,10 +1142,14 @@ def cleanup_expired_generations():
                 GenerationStatus.running,
             ]
 
-            stuck_generations = session.query(GenerationRequest).filter(
-                GenerationRequest.status.in_(stuck_statuses),
-                GenerationRequest.created_at < cutoff_time,
-            ).all()
+            stuck_generations = (
+                session.query(GenerationRequest)
+                .filter(
+                    GenerationRequest.status.in_(stuck_statuses),
+                    GenerationRequest.created_at < cutoff_time,
+                )
+                .all()
+            )
 
             for gen in stuck_generations:
                 logger.warning(
@@ -1190,9 +1164,7 @@ def cleanup_expired_generations():
                 gen.completed_at = datetime.utcnow()
 
                 # Update job status
-                job = session.query(GenerationJob).filter(
-                    GenerationJob.request_id == gen.id
-                ).first()
+                job = session.query(GenerationJob).filter(GenerationJob.request_id == gen.id).first()
                 if job:
                     job.status = JobStatus.failed
                     job.completed_at = datetime.utcnow()
@@ -1223,7 +1195,7 @@ def send_daily_report(admin_ids: list[int]):
 @shared_task(bind=True)
 def process_broadcast(self, broadcast_id: str):
     """Process entire broadcast.
-    
+
     This task:
     1. Gets all active users
     2. Queues individual messages

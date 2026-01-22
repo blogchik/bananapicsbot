@@ -5,6 +5,7 @@ Revises: 0014
 Create Date: 2026-01-16
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -21,9 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Create broadcast_status enum first
     broadcast_status_enum = postgresql.ENUM(
-        'pending', 'running', 'completed', 'cancelled', 'failed',
-        name='broadcast_status',
-        create_type=False
+        "pending", "running", "completed", "cancelled", "failed", name="broadcast_status", create_type=False
     )
     op.execute("CREATE TYPE broadcast_status AS ENUM ('pending', 'running', 'completed', 'cancelled', 'failed')")
 

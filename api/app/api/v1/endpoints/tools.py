@@ -9,11 +9,16 @@ from app.db.models import LedgerEntry
 from app.deps.db import db_session_dep
 from app.deps.wavespeed import wavespeed_client
 from app.schemas.tools import (
-    DenoiseIn, DenoiseOut,
-    EnhanceIn, EnhanceOut,
-    RestoreIn, RestoreOut,
-    UpscaleIn, UpscaleOut,
-    WatermarkRemoveIn, WatermarkRemoveOut,
+    DenoiseIn,
+    DenoiseOut,
+    EnhanceIn,
+    EnhanceOut,
+    RestoreIn,
+    RestoreOut,
+    UpscaleIn,
+    UpscaleOut,
+    WatermarkRemoveIn,
+    WatermarkRemoveOut,
 )
 from app.services.ledger import get_user_balance
 from app.services.users import get_or_create_user

@@ -23,32 +23,41 @@ class PaymentKeyboard:
         # Preset amounts in a single column
         for amount, credits in presets:
             gens = (credits // avg_price) if avg_price else 0
-            label = _(TranslationKey.TOPUP_PRESET_LABEL, {
-                "stars": amount,
-                "credits": credits,
-                "gens": gens,
-            })
-            rows.append([
-                InlineKeyboardButton(
-                    text=label,
-                    callback_data=TopupCallback.stars(amount),
-                )
-            ])
+            label = _(
+                TranslationKey.TOPUP_PRESET_LABEL,
+                {
+                    "stars": amount,
+                    "credits": credits,
+                    "gens": gens,
+                },
+            )
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=TopupCallback.stars(amount),
+                    )
+                ]
+            )
 
         # Custom amount button
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.TOPUP_CUSTOM, None),
-                callback_data=TopupCallback.CUSTOM,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.TOPUP_CUSTOM, None),
+                    callback_data=TopupCallback.CUSTOM,
+                )
+            ]
+        )
 
         # Back button
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=MenuCallback.PROFILE,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=MenuCallback.PROFILE,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)

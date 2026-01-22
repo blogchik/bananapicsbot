@@ -90,13 +90,15 @@ def build_model_menu_text(
                 duration_text = f"{min_sec}-{max_sec} {seconds_label}"
         elif model.avg_duration_text:
             duration_text = model.avg_duration_text
-        lines.extend([
-            name_line,
-            f"{quality_label}: {star_text}",
-            f"{duration_label}: {duration_text}",
-            f"{price_label}: {model.price} cr",
-            "",
-        ])
+        lines.extend(
+            [
+                name_line,
+                f"{quality_label}: {star_text}",
+                f"{duration_label}: {duration_text}",
+                f"{price_label}: {model.price} cr",
+                "",
+            ]
+        )
 
     hint = _(TranslationKey.GEN_MODEL_MENU_HINT, None).strip()
     if hint:
@@ -167,10 +169,7 @@ async def open_model_menu(
         await call.message.edit_text(
             build_model_menu_text(models, _),
             reply_markup=GenerationKeyboard.model_list(
-                [
-                    {"id": m.id, "name": f"{model_emoji(m)} {m.name}".strip()}
-                    for m in models
-                ],
+                [{"id": m.id, "name": f"{model_emoji(m)} {m.name}".strip()} for m in models],
                 model_id,
                 _,
             ),
@@ -272,10 +271,7 @@ async def select_model(
     try:
         await call.message.edit_reply_markup(
             reply_markup=GenerationKeyboard.model_list(
-                [
-                    {"id": m.id, "name": f"{model_emoji(m)} {m.name}".strip()}
-                    for m in models
-                ],
+                [{"id": m.id, "name": f"{model_emoji(m)} {m.name}".strip()} for m in models],
                 selected.id,
                 _,
             )
@@ -373,9 +369,7 @@ async def open_ratio_menu(
             msg = await call.message.bot.send_message(
                 chat_id=call.message.chat.id,
                 text=caption,
-                reply_markup=GenerationKeyboard.aspect_ratio_list(
-                    ratio_options, selected_ratio, _
-                ),
+                reply_markup=GenerationKeyboard.aspect_ratio_list(ratio_options, selected_ratio, _),
                 link_preview_options=LinkPreviewOptions(
                     url=preview_url,
                     is_disabled=False,
@@ -385,9 +379,7 @@ async def open_ratio_menu(
             await state.update_data(menu_message_id=msg.message_id)
         else:
             await call.message.edit_reply_markup(
-                reply_markup=GenerationKeyboard.aspect_ratio_list(
-                    ratio_options, selected_ratio, _
-                )
+                reply_markup=GenerationKeyboard.aspect_ratio_list(ratio_options, selected_ratio, _)
             )
     except TelegramBadRequest:
         pass
@@ -476,9 +468,7 @@ async def open_resolution_menu(
             msg = await call.message.bot.send_message(
                 chat_id=call.message.chat.id,
                 text=caption,
-                reply_markup=GenerationKeyboard.resolution_list(
-                    resolution_options, data.get("resolution"), _
-                ),
+                reply_markup=GenerationKeyboard.resolution_list(resolution_options, data.get("resolution"), _),
                 link_preview_options=LinkPreviewOptions(
                     url=preview_url,
                     is_disabled=False,
@@ -710,7 +700,7 @@ async def back_to_generation(
         resolution = data.get("resolution")
         quality = data.get("quality")
         input_fidelity = data.get("input_fidelity")
-        
+
         # Get dynamic price from API
         price = await GenerationService.get_dynamic_price(
             telegram_id=call.from_user.id,
@@ -727,9 +717,7 @@ async def back_to_generation(
         show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
         show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
         show_quality = data.get("supports_quality") and bool(data.get("quality_options"))
-        show_input_fidelity = data.get("supports_input_fidelity") and bool(
-            data.get("input_fidelity_options")
-        )
+        show_input_fidelity = data.get("supports_input_fidelity") and bool(data.get("input_fidelity_options"))
         has_reference = bool(data.get("reference_urls") or data.get("reference_file_ids"))
         text = build_generation_text(
             data.get("prompt", ""),
@@ -786,7 +774,7 @@ async def submit_generation(
     model_id = data.get("model_id")
     model_name = data.get("model_name", "-")
     resolution = data.get("resolution")
-    
+
     # Get dynamic price from API
     price = await GenerationService.get_dynamic_price(
         telegram_id=call.from_user.id,
@@ -871,7 +859,6 @@ async def submit_generation(
 
     request = result.get("request", {})
     request_id = request.get("id")
-    request_status = request.get("status")
 
     if not request_id:
         await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
@@ -946,7 +933,6 @@ async def retry_generation(
 
     request = result.get("request", {})
     request_id = request.get("id")
-    request_status = request.get("status")
 
     if not request_id:
         await call.message.answer(_(TranslationKey.ERROR_GENERIC, None))
@@ -982,14 +968,20 @@ async def _update_generation_menu(
     show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
     show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
     show_quality = data.get("supports_quality") and bool(data.get("quality_options"))
-    show_input_fidelity = data.get("supports_input_fidelity") and bool(
-        data.get("input_fidelity_options")
-    )
+    show_input_fidelity = data.get("supports_input_fidelity") and bool(data.get("input_fidelity_options"))
 
     has_reference = bool(data.get("reference_urls") or data.get("reference_file_ids"))
     text = build_generation_text(
-        prompt, model_name, size, aspect_ratio, resolution,
-        show_size, show_aspect, show_resolution, has_reference, _,
+        prompt,
+        model_name,
+        size,
+        aspect_ratio,
+        resolution,
+        show_size,
+        show_aspect,
+        show_resolution,
+        has_reference,
+        _,
     )
 
     try:

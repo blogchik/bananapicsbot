@@ -5,10 +5,10 @@ from api_client import ApiClient
 from config import load_settings
 from keyboards import home_menu
 
-WELCOME_TEXT = "Assalomu alaykum! Bananapics botiga xush kelibsiz 😊\nPrompt yuboring yoki rasm qo'shib generatsiya boshlang."
-REFERRAL_NOTICE_TEMPLATE = (
-    "👤 Yangi referral qo'shildi.\nUning to'lovlaridan {bonus}% bonus olasiz."
+WELCOME_TEXT = (
+    "Assalomu alaykum! Bananapics botiga xush kelibsiz 😊\nPrompt yuboring yoki rasm qo'shib generatsiya boshlang."
 )
+REFERRAL_NOTICE_TEMPLATE = "👤 Yangi referral qo'shildi.\nUning to'lovlaridan {bonus}% bonus olasiz."
 
 router = Router()
 

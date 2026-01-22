@@ -162,17 +162,23 @@ async def admin_add_credits_reason(
     await state.clear()
 
     if amount > 0:
-        text = _(TranslationKey.ADMIN_CREDITS_ADDED, {
-            "amount": amount,
-            "user_id": telegram_id,
-            "balance": new_balance,
-        })
+        text = _(
+            TranslationKey.ADMIN_CREDITS_ADDED,
+            {
+                "amount": amount,
+                "user_id": telegram_id,
+                "balance": new_balance,
+            },
+        )
     else:
-        text = _(TranslationKey.ADMIN_CREDITS_REMOVED, {
-            "amount": abs(amount),
-            "user_id": telegram_id,
-            "balance": new_balance,
-        })
+        text = _(
+            TranslationKey.ADMIN_CREDITS_REMOVED,
+            {
+                "amount": abs(amount),
+                "user_id": telegram_id,
+                "balance": new_balance,
+            },
+        )
 
     await message.answer(text, reply_markup=AdminKeyboard.back_to_main(_))
 
@@ -226,8 +232,7 @@ async def admin_credit_refund_start(
 
     if call.message:
         await call.message.edit_text(
-            "🎨 **Credit Refund**\n\n"
-            "👤 Foydalanuvchi Telegram ID sini kiriting:",
+            "🎨 **Credit Refund**\n\n👤 Foydalanuvchi Telegram ID sini kiriting:",
             parse_mode="Markdown",
             reply_markup=AdminKeyboard.cancel_action(_),
         )
@@ -350,15 +355,19 @@ async def admin_refund_generation(
 
     if call.message:
         await call.message.edit_text(
-            _(TranslationKey.ADMIN_REFUND_SUCCESS, {
-                "amount": refunded,
-                "balance": new_balance,
-            }),
+            _(
+                TranslationKey.ADMIN_REFUND_SUCCESS,
+                {
+                    "amount": refunded,
+                    "balance": new_balance,
+                },
+            ),
             reply_markup=AdminKeyboard.back_to_users(_),
         )
 
 
 # ============ Stars Refund Handlers ============
+
 
 @router.callback_query(F.data == AdminCallback.REFUND_STARS)
 async def admin_stars_refund_start(
@@ -372,8 +381,7 @@ async def admin_stars_refund_start(
 
     if call.message:
         await call.message.edit_text(
-            "⭐ **Stars Refund**\n\n"
-            "👤 Foydalanuvchi Telegram ID sini kiriting:",
+            "⭐ **Stars Refund**\n\n👤 Foydalanuvchi Telegram ID sini kiriting:",
             parse_mode="Markdown",
             reply_markup=AdminKeyboard.cancel_action(_),
         )
@@ -422,6 +430,7 @@ async def admin_stars_refund_user_id(
 
     # Get bot token and fetch unrefunded transactions
     from core.container import get_container
+
     container = get_container()
     bot_token = container.settings.bot_token.get_secret_value()
 
@@ -514,14 +523,13 @@ async def admin_stars_refund_single(
 
     if call.message:
         await call.message.edit_text(
-            f"⏳ Stars refund jarayoni...\n\n"
-            f"👤 User: `{telegram_id}`\n"
-            f"⭐ {stars_amount} Stars qaytarilmoqda...",
+            f"⏳ Stars refund jarayoni...\n\n👤 User: `{telegram_id}`\n⭐ {stars_amount} Stars qaytarilmoqda...",
             parse_mode="Markdown",
         )
 
     # Get bot token
     from core.container import get_container
+
     container = get_container()
     bot_token = container.settings.bot_token.get_secret_value()
 
@@ -671,6 +679,7 @@ async def admin_stars_refund_all(
 
     # Get bot token
     from core.container import get_container
+
     container = get_container()
     bot_token = container.settings.bot_token.get_secret_value()
 
@@ -702,7 +711,6 @@ async def admin_stars_refund_all(
                     errors.append(f"{tx['amount']}⭐: {error}")
         except Exception as e:
             errors.append(f"{tx['amount']}⭐: {str(e)}")
-
 
     if refunded_total > 0:
         # Deduct credits

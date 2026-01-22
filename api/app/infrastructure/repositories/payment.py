@@ -1,4 +1,5 @@
 """Payment repository implementation."""
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, Optional, Sequence
@@ -96,11 +97,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         if status == PaymentStatus.COMPLETED:
             values["completed_at"] = datetime.utcnow()
 
-        query = (
-            update(PaymentModel)
-            .where(PaymentModel.id == payment_id)
-            .values(**values)
-        )
+        query = update(PaymentModel).where(PaymentModel.id == payment_id).values(**values)
         result = await self.session.execute(query)
         return result.rowcount > 0
 
@@ -117,11 +114,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         if status:
             query = query.where(PaymentModel.status == status.value)
 
-        query = (
-            query.order_by(PaymentModel.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        query = query.order_by(PaymentModel.created_at.desc()).offset(offset).limit(limit)
 
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
@@ -134,26 +127,26 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         since = datetime.utcnow() - timedelta(days=days)
 
         # Total payments
-        total_query = select(func.count()).select_from(PaymentModel).where(
-            PaymentModel.created_at >= since
-        )
+        total_query = select(func.count()).select_from(PaymentModel).where(PaymentModel.created_at >= since)
         total_result = await self.session.execute(total_query)
         total = total_result.scalar() or 0
 
         # Completed payments
-        completed_query = select(func.count()).select_from(PaymentModel).where(
-            and_(
-                PaymentModel.created_at >= since,
-                PaymentModel.status == PaymentStatus.COMPLETED.value,
+        completed_query = (
+            select(func.count())
+            .select_from(PaymentModel)
+            .where(
+                and_(
+                    PaymentModel.created_at >= since,
+                    PaymentModel.status == PaymentStatus.COMPLETED.value,
+                )
             )
         )
         completed_result = await self.session.execute(completed_query)
         completed = completed_result.scalar() or 0
 
         # Total amount
-        amount_query = select(
-            func.coalesce(func.sum(PaymentModel.amount), Decimal("0"))
-        ).where(
+        amount_query = select(func.coalesce(func.sum(PaymentModel.amount), Decimal("0"))).where(
             and_(
                 PaymentModel.created_at >= since,
                 PaymentModel.status == PaymentStatus.COMPLETED.value,
@@ -163,9 +156,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         total_amount = amount_result.scalar() or Decimal("0")
 
         # Total credits
-        credits_query = select(
-            func.coalesce(func.sum(PaymentModel.credits), Decimal("0"))
-        ).where(
+        credits_query = select(func.coalesce(func.sum(PaymentModel.credits), Decimal("0"))).where(
             and_(
                 PaymentModel.created_at >= since,
                 PaymentModel.status == PaymentStatus.COMPLETED.value,
@@ -191,8 +182,7 @@ class PaymentRepository(BaseRepository[PaymentModel], IPaymentRepository):
         )
         by_provider_result = await self.session.execute(by_provider_query)
         by_provider = {
-            row.provider: {"count": row.count, "amount": float(row.amount or 0)}
-            for row in by_provider_result.all()
+            row.provider: {"count": row.count, "amount": float(row.amount or 0)} for row in by_provider_result.all()
         }
 
         return {

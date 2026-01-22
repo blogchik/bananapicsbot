@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class GenerationPriceIn(BaseModel):
     """Request body for getting dynamic generation price."""
+
     telegram_id: int
     model_id: int
     size: str | None = None
@@ -17,6 +18,7 @@ class GenerationPriceIn(BaseModel):
 
 class GenerationPriceOut(BaseModel):
     """Response for generation price calculation."""
+
     model_id: int
     model_key: str
     price_credits: int

@@ -5,6 +5,7 @@ Revises: 0016_add_generation_indexes
 Create Date: 2026-01-19
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 

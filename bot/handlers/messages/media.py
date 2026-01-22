@@ -55,9 +55,7 @@ async def process_reference_batch(
         reference_file_ids = list(data.get("reference_file_ids", []))
 
         if len(references) + len(files) > BotConstants.MAX_REFERENCE_IMAGES:
-            await message.answer(
-                _(TranslationKey.GEN_MAX_REFERENCES, {"max": BotConstants.MAX_REFERENCE_IMAGES})
-            )
+            await message.answer(_(TranslationKey.GEN_MAX_REFERENCES, {"max": BotConstants.MAX_REFERENCE_IMAGES}))
             return
 
         # Upload files
@@ -93,6 +91,7 @@ async def process_reference_batch(
 
     # Process as prompt with references
     from .prompt import handle_prompt_message
+
     await handle_prompt_message(message, state, _)
 
 

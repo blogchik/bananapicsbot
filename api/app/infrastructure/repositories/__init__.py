@@ -1,4 +1,5 @@
 """Repository implementations."""
+
 from app.infrastructure.repositories.broadcast import BroadcastRepository
 from app.infrastructure.repositories.generation import GenerationRepository
 from app.infrastructure.repositories.ledger import LedgerRepository

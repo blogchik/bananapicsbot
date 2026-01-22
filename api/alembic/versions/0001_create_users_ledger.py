@@ -1,7 +1,7 @@
 """create users and ledger entries
 
 Revision ID: 0001_create_users_ledger
-Revises: 
+Revises:
 Create Date: 2026-01-14 21:38:00.000000
 """
 

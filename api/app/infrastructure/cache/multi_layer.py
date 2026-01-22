@@ -1,4 +1,5 @@
 """Multi-layer cache implementation."""
+
 from typing import Any, Dict, Optional
 
 from app.domain.interfaces.services import ICacheService
@@ -8,7 +9,7 @@ from app.infrastructure.cache.redis import RedisCache
 
 class MultiLayerCache(ICacheService):
     """Multi-layer cache: L1 (Memory) + L2 (Redis).
-    
+
     Read path: L1 -> L2 -> DB (if miss, populate both)
     Write path: Invalidate L1 -> Write L2
     """

@@ -50,10 +50,13 @@ async def open_topup_menu(
     except Exception as e:
         logger.warning("Failed to get average generation price", error=str(e))
         avg_price = None
-    rate_line = _(TranslationKey.TOPUP_EXCHANGE_RATE, {
-        "numerator": numerator,
-        "denominator": denominator,
-    })
+    rate_line = _(
+        TranslationKey.TOPUP_EXCHANGE_RATE,
+        {
+            "numerator": numerator,
+            "denominator": denominator,
+        },
+    )
     lines = [
         _(TranslationKey.TOPUP_TITLE, None),
         _(TranslationKey.TOPUP_DESCRIPTION, None),
@@ -228,10 +231,13 @@ async def handle_successful_payment(
         new_balance = int(result.get("balance", 0))
 
         await message.answer(
-            _(TranslationKey.TOPUP_SUCCESS, {
-                "credits": credits_added,
-                "balance": new_balance,
-            })
+            _(
+                TranslationKey.TOPUP_SUCCESS,
+                {
+                    "credits": credits_added,
+                    "balance": new_balance,
+                },
+            )
         )
 
     except Exception as e:

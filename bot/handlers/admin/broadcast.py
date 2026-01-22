@@ -41,6 +41,7 @@ FILTER_LABELS = {
 
 # ============ Start Broadcast Flow ============
 
+
 @router.callback_query(F.data == AdminCallback.BROADCAST_NEW)
 async def admin_broadcast_new(
     call: CallbackQuery,
@@ -66,6 +67,7 @@ async def admin_broadcast_new(
 
 
 # ============ Receive Broadcast Message ============
+
 
 @router.message(AdminStates.waiting_broadcast_message)
 async def admin_broadcast_message(
@@ -111,13 +113,13 @@ async def admin_broadcast_message(
 
     # Ask for filter
     await message.answer(
-        "📊 <b>Select Target Audience</b>\n\n"
-        "Choose which users should receive this broadcast:",
+        "📊 <b>Select Target Audience</b>\n\nChoose which users should receive this broadcast:",
         reply_markup=AdminKeyboard.broadcast_filter_select(_),
     )
 
 
 # ============ Select Filter ============
+
 
 @router.callback_query(
     AdminStates.waiting_broadcast_filter,
@@ -156,6 +158,7 @@ async def admin_broadcast_filter_selected(
 
 
 # ============ Add Inline Button ============
+
 
 @router.callback_query(F.data == "admin:broadcast:add_button")
 async def admin_broadcast_add_button(
@@ -242,6 +245,7 @@ async def admin_broadcast_skip_button(
 
 # ============ Preview and Confirm ============
 
+
 async def _show_broadcast_preview(
     message: Message,
     state: FSMContext,
@@ -254,7 +258,7 @@ async def _show_broadcast_preview(
     filter_type = data.get("broadcast_filter_type", "all")
     users_count = data.get("broadcast_users_count", 0)
     button_text = data.get("broadcast_button_text")
-    button_url = data.get("broadcast_button_url")
+    _button_url = data.get("broadcast_button_url")  # Reserved for future use
 
     filter_label = FILTER_LABELS.get(filter_type, filter_type)
 
@@ -269,12 +273,14 @@ async def _show_broadcast_preview(
     if button_text:
         lines.append(f"🔘 Button: <b>{button_text}</b>")
 
-    lines.extend([
-        "",
-        "⚠️ <b>Are you sure you want to send this broadcast?</b>",
-        "",
-        f"This will send to <b>{users_count}</b> users.",
-    ])
+    lines.extend(
+        [
+            "",
+            "⚠️ <b>Are you sure you want to send this broadcast?</b>",
+            "",
+            f"This will send to <b>{users_count}</b> users.",
+        ]
+    )
 
     await state.set_state(AdminStates.waiting_broadcast_confirm)
 
@@ -343,13 +349,13 @@ async def admin_broadcast_confirm(
 
         if call.message:
             await call.message.edit_text(
-                f"❌ <b>Failed to start broadcast</b>\n\n"
-                f"Error: {str(e)}",
+                f"❌ <b>Failed to start broadcast</b>\n\nError: {str(e)}",
                 reply_markup=AdminKeyboard.back_to_broadcast(_),
             )
 
 
 # ============ Cancel ============
+
 
 @router.callback_query(F.data == AdminCallback.BROADCAST_CANCEL)
 async def admin_broadcast_cancel(
@@ -370,6 +376,7 @@ async def admin_broadcast_cancel(
 
 # ============ History ============
 
+
 @router.callback_query(F.data == AdminCallback.BROADCAST_HISTORY)
 async def admin_broadcast_history(
     call: CallbackQuery,
@@ -389,8 +396,7 @@ async def admin_broadcast_history(
     if not broadcasts:
         if call.message:
             await call.message.edit_text(
-                "📜 <b>Broadcast History</b>\n\n"
-                "No broadcasts yet.",
+                "📜 <b>Broadcast History</b>\n\nNo broadcasts yet.",
                 reply_markup=AdminKeyboard.back_to_broadcast(_),
             )
         return
@@ -424,6 +430,7 @@ async def admin_broadcast_history(
 
 
 # ============ Status ============
+
 
 @router.callback_query(F.data.startswith("admin:broadcast:status:"))
 async def admin_broadcast_status(
@@ -504,6 +511,7 @@ async def admin_broadcast_status(
 
 
 # ============ Cancel Running Broadcast ============
+
 
 @router.callback_query(F.data.startswith("admin:broadcast:cancel:"))
 async def admin_broadcast_cancel_running(

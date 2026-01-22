@@ -58,10 +58,14 @@ def upgrade() -> None:
         ],
     )
 
-    model_id = op.get_bind().execute(
-        sa.text("SELECT id FROM model_catalog WHERE key = :key"),
-        {"key": "seedream-v4"},
-    ).scalar_one()
+    model_id = (
+        op.get_bind()
+        .execute(
+            sa.text("SELECT id FROM model_catalog WHERE key = :key"),
+            {"key": "seedream-v4"},
+        )
+        .scalar_one()
+    )
 
     op.bulk_insert(
         price_table,

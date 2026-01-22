@@ -1,4 +1,5 @@
 """User use cases."""
+
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional, Sequence
@@ -14,6 +15,7 @@ logger = get_logger(__name__)
 @dataclass
 class UserProfileDTO:
     """User profile with balance."""
+
     user: User
     balance: Decimal
     referral_count: int
@@ -46,7 +48,7 @@ class GetOrCreateUserUseCase:
     ) -> tuple[User, bool]:
         """
         Execute use case.
-        
+
         Returns:
             Tuple of (user, is_new)
         """

@@ -1,6 +1,5 @@
 """Redis client for caching and rate limiting."""
 
-
 import redis.asyncio as redis
 from core.logging import get_logger
 from redis.asyncio import Redis
@@ -11,7 +10,7 @@ logger = get_logger(__name__)
 class RedisClient:
     """
     Redis client wrapper with connection pooling.
-    
+
     Features:
     - Connection pooling
     - Automatic reconnection
@@ -136,7 +135,7 @@ class RedisClient:
     ) -> tuple[bool, int]:
         """
         Check rate limit using sliding window.
-        
+
         Returns:
             Tuple of (is_allowed, remaining_requests)
         """

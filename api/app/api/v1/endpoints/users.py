@@ -18,9 +18,7 @@ async def sync_user(payload: UserSyncIn, db: Session = Depends(db_session_dep)) 
     if referral_code.startswith("r_"):
         referral_code = referral_code[2:]
     referral_code = referral_code.strip() or None
-    user, referrer, referral_applied = get_or_create_user(
-        db, payload.telegram_id, referral_code
-    )
+    user, referrer, referral_applied = get_or_create_user(db, payload.telegram_id, referral_code)
     settings = get_settings()
     return UserSyncOut(
         id=user.id,

@@ -5,6 +5,7 @@ Revises: 0015
 Create Date: 2026-01-17
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -25,14 +26,8 @@ def upgrade() -> None:
         "CREATE INDEX IF NOT EXISTS ix_generation_requests_status_created_at "
         "ON generation_requests (status, created_at)"
     )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_generation_results_request_id "
-        "ON generation_results (request_id)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_generation_jobs_request_id "
-        "ON generation_jobs (request_id)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_generation_results_request_id ON generation_results (request_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_generation_jobs_request_id ON generation_jobs (request_id)")
 
 
 def downgrade() -> None:

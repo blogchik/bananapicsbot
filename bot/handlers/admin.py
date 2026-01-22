@@ -30,9 +30,7 @@ def parse_two_ints(text: str | None) -> tuple[int, int] | None:
     return first, second
 
 
-async def fetch_star_transactions(
-    bot_token: str, offset: int, limit: int
-) -> list[dict]:
+async def fetch_star_transactions(bot_token: str, offset: int, limit: int) -> list[dict]:
     url = f"https://api.telegram.org/bot{bot_token}/getStarTransactions"
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params={"offset": offset, "limit": limit}) as resp:
@@ -43,9 +41,7 @@ async def fetch_star_transactions(
             return list(result.get("transactions") or [])
 
 
-async def refund_star_payment(
-    bot_token: str, user_id: int, charge_id: str
-) -> tuple[bool, str | None]:
+async def refund_star_payment(bot_token: str, user_id: int, charge_id: str) -> tuple[bool, str | None]:
     url = f"https://api.telegram.org/bot{bot_token}/refundStarPayment"
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -95,9 +91,7 @@ async def refund_command(message: Message) -> None:
             charge_id = tx.get("id")
             if not charge_id:
                 continue
-            ok, error = await refund_star_payment(
-                settings.bot_token, user_id, str(charge_id)
-            )
+            ok, error = await refund_star_payment(settings.bot_token, user_id, str(charge_id))
             if ok:
                 refunded_total += amount
                 refunded_count += 1
@@ -111,10 +105,7 @@ async def refund_command(message: Message) -> None:
     if refunded_total <= 0:
         await message.answer("Refund uchun mos to'lov topilmadi.")
         return
-    response = (
-        f"Refund yakunlandi. Qaytarildi: {refunded_total} ⭐ "
-        f"({refunded_count} ta to'lov)."
-    )
+    response = f"Refund yakunlandi. Qaytarildi: {refunded_total} ⭐ ({refunded_count} ta to'lov)."
     if refunded_total < stars_amount:
         response += " To'liq summa topilmadi."
     if errors:

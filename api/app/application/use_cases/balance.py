@@ -1,4 +1,5 @@
 """Balance use cases."""
+
 from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
@@ -19,6 +20,7 @@ logger = get_logger(__name__)
 @dataclass
 class BalanceInfo:
     """User balance information."""
+
     balance: Decimal
     total_deposited: Decimal
     total_spent: Decimal

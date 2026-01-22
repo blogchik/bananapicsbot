@@ -1,4 +1,5 @@
 """Redis cache implementation."""
+
 import json
 from typing import Any, Dict, Optional
 
@@ -83,11 +84,7 @@ class RedisCache:
         prefixed_keys = [self._make_key(k) for k in keys]
         values = await self._redis.mget(prefixed_keys)
 
-        return {
-            key: self._deserialize(value)
-            for key, value in zip(keys, values)
-            if value is not None
-        }
+        return {key: self._deserialize(value) for key, value in zip(keys, values) if value is not None}
 
     async def set_many(
         self,
@@ -160,10 +157,7 @@ class RedisCache:
     async def hgetall(self, key: str) -> Dict[str, Any]:
         """Get all hash fields."""
         data = await self._redis.hgetall(self._make_key(key))
-        return {
-            k.decode("utf-8"): self._deserialize(v)
-            for k, v in data.items()
-        }
+        return {k.decode("utf-8"): self._deserialize(v) for k, v in data.items()}
 
     async def hdel(self, key: str, *fields: str) -> int:
         """Delete hash fields."""

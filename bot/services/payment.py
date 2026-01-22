@@ -24,7 +24,7 @@ class PaymentService:
     @staticmethod
     async def get_min_generation_price() -> int | None:
         """Get minimum model generation price.
-        
+
         DEPRECATED: Use get_average_generation_price() for estimated generations.
         """
         container = get_container()
@@ -50,10 +50,10 @@ class PaymentService:
     @staticmethod
     async def get_average_generation_price() -> int | None:
         """Get average model generation price for estimated generations.
-        
+
         Used on payment and profile pages to show approximate number
         of generations the user can perform with their balance.
-        
+
         Returns:
             Average price in credits, or None if no models available
         """
@@ -120,10 +120,13 @@ class PaymentService:
         credits = PaymentService.calculate_credits(stars_amount, numerator, denominator)
         payload = f"stars:{stars_amount}:{uuid.uuid4().hex}"
         title = _(TranslationKey.TOPUP_TITLE, None)
-        description = _(TranslationKey.TOPUP_INVOICE_DESCRIPTION, {
-            "stars": stars_amount,
-            "credits": credits,
-        })
+        description = _(
+            TranslationKey.TOPUP_INVOICE_DESCRIPTION,
+            {
+                "stars": stars_amount,
+                "credits": credits,
+            },
+        )
         label = _(TranslationKey.TOPUP_INVOICE_LABEL, None)
         prices = [LabeledPrice(label=label, amount=stars_amount)]
 
@@ -165,7 +168,4 @@ class PaymentService:
         denominator: int,
     ) -> list[tuple[int, int]]:
         """Build preset amount pairs (stars, credits)."""
-        return [
-            (amount, PaymentService.calculate_credits(amount, numerator, denominator))
-            for amount in presets
-        ]
+        return [(amount, PaymentService.calculate_credits(amount, numerator, denominator)) for amount in presets]

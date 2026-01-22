@@ -1,4 +1,5 @@
 """Model repository implementation."""
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Sequence
@@ -111,14 +112,11 @@ class ModelRepository(BaseRepository[ModelCatalogModel], IModelRepository):
     async def _get_current_prices(self, model_id: int) -> Sequence[ModelPriceModel]:
         """Get current prices for a model."""
         now = datetime.utcnow()
-        query = (
-            select(ModelPriceModel)
-            .where(
-                and_(
-                    ModelPriceModel.model_id == model_id,
-                    ModelPriceModel.valid_from <= now,
-                    (ModelPriceModel.valid_until.is_(None)) | (ModelPriceModel.valid_until > now),
-                )
+        query = select(ModelPriceModel).where(
+            and_(
+                ModelPriceModel.model_id == model_id,
+                ModelPriceModel.valid_from <= now,
+                (ModelPriceModel.valid_until.is_(None)) | (ModelPriceModel.valid_until > now),
             )
         )
         result = await self.session.execute(query)
@@ -149,11 +147,7 @@ class ModelRepository(BaseRepository[ModelCatalogModel], IModelRepository):
 
     async def set_active(self, model_id: int, is_active: bool) -> bool:
         """Set model active status."""
-        query = (
-            update(ModelCatalogModel)
-            .where(ModelCatalogModel.id == model_id)
-            .values(is_active=is_active)
-        )
+        query = update(ModelCatalogModel).where(ModelCatalogModel.id == model_id).values(is_active=is_active)
         result = await self.session.execute(query)
         return result.rowcount > 0
 

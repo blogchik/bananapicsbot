@@ -1,4 +1,5 @@
 """Generation use cases."""
+
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Dict, Optional, Sequence
@@ -25,6 +26,7 @@ logger = get_logger(__name__)
 @dataclass
 class GenerationResult:
     """Generation result DTO."""
+
     generation: Generation
     result_urls: Sequence[str]
 
@@ -116,6 +118,7 @@ class CreateGenerationUseCase:
         if use_trial:
             # Decrease trial
             from app.domain.entities.user import UserUpdate
+
             await self._user_repo.update(
                 telegram_id,
                 UserUpdate(trial_remaining=user.trial_remaining - 1),

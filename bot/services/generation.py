@@ -33,6 +33,7 @@ logger = get_logger(__name__)
 @dataclass
 class NormalizedModel:
     """Normalized model data."""
+
     id: int
     key: str
     name: str
@@ -56,6 +57,7 @@ class NormalizedModel:
 @dataclass
 class GenerationConfig:
     """Generation configuration."""
+
     prompt: str
     model_id: int
     model_name: str
@@ -91,17 +93,17 @@ class GenerationService:
         is_image_to_image: bool = False,
     ) -> int:
         """Calculate generation price (sync fallback).
-        
+
         DEPRECATED: Use get_dynamic_price() for real-time API pricing.
         This method is kept for backward compatibility.
         """
         from services.pricing import usd_to_credits
-        
+
         key = (model_key or "").strip().lower().replace("_", "-").replace(" ", "-")
         res = (resolution or "").strip().lower()
         if res in {"4k", "4096", "4096x4096", "4096*4096"}:
             res = "4k"
-        
+
         # Fallback hardcoded prices
         if key == "seedream-v4":
             return base_price if base_price > 0 else usd_to_credits(0.027)
@@ -109,6 +111,7 @@ class GenerationService:
             return base_price if base_price > 0 else usd_to_credits(0.038)
         if key == "nano-banana-pro":
             from services.pricing import usd_to_credits as convert_usd
+
             if res == "4k":
                 return convert_usd(0.24)
             return convert_usd(0.14)
@@ -163,10 +166,10 @@ class GenerationService:
         base_price: int = 0,
     ) -> int:
         """Get dynamic generation price from Wavespeed pricing API.
-        
+
         This method calls the API which fetches real-time pricing from Wavespeed.
         Falls back to calculate_generation_price if API fails.
-        
+
         Args:
             telegram_id: User Telegram ID for rate limiting
             model_id: Database model ID
@@ -178,12 +181,12 @@ class GenerationService:
             input_fidelity: Input fidelity parameter
             is_image_to_image: Whether this is image-to-image mode
             base_price: Base price for fallback calculation
-        
+
         Returns:
             Price in credits
         """
         container = get_container()
-        
+
         # Check bot-side cache first
         cache_key = GenerationService._get_pricing_cache_key(
             model_key, size, aspect_ratio, resolution, quality, input_fidelity, is_image_to_image
@@ -206,11 +209,11 @@ class GenerationService:
                 input_fidelity=input_fidelity,
                 is_image_to_image=is_image_to_image,
             )
-            
+
             price_credits = int(price_data.get("price_credits", 0))
             price_usd = price_data.get("price_usd", 0)
             cached = price_data.get("cached", False)
-            
+
             logger.info(
                 "Got dynamic price from API",
                 model_id=model_id,
@@ -224,7 +227,7 @@ class GenerationService:
                 price_usd=price_usd,
                 cached=cached,
             )
-            
+
             # Cache on bot side for 5 minutes
             try:
                 await container.redis_client.set(cache_key, str(price_credits), ex=300)
@@ -232,7 +235,7 @@ class GenerationService:
                 pass
 
             return price_credits
-            
+
         except Exception as exc:
             logger.warning(
                 "Failed to get dynamic price from API, using fallback",
@@ -257,7 +260,7 @@ class GenerationService:
         is_image_to_image: bool = False,
     ) -> int | None:
         """Calculate price based on size and quality for gpt-image-1.5.
-        
+
         Prices are in credits ($1 = 1000 credits).
         These values match Wavespeed's pricing for gpt-image-1.5.
         """
@@ -271,7 +274,7 @@ class GenerationService:
             return None
         size_key = normalized
         quality_key = (quality or "medium").lower()
-        
+
         # Prices in credits ($1 = 1000 credits)
         # Based on Wavespeed's gpt-image-1.5 pricing
         t2i_prices = {
@@ -339,9 +342,9 @@ class GenerationService:
     @staticmethod
     async def get_average_model_price() -> int:
         """Get average price across all active models.
-        
+
         Used for calculating estimated generations on profile and payment pages.
-        
+
         Returns:
             Average price in credits, or 0 if no models available
         """
@@ -389,42 +392,34 @@ class GenerationService:
             key = str(model.get("key") or "").strip()
             name = model.get("name") or model.get("key") or str(model_id)
             if not key and name:
-                key = (
-                    str(name)
-                    .strip()
-                    .lower()
-                    .replace("_", "-")
-                    .replace(" ", "-")
-                )
+                key = str(name).strip().lower().replace("_", "-").replace(" ", "-")
 
-            normalized.append(NormalizedModel(
-                id=int(model_id),
-                key=key,
-                name=name,
-                price=price,
-                supports_size=supports_size,
-                supports_aspect_ratio=supports_aspect_ratio,
-                supports_resolution=supports_resolution,
-                supports_quality=supports_quality,
-                supports_input_fidelity=supports_input_fidelity,
-                quality_stars=int(quality_stars) if quality_stars is not None else None,
-                avg_duration_seconds_min=(
-                    int(avg_duration_seconds_min)
-                    if avg_duration_seconds_min is not None
-                    else None
-                ),
-                avg_duration_seconds_max=(
-                    int(avg_duration_seconds_max)
-                    if avg_duration_seconds_max is not None
-                    else None
-                ),
-                avg_duration_text=str(avg_duration_text) if avg_duration_text else None,
-                size_options=size_options,
-                aspect_ratio_options=aspect_ratio_options,
-                resolution_options=resolution_options,
-                quality_options=quality_options,
-                input_fidelity_options=input_fidelity_options,
-            ))
+            normalized.append(
+                NormalizedModel(
+                    id=int(model_id),
+                    key=key,
+                    name=name,
+                    price=price,
+                    supports_size=supports_size,
+                    supports_aspect_ratio=supports_aspect_ratio,
+                    supports_resolution=supports_resolution,
+                    supports_quality=supports_quality,
+                    supports_input_fidelity=supports_input_fidelity,
+                    quality_stars=int(quality_stars) if quality_stars is not None else None,
+                    avg_duration_seconds_min=(
+                        int(avg_duration_seconds_min) if avg_duration_seconds_min is not None else None
+                    ),
+                    avg_duration_seconds_max=(
+                        int(avg_duration_seconds_max) if avg_duration_seconds_max is not None else None
+                    ),
+                    avg_duration_text=str(avg_duration_text) if avg_duration_text else None,
+                    size_options=size_options,
+                    aspect_ratio_options=aspect_ratio_options,
+                    resolution_options=resolution_options,
+                    quality_options=quality_options,
+                    input_fidelity_options=input_fidelity_options,
+                )
+            )
 
         return normalized
 
@@ -509,9 +504,7 @@ class GenerationService:
         key = f"{GenerationService._LAST_REQUEST_KEY_PREFIX}:{telegram_id}"
         try:
             data = json.dumps(payload)
-            await container.redis_client.set(
-                key, data, expire_seconds=GenerationService._LAST_REQUEST_TTL_SECONDS
-            )
+            await container.redis_client.set(key, data, expire_seconds=GenerationService._LAST_REQUEST_TTL_SECONDS)
         except Exception:
             logger.warning("Failed to save last generation request", user_id=telegram_id)
 
@@ -632,11 +625,14 @@ class GenerationService:
         """Build result caption with prompt."""
         hashtag = GenerationService.format_model_hashtag(model_name)
         credits = cost if cost is not None else 0
-        template = _(TranslationKey.GEN_RESULT_CAPTION, {
-            "model": hashtag,
-            "credits": credits,
-            "prompt": "{PROMPT_PLACEHOLDER}",
-        })
+        template = _(
+            TranslationKey.GEN_RESULT_CAPTION,
+            {
+                "model": hashtag,
+                "credits": credits,
+                "prompt": "{PROMPT_PLACEHOLDER}",
+            },
+        )
         return GenerationService._inject_prompt(template, prompt)
 
     @staticmethod
@@ -672,9 +668,7 @@ class GenerationService:
         if placeholder not in template:
             return template
         prefix, suffix = template.split(placeholder, 1)
-        max_prompt_len = max(
-            0, BotConstants.MAX_CAPTION_LENGTH - len(prefix) - len(suffix)
-        )
+        max_prompt_len = max(0, BotConstants.MAX_CAPTION_LENGTH - len(prefix) - len(suffix))
         escaped_prompt = GenerationService._build_escaped_prompt(prompt, max_prompt_len)
         return f"{prefix}{escaped_prompt}{suffix}"
 
@@ -685,6 +679,7 @@ class GenerationService:
         created_at: str | None,
     ) -> int | None:
         """Parse generation duration in seconds."""
+
         def parse_datetime(value: str | None) -> datetime | None:
             if not value:
                 return None
@@ -799,9 +794,7 @@ class GenerationService:
             # Fallback: send URL as text
             if not sent_document:
                 await GenerationService._retry_send(
-                    lambda u=url: bot.send_message(
-                        chat_id, u, reply_to_message_id=reply_to_message_id
-                    )
+                    lambda u=url: bot.send_message(chat_id, u, reply_to_message_id=reply_to_message_id)
                 )
 
         if document_failed:
@@ -900,9 +893,7 @@ class GenerationService:
                     pass
 
                 if outputs:
-                    await GenerationService.send_results(
-                        bot, chat_id, outputs, prompt_message_id, caption_text, _
-                    )
+                    await GenerationService.send_results(bot, chat_id, outputs, prompt_message_id, caption_text, _)
                 return
 
             # Handle failure

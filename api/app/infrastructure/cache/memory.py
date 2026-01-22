@@ -1,4 +1,5 @@
 """In-memory cache implementation using TTL cache."""
+
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -8,6 +9,7 @@ from typing import Any, Dict, Optional
 @dataclass
 class CacheEntry:
     """Cache entry with TTL."""
+
     value: Any
     expires_at: datetime
 
@@ -60,11 +62,7 @@ class MemoryCache:
     async def _cleanup_expired(self) -> None:
         """Remove expired entries."""
         async with self._lock:
-            now = datetime.utcnow()
-            expired_keys = [
-                key for key, entry in self._cache.items()
-                if entry.is_expired()
-            ]
+            expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
             for key in expired_keys:
                 del self._cache[key]
 
@@ -100,9 +98,7 @@ class MemoryCache:
         """Set value in cache."""
         async with self._lock:
             await self._ensure_capacity()
-            expires_at = datetime.utcnow() + timedelta(
-                seconds=ttl if ttl is not None else self.default_ttl
-            )
+            expires_at = datetime.utcnow() + timedelta(seconds=ttl if ttl is not None else self.default_ttl)
             self._cache[key] = CacheEntry(value=value, expires_at=expires_at)
 
     async def delete(self, key: str) -> bool:
@@ -147,20 +143,16 @@ class MemoryCache:
         """Set multiple values."""
         async with self._lock:
             await self._ensure_capacity()
-            expires_at = datetime.utcnow() + timedelta(
-                seconds=ttl if ttl is not None else self.default_ttl
-            )
+            expires_at = datetime.utcnow() + timedelta(seconds=ttl if ttl is not None else self.default_ttl)
             for key, value in items.items():
                 self._cache[key] = CacheEntry(value=value, expires_at=expires_at)
 
     async def delete_pattern(self, pattern: str) -> int:
         """Delete keys matching pattern (simple glob)."""
         import fnmatch
+
         async with self._lock:
-            matching_keys = [
-                key for key in self._cache.keys()
-                if fnmatch.fnmatch(key, pattern)
-            ]
+            matching_keys = [key for key in self._cache.keys() if fnmatch.fnmatch(key, pattern)]
             for key in matching_keys:
                 del self._cache[key]
             return len(matching_keys)

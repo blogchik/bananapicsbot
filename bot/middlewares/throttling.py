@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 class ThrottlingMiddleware(BaseMiddleware):
     """
     Rate limiting middleware using Redis.
-    
+
     Features:
     - Separate limits for messages and callbacks
     - Per-user rate limiting

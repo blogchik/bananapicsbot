@@ -50,6 +50,7 @@ async def set_language(
 
     # Get new translator
     from locales import get_translator
+
     new_translator = get_translator(lang_code)
 
     language_name = manager.language_names.get(lang_code, lang_code)

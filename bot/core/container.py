@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class Container:
     """
     Dependency injection container.
-    
+
     Holds all shared instances and provides access to them.
     Implements lazy initialization for better startup performance.
     """
@@ -87,6 +87,7 @@ class Container:
         """Get API client instance."""
         if self._api_client is None:
             from infrastructure.api_client import ApiClient
+
             self._api_client = ApiClient(
                 base_url=self.settings.api_base_url,
                 timeout_seconds=self.settings.api_timeout_seconds,
@@ -98,6 +99,7 @@ class Container:
         """Get Redis client instance."""
         if self._redis_client is None:
             from infrastructure.redis_client import RedisClient
+
             self._redis_client = RedisClient(
                 url=self.settings.redis_url,
                 prefix=self.settings.redis_prefix,

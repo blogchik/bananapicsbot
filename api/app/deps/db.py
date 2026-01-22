@@ -1,4 +1,5 @@
 """Database dependencies."""
+
 from collections.abc import AsyncGenerator, Generator
 from typing import Annotated
 
@@ -44,4 +45,3 @@ async def init_database() -> None:
 async def shutdown_database() -> None:
     """Shutdown database connection."""
     await Database.close()
-

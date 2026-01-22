@@ -1,4 +1,5 @@
 """Admin use cases."""
+
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -22,6 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class DashboardStats:
     """Admin dashboard statistics."""
+
     # Users
     total_users: int
     active_users_7d: int
@@ -84,18 +86,15 @@ class GetStatsUseCase:
             active_users_30d=user_stats["active_30d"],
             new_users_today=user_stats["new_today"],
             banned_users=user_stats["banned_users"],
-
             # Generations
             total_generations=gen_stats["total_generations"],
             completed_generations=gen_stats["completed"],
             failed_generations=gen_stats["failed"],
             success_rate=gen_stats["success_rate"],
-
             # Revenue
             total_deposits=revenue_stats["total_deposits"],
             total_spent=revenue_stats["total_spent"],
             net_revenue=revenue_stats["net_revenue"],
-
             # Payments
             total_payments=payment_stats["total_payments"],
             completed_payments=payment_stats["completed_payments"],

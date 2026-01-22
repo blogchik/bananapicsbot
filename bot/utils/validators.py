@@ -9,7 +9,7 @@ from core.constants import BotConstants
 def validate_prompt(prompt: str) -> tuple[bool, Optional[str]]:
     """
     Validate generation prompt.
-    
+
     Returns:
         Tuple of (is_valid, error_message)
     """
@@ -27,10 +27,12 @@ def validate_prompt(prompt: str) -> tuple[bool, Optional[str]]:
     return True, None
 
 
-def validate_amount(text: str, min_value: int = 1, max_value: int = 1_000_000) -> tuple[bool, Optional[int], Optional[str]]:
+def validate_amount(
+    text: str, min_value: int = 1, max_value: int = 1_000_000
+) -> tuple[bool, Optional[int], Optional[str]]:
     """
     Validate numeric amount input.
-    
+
     Returns:
         Tuple of (is_valid, parsed_value, error_message)
     """
@@ -56,7 +58,7 @@ def validate_amount(text: str, min_value: int = 1, max_value: int = 1_000_000) -
 def validate_telegram_id(text: str) -> tuple[bool, Optional[int], Optional[str]]:
     """
     Validate Telegram user ID.
-    
+
     Returns:
         Tuple of (is_valid, parsed_id, error_message)
     """
@@ -76,7 +78,7 @@ def validate_telegram_id(text: str) -> tuple[bool, Optional[int], Optional[str]]
 def validate_username(text: str) -> tuple[bool, Optional[str], Optional[str]]:
     """
     Validate Telegram username.
-    
+
     Returns:
         Tuple of (is_valid, normalized_username, error_message)
     """

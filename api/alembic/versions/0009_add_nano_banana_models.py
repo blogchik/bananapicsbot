@@ -118,6 +118,4 @@ def downgrade() -> None:
     op.execute(
         "DELETE FROM model_prices WHERE model_id IN (SELECT id FROM model_catalog WHERE key IN ('nano-banana', 'nano-banana-pro'))"
     )
-    op.execute(
-        "DELETE FROM model_catalog WHERE key IN ('nano-banana', 'nano-banana-pro')"
-    )
+    op.execute("DELETE FROM model_catalog WHERE key IN ('nano-banana', 'nano-banana-pro')")

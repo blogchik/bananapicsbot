@@ -15,7 +15,7 @@ def truncate_text(
     if len(text) <= max_length:
         return text
 
-    return text[:max_length - len(suffix)] + suffix
+    return text[: max_length - len(suffix)] + suffix
 
 
 def escape_html(text: str) -> str:
@@ -56,7 +56,7 @@ def safe_float(value: Optional[str], default: float = 0.0) -> float:
 
 def chunk_list(lst: list, chunk_size: int) -> list:
     """Split list into chunks of given size."""
-    return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
+    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def first_or_none(lst: list) -> Optional[any]:
@@ -80,7 +80,7 @@ def get_user_link(user_id: int, name: str) -> str:
 def pluralize(count: int, one: str, few: str, many: str) -> str:
     """
     Russian/Uzbek pluralization.
-    
+
     Example: pluralize(5, "кредит", "кредита", "кредитов")
     """
     if count % 10 == 1 and count % 100 != 11:

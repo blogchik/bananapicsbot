@@ -82,10 +82,7 @@ async def open_topup_menu(call: CallbackQuery, state: FSMContext) -> None:
     presets = options.get("preset_stars") or []
     numerator = int(options.get("exchange_numerator", 1))
     denominator = int(options.get("exchange_denominator", 1))
-    preset_pairs = [
-        (amount, calculate_credits(amount, numerator, denominator))
-        for amount in presets
-    ]
+    preset_pairs = [(amount, calculate_credits(amount, numerator, denominator)) for amount in presets]
     rate_line = format_exchange_rate(numerator, denominator)
     text = (
         "⭐ Balans to'ldirish\n"
@@ -204,10 +201,6 @@ async def handle_successful_payment(message: Message) -> None:
     credits_added = result.get("credits_added")
     balance = result.get("balance")
     await message.answer(
-        (
-            "✅ To'lov qabul qilindi.\n"
-            f"{payment.total_amount} ⭐ → {credits_added} credit\n"
-            f"Balans: {balance}"
-        ),
+        (f"✅ To'lov qabul qilindi.\n{payment.total_amount} ⭐ → {credits_added} credit\nBalans: {balance}"),
         reply_to_message_id=message.message_id,
     )

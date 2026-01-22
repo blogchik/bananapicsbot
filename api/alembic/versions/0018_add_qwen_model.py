@@ -71,9 +71,7 @@ def upgrade() -> None:
     )
 
     # Get model ID
-    model_id = conn.execute(
-        sa.text("SELECT id FROM model_catalog WHERE key = 'qwen'")
-    ).scalar_one()
+    model_id = conn.execute(sa.text("SELECT id FROM model_catalog WHERE key = 'qwen'")).scalar_one()
 
     # Check if price already exists
     existing_price = conn.execute(
@@ -108,11 +106,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     conn = op.get_bind()
     conn.execute(
-        sa.text(
-            "DELETE FROM model_prices WHERE model_id IN "
-            "(SELECT id FROM model_catalog WHERE key = 'qwen')"
-        )
+        sa.text("DELETE FROM model_prices WHERE model_id IN (SELECT id FROM model_catalog WHERE key = 'qwen')")
     )
-    conn.execute(
-        sa.text("DELETE FROM model_catalog WHERE key = 'qwen'")
-    )
+    conn.execute(sa.text("DELETE FROM model_catalog WHERE key = 'qwen'"))

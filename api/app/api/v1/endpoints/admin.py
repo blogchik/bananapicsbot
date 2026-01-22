@@ -1,4 +1,5 @@
 """Admin endpoints for bot administration."""
+
 from decimal import Decimal
 from typing import Optional
 
@@ -31,6 +32,7 @@ router = APIRouter(prefix="/admin")
 
 
 # ============ Dashboard Stats ============
+
 
 @router.get("/stats", response_model=DashboardStatsOut)
 async def get_dashboard_stats(
@@ -80,6 +82,7 @@ async def get_dashboard_stats(
 
 # ============ User Management ============
 
+
 @router.get("/users", response_model=UserListOut)
 async def search_users(
     query: Optional[str] = Query(default=None),
@@ -103,23 +106,25 @@ async def search_users(
             referral_count = await service.get_user_referral_count(user.id)
             gen_count = await service.get_user_generation_count(user.id)
 
-            result_users.append(AdminUserOut(
-                telegram_id=user.telegram_id,
-                username=None,
-                first_name=None,
-                last_name=None,
-                language_code="uz",
-                is_active=True,
-                is_banned=False,
-                ban_reason=None,
-                trial_remaining=3,
-                balance=Decimal(balance),
-                referrer_id=user.referred_by_id,
-                referral_count=referral_count,
-                generation_count=gen_count,
-                created_at=user.created_at,
-                last_active_at=None,
-            ))
+            result_users.append(
+                AdminUserOut(
+                    telegram_id=user.telegram_id,
+                    username=None,
+                    first_name=None,
+                    last_name=None,
+                    language_code="uz",
+                    is_active=True,
+                    is_banned=False,
+                    ban_reason=None,
+                    trial_remaining=3,
+                    balance=Decimal(balance),
+                    referrer_id=user.referred_by_id,
+                    referral_count=referral_count,
+                    generation_count=gen_count,
+                    created_at=user.created_at,
+                    last_active_at=None,
+                )
+            )
 
         return UserListOut(
             users=result_users,
@@ -199,6 +204,7 @@ async def get_user(
 
 # ============ Credits Management ============
 
+
 @router.post("/credits", response_model=AdminCreditOut)
 async def adjust_credits(
     data: AdminCreditIn,
@@ -241,6 +247,7 @@ async def adjust_credits(
 
 # ============ Health Check ============
 
+
 @router.get("/health")
 async def health_check():
     """Admin API health check."""
@@ -248,6 +255,7 @@ async def health_check():
 
 
 # ============ User Generations ============
+
 
 @router.get("/users/{telegram_id}/generations")
 async def get_user_generations(
@@ -276,6 +284,7 @@ async def get_user_generations(
 
 
 # ============ Refund Generation ============
+
 
 @router.post("/generations/{generation_id}/refund")
 async def refund_generation(
@@ -313,6 +322,7 @@ async def refund_generation(
 
 # ============ User Payments ============
 
+
 @router.get("/users/{telegram_id}/payments")
 async def get_user_payments(
     telegram_id: int,
@@ -340,6 +350,7 @@ async def get_user_payments(
 
 
 # ============ Broadcast Management ============
+
 
 @router.post("/broadcasts", response_model=BroadcastOut)
 async def create_broadcast(
@@ -443,6 +454,7 @@ async def start_broadcast(
 
         # Start broadcast via Celery
         from app.worker.tasks import start_broadcast_task
+
         start_broadcast_task.delay(broadcast.id)
 
         return {"status": "started", "public_id": public_id}

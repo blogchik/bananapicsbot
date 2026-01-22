@@ -23,6 +23,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
     """Base class for all models."""
+
     pass
 
 
@@ -76,44 +77,24 @@ class UserModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     referral_code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
-    referred_by_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id"), nullable=True, index=True
-    )
+    referred_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     language_code: Mapped[str] = mapped_column(String(10), default="uz")
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now()
-    )
-    last_active_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    referrer: Mapped[Optional["UserModel"]] = relationship(
-        "UserModel", remote_side=[id], back_populates="referrals"
-    )
-    referrals: Mapped[list["UserModel"]] = relationship(
-        "UserModel", back_populates="referrer"
-    )
-    ledger_entries: Mapped[list["LedgerEntryModel"]] = relationship(
-        "LedgerEntryModel", back_populates="user"
-    )
-    generations: Mapped[list["GenerationModel"]] = relationship(
-        "GenerationModel", back_populates="user"
-    )
-    payments: Mapped[list["PaymentModel"]] = relationship(
-        "PaymentModel", back_populates="user"
-    )
-    trial_uses: Mapped[list["TrialUseModel"]] = relationship(
-        "TrialUseModel", back_populates="user"
-    )
+    referrer: Mapped[Optional["UserModel"]] = relationship("UserModel", remote_side=[id], back_populates="referrals")
+    referrals: Mapped[list["UserModel"]] = relationship("UserModel", back_populates="referrer")
+    ledger_entries: Mapped[list["LedgerEntryModel"]] = relationship("LedgerEntryModel", back_populates="user")
+    generations: Mapped[list["GenerationModel"]] = relationship("GenerationModel", back_populates="user")
+    payments: Mapped[list["PaymentModel"]] = relationship("PaymentModel", back_populates="user")
+    trial_uses: Mapped[list["TrialUseModel"]] = relationship("TrialUseModel", back_populates="user")
 
 
 class LedgerEntryModel(Base):
@@ -128,15 +109,11 @@ class LedgerEntryModel(Base):
     reference_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped[UserModel] = relationship("UserModel", back_populates="ledger_entries")
 
-    __table_args__ = (
-        Index("ix_ledger_user_created", "user_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_ledger_user_created", "user_id", "created_at"),)
 
 
 class ModelCatalogModel(Base):
@@ -156,16 +133,10 @@ class ModelCatalogModel(Base):
     supports_style: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    prices: Mapped[list["ModelPriceModel"]] = relationship(
-        "ModelPriceModel", back_populates="model"
-    )
-    generations: Mapped[list["GenerationModel"]] = relationship(
-        "GenerationModel", back_populates="model"
-    )
+    prices: Mapped[list["ModelPriceModel"]] = relationship("ModelPriceModel", back_populates="model")
+    generations: Mapped[list["GenerationModel"]] = relationship("GenerationModel", back_populates="model")
 
 
 class ModelPriceModel(Base):
@@ -178,13 +149,9 @@ class ModelPriceModel(Base):
     currency: Mapped[str] = mapped_column(String(20), default="credit")
     unit_price: Mapped[int] = mapped_column(Integer)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    model: Mapped[ModelCatalogModel] = relationship(
-        "ModelCatalogModel", back_populates="prices"
-    )
+    model: Mapped[ModelCatalogModel] = relationship("ModelCatalogModel", back_populates="prices")
 
 
 class GenerationModel(Base):
@@ -193,9 +160,7 @@ class GenerationModel(Base):
     __tablename__ = "generation_requests"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    public_id: Mapped[str] = mapped_column(
-        String(36), unique=True, index=True, default=lambda: str(uuid.uuid4())
-    )
+    public_id: Mapped[str] = mapped_column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     model_id: Mapped[int] = mapped_column(ForeignKey("model_catalog.id"), index=True)
     prompt: Mapped[str] = mapped_column(Text)
@@ -212,32 +177,18 @@ class GenerationModel(Base):
     is_trial: Mapped[bool] = mapped_column(Boolean, default=False)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     wavespeed_request_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now()
-    )
-    started_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped[UserModel] = relationship("UserModel", back_populates="generations")
-    model: Mapped[ModelCatalogModel] = relationship(
-        "ModelCatalogModel", back_populates="generations"
-    )
+    model: Mapped[ModelCatalogModel] = relationship("ModelCatalogModel", back_populates="generations")
     references: Mapped[list["GenerationReferenceModel"]] = relationship(
         "GenerationReferenceModel", back_populates="generation"
     )
-    results: Mapped[list["GenerationResultModel"]] = relationship(
-        "GenerationResultModel", back_populates="generation"
-    )
-    jobs: Mapped[list["GenerationJobModel"]] = relationship(
-        "GenerationJobModel", back_populates="generation"
-    )
+    results: Mapped[list["GenerationResultModel"]] = relationship("GenerationResultModel", back_populates="generation")
+    jobs: Mapped[list["GenerationJobModel"]] = relationship("GenerationJobModel", back_populates="generation")
 
     __table_args__ = (
         Index("ix_generation_user_status", "user_id", "status"),
@@ -251,18 +202,12 @@ class GenerationReferenceModel(Base):
     __tablename__ = "generation_references"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    request_id: Mapped[int] = mapped_column(
-        ForeignKey("generation_requests.id"), index=True
-    )
+    request_id: Mapped[int] = mapped_column(ForeignKey("generation_requests.id"), index=True)
     telegram_file_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    generation: Mapped[GenerationModel] = relationship(
-        "GenerationModel", back_populates="references"
-    )
+    generation: Mapped[GenerationModel] = relationship("GenerationModel", back_populates="references")
 
 
 class GenerationResultModel(Base):
@@ -271,18 +216,12 @@ class GenerationResultModel(Base):
     __tablename__ = "generation_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    request_id: Mapped[int] = mapped_column(
-        ForeignKey("generation_requests.id"), index=True
-    )
+    request_id: Mapped[int] = mapped_column(ForeignKey("generation_requests.id"), index=True)
     url: Mapped[str] = mapped_column(String(500))
     telegram_file_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    generation: Mapped[GenerationModel] = relationship(
-        "GenerationModel", back_populates="results"
-    )
+    generation: Mapped[GenerationModel] = relationship("GenerationModel", back_populates="results")
 
 
 class GenerationJobModel(Base):
@@ -291,25 +230,15 @@ class GenerationJobModel(Base):
     __tablename__ = "generation_jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    request_id: Mapped[int] = mapped_column(
-        ForeignKey("generation_requests.id"), index=True
-    )
+    request_id: Mapped[int] = mapped_column(ForeignKey("generation_requests.id"), index=True)
     wavespeed_request_id: Mapped[str] = mapped_column(String(100), index=True)
-    status: Mapped[JobStatusEnum] = mapped_column(
-        Enum(JobStatusEnum), default=JobStatusEnum.queued
-    )
+    status: Mapped[JobStatusEnum] = mapped_column(Enum(JobStatusEnum), default=JobStatusEnum.queued)
     output_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
-    generation: Mapped[GenerationModel] = relationship(
-        "GenerationModel", back_populates="jobs"
-    )
+    generation: Mapped[GenerationModel] = relationship("GenerationModel", back_populates="jobs")
 
 
 class TrialUseModel(Base):
@@ -319,12 +248,8 @@ class TrialUseModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    generation_id: Mapped[int] = mapped_column(
-        ForeignKey("generation_requests.id"), index=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    generation_id: Mapped[int] = mapped_column(ForeignKey("generation_requests.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped[UserModel] = relationship("UserModel", back_populates="trial_uses")
 
@@ -339,25 +264,15 @@ class PaymentModel(Base):
     amount: Mapped[int] = mapped_column(Integer)  # Stars amount
     credits: Mapped[int] = mapped_column(Integer)  # Credits to add
     provider: Mapped[str] = mapped_column(String(50))
-    status: Mapped[PaymentStatusEnum] = mapped_column(
-        Enum(PaymentStatusEnum), default=PaymentStatusEnum.pending
-    )
+    status: Mapped[PaymentStatusEnum] = mapped_column(Enum(PaymentStatusEnum), default=PaymentStatusEnum.pending)
     currency: Mapped[str] = mapped_column(String(10), default="XTR")
-    telegram_charge_id: Mapped[Optional[str]] = mapped_column(
-        String(200), unique=True, nullable=True
-    )
+    telegram_charge_id: Mapped[Optional[str]] = mapped_column(String(200), unique=True, nullable=True)
     provider_charge_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     invoice_payload: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    refunded_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    refunded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped[UserModel] = relationship("UserModel", back_populates="payments")
 
@@ -377,19 +292,11 @@ class BroadcastModel(Base):
     content_type: Mapped[str] = mapped_column(String(20))
     text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     media_file_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    status: Mapped[BroadcastStatusEnum] = mapped_column(
-        Enum(BroadcastStatusEnum), default=BroadcastStatusEnum.pending
-    )
+    status: Mapped[BroadcastStatusEnum] = mapped_column(Enum(BroadcastStatusEnum), default=BroadcastStatusEnum.pending)
     target_count: Mapped[int] = mapped_column(Integer, default=0)
     sent_count: Mapped[int] = mapped_column(Integer, default=0)
     failed_count: Mapped[int] = mapped_column(Integer, default=0)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    started_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

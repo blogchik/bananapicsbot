@@ -128,10 +128,7 @@ def build_result_caption(
     credits = cost if cost is not None else 0
     duration_text = f"{duration_seconds}s" if duration_seconds is not None else "-"
     result_text = _(TranslationKey.GEN_RESULT_CAPTION).format(
-        model=hashtag,
-        credits=credits,
-        duration=duration_text,
-        prompt="{PROMPT_PLACEHOLDER}"
+        model=hashtag, credits=credits, duration=duration_text, prompt="{PROMPT_PLACEHOLDER}"
     )
     prefix = result_text.split("{PROMPT_PLACEHOLDER}")[0]
     suffix = result_text.split("{PROMPT_PLACEHOLDER}")[1] if "{PROMPT_PLACEHOLDER}" in result_text else ""
@@ -177,11 +174,7 @@ async def download_output_file(url: str) -> tuple[bytes, str, str | None]:
             resp.raise_for_status()
             content_type = resp.headers.get("Content-Type")
             disposition = resp.headers.get("Content-Disposition")
-            filename = (
-                extract_filename_from_disposition(disposition)
-                or extract_filename_from_url(url)
-                or "result"
-            )
+            filename = extract_filename_from_disposition(disposition) or extract_filename_from_url(url) or "result"
             filename = os.path.basename(filename)
             filename = ensure_extension(filename, content_type)
             return await resp.read(), filename, content_type
@@ -243,12 +236,8 @@ def normalize_models(models: list[dict]) -> list[dict]:
         aspect_ratio_options = list(options.get("aspect_ratio_options") or [])
         resolution_options = list(options.get("resolution_options") or [])
         supports_size = bool(options.get("supports_size")) or bool(size_options)
-        supports_aspect_ratio = bool(options.get("supports_aspect_ratio")) or bool(
-            aspect_ratio_options
-        )
-        supports_resolution = bool(options.get("supports_resolution")) or bool(
-            resolution_options
-        )
+        supports_aspect_ratio = bool(options.get("supports_aspect_ratio")) or bool(aspect_ratio_options)
+        supports_resolution = bool(options.get("supports_resolution")) or bool(resolution_options)
         normalized.append(
             {
                 "id": int(model_id),
@@ -427,8 +416,8 @@ async def process_media_group(key: tuple[int, str]) -> None:
         return
 
     if _ is None:
-         # Fallback if loc is missing (should not happen with new logical flow)
-         return
+        # Fallback if loc is missing (should not happen with new logical flow)
+        return
 
     await process_reference_batch(prompt_message, state, files, _)
 
@@ -492,9 +481,7 @@ async def handle_prompt_message(message: Message, state: FSMContext, _: Localiza
     client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
 
     if await has_active_generation(client, user.id):
-        await message.answer(
-            "Sizda hozir aktiv generatsiya bor. Iltimos, tugashini kuting va keyinroq urinib ko'ring."
-        )
+        await message.answer("Sizda hozir aktiv generatsiya bor. Iltimos, tugashini kuting va keyinroq urinib ko'ring.")
         return
 
     try:
@@ -1120,11 +1107,7 @@ async def send_outputs(
         if sent_document and caption_pending:
             caption_pending = False
         if not sent_document:
-            await retry_send(
-                lambda: bot.send_message(
-                    chat_id, url, reply_to_message_id=reply_to_message_id
-                )
-            )
+            await retry_send(lambda: bot.send_message(chat_id, url, reply_to_message_id=reply_to_message_id))
     if document_failed:
         await retry_send(
             lambda: bot.send_message(
@@ -1149,6 +1132,7 @@ async def poll_generation_status(
 ) -> None:
     consecutive_errors = 0
     import time
+
     start_time = time.time()
 
     while True:
@@ -1179,8 +1163,7 @@ async def poll_generation_status(
                 detail_text = f" ({detail_value})" if detail_value else ""
                 try:
                     await bot.edit_message_text(
-                        f"{_(TranslationKey.GEN_STATUS_CHECK_ERROR)}"
-                        f"{detail_text}",
+                        f"{_(TranslationKey.GEN_STATUS_CHECK_ERROR)}{detail_text}",
                         chat_id=chat_id,
                         message_id=message_id,
                     )
@@ -1215,17 +1198,13 @@ async def poll_generation_status(
                 result.get("completed_at"),
                 result.get("created_at"),
             )
-            caption_text = build_result_caption(
-                prompt, model_name, result.get("cost"), duration_seconds, _
-            )
+            caption_text = build_result_caption(prompt, model_name, result.get("cost"), duration_seconds, _)
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=message_id)
             except TelegramBadRequest:
                 pass
             if outputs:
-                await send_outputs(
-                    bot, chat_id, outputs, prompt_message_id, caption_text, _
-                )
+                await send_outputs(bot, chat_id, outputs, prompt_message_id, caption_text, _)
             return
         if status == "failed":
             try:
@@ -1251,7 +1230,6 @@ async def submit_generation(call: CallbackQuery, state: FSMContext, _: Localizat
     prompt = data.get("prompt")
     model_id = int(data.get("model_id", 0))
     model_name = data.get("model_name", "-")
-    price = int(data.get("price", 0))
     size = data.get("size")
     aspect_ratio = data.get("aspect_ratio")
     resolution = data.get("resolution")
@@ -1307,15 +1285,10 @@ async def submit_generation(call: CallbackQuery, state: FSMContext, _: Localizat
             if isinstance(detail, dict):
                 active_id = detail.get("active_request_id")
             suffix = f" (ID: {active_id})" if active_id else ""
-            await call.message.edit_text(
-                f"{_(TranslationKey.GEN_CONFLICT)}"
-                f"{suffix}"
-            )
+            await call.message.edit_text(f"{_(TranslationKey.GEN_CONFLICT)}{suffix}")
             return
         if exc.status == 402:
-            await call.message.edit_text(
-                _(TranslationKey.GEN_INSUFFICIENT_BALANCE), reply_markup=profile_menu()
-            )
+            await call.message.edit_text(_(TranslationKey.GEN_INSUFFICIENT_BALANCE), reply_markup=profile_menu())
             return
         detail = exc.data.get("detail") if isinstance(exc.data, dict) else None
         if detail:
@@ -1325,14 +1298,10 @@ async def submit_generation(call: CallbackQuery, state: FSMContext, _: Localizat
                 detail_text = str(detail)
             await call.message.edit_text(_(TranslationKey.GEN_ERROR).format(error=detail_text))
             return
-        await call.message.edit_text(
-            _(TranslationKey.GEN_ERROR_GENERIC)
-        )
+        await call.message.edit_text(_(TranslationKey.GEN_ERROR_GENERIC))
         return
     except Exception:
-        await call.message.edit_text(
-            _(TranslationKey.GEN_ERROR_GENERIC)
-        )
+        await call.message.edit_text(_(TranslationKey.GEN_ERROR_GENERIC))
         return
 
     request = result.get("request", {})
@@ -1353,9 +1322,7 @@ async def submit_generation(call: CallbackQuery, state: FSMContext, _: Localizat
             request.get("completed_at"),
             request.get("created_at"),
         )
-        caption_text = build_result_caption(
-            prompt, model_name, request.get("cost"), duration_seconds, _
-        )
+        caption_text = build_result_caption(prompt, model_name, request.get("cost"), duration_seconds, _)
         try:
             await call.message.delete()
         except TelegramBadRequest:

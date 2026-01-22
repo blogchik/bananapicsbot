@@ -1,4 +1,5 @@
 """Broadcast repository implementation."""
+
 from datetime import datetime
 from typing import Any, Dict, Optional, Sequence
 from uuid import UUID
@@ -83,11 +84,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         elif status in (BroadcastStatus.COMPLETED, BroadcastStatus.FAILED, BroadcastStatus.CANCELLED):
             values["completed_at"] = datetime.utcnow()
 
-        query = (
-            update(BroadcastModel)
-            .where(BroadcastModel.id == broadcast_id)
-            .values(**values)
-        )
+        query = update(BroadcastModel).where(BroadcastModel.id == broadcast_id).values(**values)
         result = await self.session.execute(query)
         return result.rowcount > 0
 
@@ -138,11 +135,7 @@ class BroadcastRepository(BaseRepository[BroadcastModel], IBroadcastRepository):
         if status:
             query = query.where(BroadcastModel.status == status.value)
 
-        query = (
-            query.order_by(BroadcastModel.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        query = query.order_by(BroadcastModel.created_at.desc()).offset(offset).limit(limit)
 
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]

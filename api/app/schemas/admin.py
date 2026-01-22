@@ -1,4 +1,5 @@
 """Admin schemas."""
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
@@ -8,8 +9,10 @@ from pydantic import BaseModel, Field
 
 # ============ Credits ============
 
+
 class AdminCreditIn(BaseModel):
     """Admin credit adjustment input."""
+
     telegram_id: int
     amount: int = Field(..., description="Amount to add (positive) or subtract (negative)")
     reason: Optional[str] = Field(None, max_length=255)
@@ -17,6 +20,7 @@ class AdminCreditIn(BaseModel):
 
 class AdminCreditOut(BaseModel):
     """Admin credit adjustment output."""
+
     telegram_id: int
     amount: int
     old_balance: int
@@ -26,8 +30,10 @@ class AdminCreditOut(BaseModel):
 
 # ============ Users ============
 
+
 class UserSearchQuery(BaseModel):
     """User search query."""
+
     query: Optional[str] = None
     is_banned: Optional[bool] = None
     offset: int = Field(default=0, ge=0)
@@ -36,6 +42,7 @@ class UserSearchQuery(BaseModel):
 
 class UserBanRequest(BaseModel):
     """User ban/unban request."""
+
     telegram_id: int
     ban: bool
     reason: Optional[str] = None
@@ -43,6 +50,7 @@ class UserBanRequest(BaseModel):
 
 class AdminUserOut(BaseModel):
     """Admin user output."""
+
     telegram_id: int
     username: Optional[str]
     first_name: Optional[str]
@@ -62,6 +70,7 @@ class AdminUserOut(BaseModel):
 
 class UserListOut(BaseModel):
     """User list output."""
+
     users: List[AdminUserOut]
     total: int
     offset: int
@@ -70,8 +79,10 @@ class UserListOut(BaseModel):
 
 # ============ Statistics ============
 
+
 class DashboardStatsOut(BaseModel):
     """Dashboard statistics output."""
+
     # Users
     total_users: int
     active_users_7d: int
@@ -107,6 +118,7 @@ class DashboardStatsOut(BaseModel):
 
 class DailyStatItem(BaseModel):
     """Daily stat item."""
+
     date: str
     count: int
     amount: Optional[float] = None
@@ -114,6 +126,7 @@ class DailyStatItem(BaseModel):
 
 class DailyReportOut(BaseModel):
     """Daily report output."""
+
     user_stats: Dict[str, Any]
     generation_daily: List[Dict[str, Any]]
     revenue_daily: List[Dict[str, Any]]
@@ -122,8 +135,10 @@ class DailyReportOut(BaseModel):
 
 # ============ Generations ============
 
+
 class GenerationSearchQuery(BaseModel):
     """Generation search query."""
+
     telegram_id: Optional[int] = None
     model_slug: Optional[str] = None
     status: Optional[str] = None
@@ -133,6 +148,7 @@ class GenerationSearchQuery(BaseModel):
 
 class AdminGenerationOut(BaseModel):
     """Admin generation output."""
+
     id: UUID
     public_id: str
     telegram_id: int
@@ -146,12 +162,14 @@ class AdminGenerationOut(BaseModel):
 
 class RefundRequest(BaseModel):
     """Refund request."""
+
     generation_id: UUID
     reason: Optional[str] = None
 
 
 class RefundOut(BaseModel):
     """Refund output."""
+
     generation_id: UUID
     telegram_id: int
     amount: Decimal
@@ -160,8 +178,10 @@ class RefundOut(BaseModel):
 
 # ============ Broadcast ============
 
+
 class BroadcastFilterType(str):
     """Broadcast filter types."""
+
     ALL = "all"
     ACTIVE_7D = "active_7d"
     ACTIVE_30D = "active_30d"
@@ -172,6 +192,7 @@ class BroadcastFilterType(str):
 
 class BroadcastCreateRequest(BaseModel):
     """Broadcast create request."""
+
     admin_id: int
     content_type: str = Field(..., pattern="^(text|photo|video|audio|sticker)$")
     text: Optional[str] = None
@@ -184,6 +205,7 @@ class BroadcastCreateRequest(BaseModel):
 
 class BroadcastOut(BaseModel):
     """Broadcast output."""
+
     id: int
     public_id: str
     admin_id: int
@@ -208,6 +230,7 @@ class BroadcastOut(BaseModel):
 
 class BroadcastStatusOut(BaseModel):
     """Broadcast status output."""
+
     public_id: str
     status: str
     total_users: int
@@ -221,14 +244,17 @@ class BroadcastStatusOut(BaseModel):
 
 class BroadcastListOut(BaseModel):
     """Broadcast list output."""
+
     broadcasts: List[BroadcastOut]
     total: int
 
 
 # ============ Revenue ============
 
+
 class RevenueStatsOut(BaseModel):
     """Revenue statistics output."""
+
     period_days: int
     total_deposits: float
     total_spent: float
@@ -240,6 +266,7 @@ class RevenueStatsOut(BaseModel):
 
 class PaymentStatsOut(BaseModel):
     """Payment statistics output."""
+
     period_days: int
     total_payments: int
     completed_payments: int
@@ -247,4 +274,3 @@ class PaymentStatsOut(BaseModel):
     total_amount: float
     total_credits: float
     by_provider: Dict[str, Dict[str, Any]]
-

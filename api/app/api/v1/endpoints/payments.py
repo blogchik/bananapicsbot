@@ -47,9 +47,7 @@ async def confirm_stars_payment(
         raise HTTPException(status_code=400, detail="Stars amount below minimum")
 
     existing = db.execute(
-        select(PaymentLedger).where(
-            PaymentLedger.telegram_charge_id == payload.telegram_charge_id
-        )
+        select(PaymentLedger).where(PaymentLedger.telegram_charge_id == payload.telegram_charge_id)
     ).scalar_one_or_none()
     if existing:
         balance = get_user_balance(db, existing.user_id)
@@ -113,9 +111,7 @@ async def mark_payment_refunded(
 ) -> dict:
     """Mark a payment as refunded by telegram_charge_id."""
     payment = db.execute(
-        select(PaymentLedger).where(
-            PaymentLedger.telegram_charge_id == telegram_charge_id
-        )
+        select(PaymentLedger).where(PaymentLedger.telegram_charge_id == telegram_charge_id)
     ).scalar_one_or_none()
 
     if not payment:

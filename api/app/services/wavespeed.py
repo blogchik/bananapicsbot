@@ -345,7 +345,7 @@ class WavespeedClient:
         enable_sync_mode: bool = True,
     ) -> WavespeedResponse:
         """Submit image to Ultimate Image Upscaler.
-        
+
         Args:
             image: Image URL
             target_resolution: 2k, 4k, or 8k
@@ -373,7 +373,7 @@ class WavespeedClient:
         enable_sync_mode: bool = True,
     ) -> WavespeedResponse:
         """Submit image to Topaz Denoise.
-        
+
         Args:
             image: Image URL
             model: Normal, Strong, or Extreme
@@ -401,7 +401,7 @@ class WavespeedClient:
         enable_sync_mode: bool = True,
     ) -> WavespeedResponse:
         """Submit image to Topaz Restore.
-        
+
         Args:
             image: Image URL
             model: Dust-Scratch or Dust-Scratch V2
@@ -430,7 +430,7 @@ class WavespeedClient:
         enable_sync_mode: bool = True,
     ) -> WavespeedResponse:
         """Submit image to Topaz Enhance.
-        
+
         Args:
             image: Image URL
             size: Output size (e.g., 1080*1080, up to 4096*4096)
@@ -542,17 +542,18 @@ class WavespeedClient:
         inputs: dict[str, Any] | None = None,
     ) -> WavespeedResponse:
         """Get pricing for a model with given inputs.
-        
+
         Args:
             model_id: Full model identifier (e.g., "bytedance/seedream-v4")
             inputs: Optional input parameters (prompt, size, quality, etc.)
-        
+
         Returns:
             WavespeedResponse with data containing:
                 - model_id: str
                 - unit_price: float (USD)
                 - currency: str ("USD")
         """
+
         def _call() -> WavespeedResponse:
             url = f"{self._client.base_url}/api/v3/model/pricing"
             headers = self._client._get_headers()
@@ -574,4 +575,3 @@ class WavespeedClient:
             return self._response_from_result(response.json())
 
         return await asyncio.to_thread(_call)
-

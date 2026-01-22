@@ -1,4 +1,5 @@
 """Broadcast service for managing broadcasts."""
+
 import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -75,16 +76,12 @@ class BroadcastService:
 
     async def get_broadcast_by_public_id(self, public_id: str) -> Optional[Broadcast]:
         """Get broadcast by public ID."""
-        result = await self.session.execute(
-            select(Broadcast).where(Broadcast.public_id == public_id)
-        )
+        result = await self.session.execute(select(Broadcast).where(Broadcast.public_id == public_id))
         return result.scalar_one_or_none()
 
     async def get_broadcast_by_id(self, broadcast_id: int) -> Optional[Broadcast]:
         """Get broadcast by internal ID."""
-        result = await self.session.execute(
-            select(Broadcast).where(Broadcast.id == broadcast_id)
-        )
+        result = await self.session.execute(select(Broadcast).where(Broadcast.id == broadcast_id))
         return result.scalar_one_or_none()
 
     async def list_broadcasts(
@@ -94,10 +91,7 @@ class BroadcastService:
     ) -> List[Broadcast]:
         """List broadcasts, newest first."""
         result = await self.session.execute(
-            select(Broadcast)
-            .order_by(Broadcast.created_at.desc())
-            .offset(offset)
-            .limit(limit)
+            select(Broadcast).order_by(Broadcast.created_at.desc()).offset(offset).limit(limit)
         )
         return list(result.scalars().all())
 
@@ -151,12 +145,7 @@ class BroadcastService:
 
         elif filter_type == "paid_users":
             # Users who ever made a payment
-            paid_subquery = (
-                select(LedgerEntry.user_id)
-                .where(LedgerEntry.entry_type == "deposit")
-                .distinct()
-                .subquery()
-            )
+            paid_subquery = select(LedgerEntry.user_id).where(LedgerEntry.entry_type == "deposit").distinct().subquery()
             query = (
                 select(func.count(User.id))
                 .join(paid_subquery, User.id == paid_subquery.c.user_id)
@@ -221,12 +210,7 @@ class BroadcastService:
             )
 
         elif filter_type == "paid_users":
-            paid_subquery = (
-                select(LedgerEntry.user_id)
-                .where(LedgerEntry.entry_type == "deposit")
-                .distinct()
-                .subquery()
-            )
+            paid_subquery = select(LedgerEntry.user_id).where(LedgerEntry.entry_type == "deposit").distinct().subquery()
             query = (
                 select(User.telegram_id)
                 .join(paid_subquery, User.id == paid_subquery.c.user_id)

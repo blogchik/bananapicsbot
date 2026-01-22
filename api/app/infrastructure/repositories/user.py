@@ -1,4 +1,5 @@
 """User repository implementation."""
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, Optional, Sequence
@@ -88,11 +89,7 @@ class UserRepository(BaseRepository[UserModel], IUserRepository):
 
     async def update_last_active(self, telegram_id: int) -> None:
         """Update last active timestamp."""
-        query = (
-            update(UserModel)
-            .where(UserModel.telegram_id == telegram_id)
-            .values(last_active_at=datetime.utcnow())
-        )
+        query = update(UserModel).where(UserModel.telegram_id == telegram_id).values(last_active_at=datetime.utcnow())
         await self.session.execute(query)
 
     async def get_balance(self, telegram_id: int) -> Decimal:
@@ -164,18 +161,14 @@ class UserRepository(BaseRepository[UserModel], IUserRepository):
     async def count_active(self, days: int = 7) -> int:
         """Count active users in last N days."""
         since = datetime.utcnow() - timedelta(days=days)
-        query = select(func.count()).select_from(UserModel).where(
-            UserModel.last_active_at >= since
-        )
+        query = select(func.count()).select_from(UserModel).where(UserModel.last_active_at >= since)
         result = await self.session.execute(query)
         return result.scalar() or 0
 
     async def count_new_today(self) -> int:
         """Count new users today."""
         today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        query = select(func.count()).select_from(UserModel).where(
-            UserModel.created_at >= today
-        )
+        query = select(func.count()).select_from(UserModel).where(UserModel.created_at >= today)
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -198,9 +191,7 @@ class UserRepository(BaseRepository[UserModel], IUserRepository):
 
     async def count_referrals(self, telegram_id: int) -> int:
         """Count user's referrals."""
-        query = select(func.count()).select_from(UserModel).where(
-            UserModel.referrer_id == telegram_id
-        )
+        query = select(func.count()).select_from(UserModel).where(UserModel.referrer_id == telegram_id)
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -211,9 +202,7 @@ class UserRepository(BaseRepository[UserModel], IUserRepository):
         active_30d = await self.count_active(30)
         new_today = await self.count_new_today()
 
-        banned_query = select(func.count()).select_from(UserModel).where(
-            UserModel.is_banned == True
-        )
+        banned_query = select(func.count()).select_from(UserModel).where(UserModel.is_banned == True)
         banned_result = await self.session.execute(banned_query)
         banned = banned_result.scalar() or 0
 

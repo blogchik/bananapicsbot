@@ -82,12 +82,7 @@ def _normalize_option_list(values: Any) -> list[str]:
     for item in values:
         value = item
         if isinstance(item, dict):
-            value = (
-                item.get("value")
-                or item.get("id")
-                or item.get("key")
-                or item.get("name")
-            )
+            value = item.get("value") or item.get("id") or item.get("key") or item.get("name")
         if value is None:
             continue
         text = str(value).strip()
@@ -139,10 +134,7 @@ def _extract_from_inputs(inputs: Any, field: str) -> list[str]:
         name = item.get("name") or item.get("key") or item.get("param")
         if name == field:
             return _normalize_option_list(
-                item.get("options")
-                or item.get("values")
-                or item.get("enum")
-                or item.get("choices")
+                item.get("options") or item.get("values") or item.get("enum") or item.get("choices")
             )
     return []
 
@@ -160,46 +152,26 @@ def _extract_options_map(data: dict[str, Any]) -> dict[str, list[str]]:
 
     for key in ("input_schema", "schema", "input"):
         options_map["size"] = options_map["size"] or _extract_from_schema(data.get(key), "size")
-        options_map["aspect_ratio"] = options_map["aspect_ratio"] or _extract_from_schema(
-            data.get(key), "aspect_ratio"
-        )
-        options_map["resolution"] = options_map["resolution"] or _extract_from_schema(
-            data.get(key), "resolution"
-        )
-        options_map["quality"] = options_map["quality"] or _extract_from_schema(
-            data.get(key), "quality"
-        )
+        options_map["aspect_ratio"] = options_map["aspect_ratio"] or _extract_from_schema(data.get(key), "aspect_ratio")
+        options_map["resolution"] = options_map["resolution"] or _extract_from_schema(data.get(key), "resolution")
+        options_map["quality"] = options_map["quality"] or _extract_from_schema(data.get(key), "quality")
         options_map["input_fidelity"] = options_map["input_fidelity"] or _extract_from_schema(
             data.get(key), "input_fidelity"
         )
 
     inputs = data.get("inputs") or data.get("parameters") or data.get("params")
     options_map["size"] = options_map["size"] or _extract_from_inputs(inputs, "size")
-    options_map["aspect_ratio"] = options_map["aspect_ratio"] or _extract_from_inputs(
-        inputs, "aspect_ratio"
-    )
-    options_map["resolution"] = options_map["resolution"] or _extract_from_inputs(
-        inputs, "resolution"
-    )
-    options_map["quality"] = options_map["quality"] or _extract_from_inputs(
-        inputs, "quality"
-    )
-    options_map["input_fidelity"] = options_map["input_fidelity"] or _extract_from_inputs(
-        inputs, "input_fidelity"
-    )
+    options_map["aspect_ratio"] = options_map["aspect_ratio"] or _extract_from_inputs(inputs, "aspect_ratio")
+    options_map["resolution"] = options_map["resolution"] or _extract_from_inputs(inputs, "resolution")
+    options_map["quality"] = options_map["quality"] or _extract_from_inputs(inputs, "quality")
+    options_map["input_fidelity"] = options_map["input_fidelity"] or _extract_from_inputs(inputs, "input_fidelity")
 
-    options_map["size"] = options_map["size"] or _normalize_option_list(
-        data.get("sizes") or data.get("size_options")
-    )
+    options_map["size"] = options_map["size"] or _normalize_option_list(data.get("sizes") or data.get("size_options"))
     options_map["aspect_ratio"] = options_map["aspect_ratio"] or _normalize_option_list(
         data.get("aspect_ratio_options")
     )
-    options_map["resolution"] = options_map["resolution"] or _normalize_option_list(
-        data.get("resolution_options")
-    )
-    options_map["quality"] = options_map["quality"] or _normalize_option_list(
-        data.get("quality_options")
-    )
+    options_map["resolution"] = options_map["resolution"] or _normalize_option_list(data.get("resolution_options"))
+    options_map["quality"] = options_map["quality"] or _normalize_option_list(data.get("quality_options"))
     options_map["input_fidelity"] = options_map["input_fidelity"] or _normalize_option_list(
         data.get("input_fidelity_options")
     )

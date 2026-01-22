@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class UserContextMiddleware(BaseMiddleware):
     """
     User context middleware.
-    
+
     Syncs user with API and provides user context to handlers.
     """
 

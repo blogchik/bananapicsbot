@@ -1,4 +1,5 @@
 """Celery worker module."""
+
 from app.worker.celery import celery_app
 from app.worker.tasks import (
     cleanup_expired_generations,

@@ -1,4 +1,5 @@
 """Generation repository implementation."""
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, Optional, Sequence
@@ -94,11 +95,7 @@ class GenerationRepository(BaseRepository[GenerationModel], IGenerationRepositor
         if status in (GenerationStatus.COMPLETED, GenerationStatus.FAILED):
             values["completed_at"] = datetime.utcnow()
 
-        query = (
-            update(GenerationModel)
-            .where(GenerationModel.id == generation_id)
-            .values(**values)
-        )
+        query = update(GenerationModel).where(GenerationModel.id == generation_id).values(**values)
         result = await self.session.execute(query)
         return result.rowcount > 0
 
@@ -136,9 +133,7 @@ class GenerationRepository(BaseRepository[GenerationModel], IGenerationRepositor
         status: Optional[GenerationStatus] = None,
     ) -> int:
         """Count user's generations."""
-        query = select(func.count()).select_from(GenerationModel).where(
-            GenerationModel.telegram_id == telegram_id
-        )
+        query = select(func.count()).select_from(GenerationModel).where(GenerationModel.telegram_id == telegram_id)
 
         if status:
             query = query.where(GenerationModel.status == status.value)
@@ -148,9 +143,7 @@ class GenerationRepository(BaseRepository[GenerationModel], IGenerationRepositor
 
     async def get_result_urls(self, generation_id: UUID) -> Sequence[str]:
         """Get generation result URLs."""
-        query = select(GenerationResultModel.image_url).where(
-            GenerationResultModel.generation_id == generation_id
-        )
+        query = select(GenerationResultModel.image_url).where(GenerationResultModel.generation_id == generation_id)
         result = await self.session.execute(query)
         return [r for r in result.scalars().all()]
 
@@ -177,36 +170,40 @@ class GenerationRepository(BaseRepository[GenerationModel], IGenerationRepositor
         since = datetime.utcnow() - timedelta(days=days)
 
         # Total generations
-        total_query = select(func.count()).select_from(GenerationModel).where(
-            GenerationModel.created_at >= since
-        )
+        total_query = select(func.count()).select_from(GenerationModel).where(GenerationModel.created_at >= since)
         total_result = await self.session.execute(total_query)
         total = total_result.scalar() or 0
 
         # Completed
-        completed_query = select(func.count()).select_from(GenerationModel).where(
-            and_(
-                GenerationModel.created_at >= since,
-                GenerationModel.status == GenerationStatus.COMPLETED.value,
+        completed_query = (
+            select(func.count())
+            .select_from(GenerationModel)
+            .where(
+                and_(
+                    GenerationModel.created_at >= since,
+                    GenerationModel.status == GenerationStatus.COMPLETED.value,
+                )
             )
         )
         completed_result = await self.session.execute(completed_query)
         completed = completed_result.scalar() or 0
 
         # Failed
-        failed_query = select(func.count()).select_from(GenerationModel).where(
-            and_(
-                GenerationModel.created_at >= since,
-                GenerationModel.status == GenerationStatus.FAILED.value,
+        failed_query = (
+            select(func.count())
+            .select_from(GenerationModel)
+            .where(
+                and_(
+                    GenerationModel.created_at >= since,
+                    GenerationModel.status == GenerationStatus.FAILED.value,
+                )
             )
         )
         failed_result = await self.session.execute(failed_query)
         failed = failed_result.scalar() or 0
 
         # Credits used
-        credits_query = select(
-            func.coalesce(func.sum(GenerationModel.credits_charged), Decimal("0"))
-        ).where(
+        credits_query = select(func.coalesce(func.sum(GenerationModel.credits_charged), Decimal("0"))).where(
             and_(
                 GenerationModel.created_at >= since,
                 GenerationModel.status == GenerationStatus.COMPLETED.value,

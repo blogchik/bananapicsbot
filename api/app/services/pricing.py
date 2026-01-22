@@ -26,15 +26,15 @@ PRICING_CACHE_TTL_SECONDS = 600  # 10 minutes
 
 def usd_to_credits(usd_amount: float | Decimal) -> int:
     """Convert USD amount to credits.
-    
+
     Formula: credits = usd_amount * 1000
-    
+
     Args:
         usd_amount: Price in USD (e.g., 0.027 for seedream-v4)
-    
+
     Returns:
         Integer credit amount (e.g., 27 credits)
-    
+
     Examples:
         >>> usd_to_credits(0.027)
         27
@@ -45,20 +45,18 @@ def usd_to_credits(usd_amount: float | Decimal) -> int:
     """
     if isinstance(usd_amount, float):
         usd_amount = Decimal(str(usd_amount))
-    credits = (usd_amount * Decimal(str(CREDITS_PER_USD))).quantize(
-        Decimal("1"), rounding=ROUND_HALF_UP
-    )
+    credits = (usd_amount * Decimal(str(CREDITS_PER_USD))).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     return int(credits)
 
 
 def credits_to_usd(credits_amount: int) -> Decimal:
     """Convert credits to USD amount.
-    
+
     Formula: usd = credits / 1000
-    
+
     Args:
         credits_amount: Credit amount (e.g., 27)
-    
+
     Returns:
         Decimal USD amount (e.g., 0.027)
     """
@@ -67,14 +65,14 @@ def credits_to_usd(credits_amount: int) -> Decimal:
 
 def apply_price_markup(base_price: int, markup: int = 0) -> int:
     """Apply admin-configured markup to base price.
-    
+
     Args:
         base_price: Base price in credits from Wavespeed
         markup: Markup amount in credits to add
-    
+
     Returns:
         Final price with markup applied
-    
+
     Examples:
         >>> apply_price_markup(240, 40)
         280
@@ -88,10 +86,10 @@ def apply_price_markup(base_price: int, markup: int = 0) -> int:
 
 async def get_cached_price(cache_key: str) -> int | None:
     """Get cached price value.
-    
+
     Args:
         cache_key: Redis cache key
-    
+
     Returns:
         Cached price in credits, or None if not found
     """
@@ -111,7 +109,7 @@ async def set_cached_price(
     ttl_seconds: int = PRICING_CACHE_TTL_SECONDS,
 ) -> None:
     """Cache price value.
-    
+
     Args:
         cache_key: Redis cache key
         price: Price in credits
@@ -133,7 +131,7 @@ def build_pricing_cache_key(
     is_i2i: bool = False,
 ) -> str:
     """Build cache key for model pricing.
-    
+
     Args:
         model_id: Full model identifier
         size: Size parameter
@@ -141,7 +139,7 @@ def build_pricing_cache_key(
         resolution: Resolution parameter
         quality: Quality parameter
         is_i2i: Whether this is image-to-image mode
-    
+
     Returns:
         Unique cache key for this parameter combination
     """
@@ -168,13 +166,13 @@ async def get_model_price_from_wavespeed(
     markup: int = 0,
 ) -> int | None:
     """Fetch model price from Wavespeed pricing API.
-    
+
     Args:
         wavespeed_client: WavespeedClient instance
         model_id: Full model identifier (e.g., "bytedance/seedream-v4")
         inputs: Optional input parameters
         markup: Markup amount in credits to add to base price
-    
+
     Returns:
         Price in credits with markup applied, or None if fetch failed
     """
@@ -188,7 +186,7 @@ async def get_model_price_from_wavespeed(
                 message=response.message,
             )
             return None
-        
+
         unit_price = response.data.get("unit_price")
         if unit_price is None:
             logger.warning(
@@ -197,7 +195,7 @@ async def get_model_price_from_wavespeed(
                 data=response.data,
             )
             return None
-        
+
         base_price = usd_to_credits(float(unit_price))
         return apply_price_markup(base_price, markup)
     except Exception as exc:
@@ -211,26 +209,26 @@ async def get_model_price_from_wavespeed(
 
 async def get_average_model_price(model_prices: list[int]) -> int:
     """Calculate average model price for estimated generations.
-    
+
     Args:
         model_prices: List of model prices in credits
-    
+
     Returns:
         Average price in credits, or 0 if no prices available
     """
     if not model_prices:
         return 0
-    
+
     valid_prices = [p for p in model_prices if p > 0]
     if not valid_prices:
         return 0
-    
+
     return int(sum(valid_prices) / len(valid_prices))
 
 
 async def get_cached_average_price() -> int | None:
     """Get cached average model price.
-    
+
     Returns:
         Cached average price, or None if not found
     """
@@ -239,7 +237,7 @@ async def get_cached_average_price() -> int | None:
 
 async def set_cached_average_price(price: int) -> None:
     """Cache average model price.
-    
+
     Args:
         price: Average price in credits
     """

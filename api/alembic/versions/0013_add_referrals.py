@@ -17,12 +17,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "users", sa.Column("referral_code", sa.String(length=16), nullable=True)
-    )
-    op.add_column(
-        "users", sa.Column("referred_by_id", sa.Integer(), nullable=True)
-    )
+    op.add_column("users", sa.Column("referral_code", sa.String(length=16), nullable=True))
+    op.add_column("users", sa.Column("referred_by_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_users_referred_by_id",
         "users",
@@ -44,19 +40,11 @@ def upgrade() -> None:
             sa.select(users_table.c.id).where(users_table.c.referral_code == code)
         ).scalar_one_or_none():
             code = secrets.token_hex(4)
-        connection.execute(
-            users_table.update()
-            .where(users_table.c.id == row.id)
-            .values(referral_code=code)
-        )
+        connection.execute(users_table.update().where(users_table.c.id == row.id).values(referral_code=code))
 
     op.alter_column("users", "referral_code", nullable=False)
-    op.create_index(
-        "ix_users_referral_code", "users", ["referral_code"], unique=True
-    )
-    op.create_index(
-        "ix_users_referred_by_id", "users", ["referred_by_id"], unique=False
-    )
+    op.create_index("ix_users_referral_code", "users", ["referral_code"], unique=True)
+    op.create_index("ix_users_referred_by_id", "users", ["referred_by_id"], unique=False)
 
 
 def downgrade() -> None:

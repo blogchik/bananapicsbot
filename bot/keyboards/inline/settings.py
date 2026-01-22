@@ -48,18 +48,22 @@ class SettingsKeyboard:
 
         for code, name in manager.language_names.items():
             label = f"✅ {name}" if code == current_language else name
-            rows.append([
-                InlineKeyboardButton(
-                    text=label,
-                    callback_data=SettingsCallback.language_set(code),
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=MenuCallback.PROFILE,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=SettingsCallback.language_set(code),
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=MenuCallback.PROFILE,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)

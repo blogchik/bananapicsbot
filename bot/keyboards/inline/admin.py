@@ -70,12 +70,14 @@ class AdminKeyboard:
             user_id = user.get("telegram_id", 0)
             name = user.get("name", str(user_id))
             balance = user.get("balance", 0)
-            rows.append([
-                InlineKeyboardButton(
-                    text=f"👤 {name} ({balance} cr)",
-                    callback_data=AdminCallback.user_detail(user_id),
-                )
-            ])
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"👤 {name} ({balance} cr)",
+                        callback_data=AdminCallback.user_detail(user_id),
+                    )
+                ]
+            )
 
         # Pagination
         nav_row = []
@@ -106,12 +108,14 @@ class AdminKeyboard:
             rows.append(nav_row)
 
         # Back button
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=AdminCallback.PANEL,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=AdminCallback.PANEL,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -265,19 +269,23 @@ class AdminKeyboard:
         for user in users:
             user_id = user.get("telegram_id", 0)
             name = user.get("full_name") or user.get("username") or str(user_id)
-            rows.append([
-                InlineKeyboardButton(
-                    text=f"👤 {name}",
-                    callback_data=f"admin:user:view:{user_id}",
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=AdminCallback.USERS,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"👤 {name}",
+                        callback_data=f"admin:user:view:{user_id}",
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=AdminCallback.USERS,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -295,12 +303,14 @@ class AdminKeyboard:
             user_id = user.get("telegram_id", 0)
             name = user.get("full_name") or user.get("username") or str(user_id)
             balance = user.get("balance", 0)
-            rows.append([
-                InlineKeyboardButton(
-                    text=f"👤 {name} | {balance} cr",
-                    callback_data=f"admin:user:view:{user_id}",
-                )
-            ])
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"👤 {name} | {balance} cr",
+                        callback_data=f"admin:user:view:{user_id}",
+                    )
+                ]
+            )
 
         # Pagination
         nav_row = []
@@ -323,12 +333,14 @@ class AdminKeyboard:
         if nav_row:
             rows.append(nav_row)
 
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=AdminCallback.USERS,
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=AdminCallback.USERS,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -442,30 +454,36 @@ class AdminKeyboard:
             else:
                 date_str = "???"
 
-            buttons.append([
-                InlineKeyboardButton(
-                    text=f"⭐ {amount} Stars - {date_str}",
-                    callback_data=AdminCallback.refund_stars_tx(idx),
-                )
-            ])
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"⭐ {amount} Stars - {date_str}",
+                        callback_data=AdminCallback.refund_stars_tx(idx),
+                    )
+                ]
+            )
 
         # Add "Refund All" button if multiple transactions
         if len(transactions) > 1:
             total = sum(tx["amount"] for tx in transactions)
-            buttons.append([
-                InlineKeyboardButton(
-                    text=f"🔄 Barchasini qaytarish ({total}⭐)",
-                    callback_data=AdminCallback.REFUND_STARS_ALL,
-                )
-            ])
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"🔄 Barchasini qaytarish ({total}⭐)",
+                        callback_data=AdminCallback.REFUND_STARS_ALL,
+                    )
+                ]
+            )
 
         # Back button
-        buttons.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=AdminCallback.REFUND,
-            )
-        ])
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=AdminCallback.REFUND,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -515,19 +533,23 @@ class AdminKeyboard:
             credits = gen.get("credits", 0)
             created = gen.get("created_at", "")[:10]
 
-            rows.append([
-                InlineKeyboardButton(
-                    text=f"🎨 {model} | {credits} cr | {created}",
-                    callback_data=f"admin:refund:gen:{gen_id}",
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=AdminCallback.USERS,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"🎨 {model} | {credits} cr | {created}",
+                        callback_data=f"admin:refund:gen:{gen_id}",
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=AdminCallback.USERS,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -649,15 +671,6 @@ class AdminKeyboard:
         _: Callable[[TranslationKey, dict | None], str],
     ) -> InlineKeyboardMarkup:
         """Build broadcast preview/confirmation."""
-        filter_labels = {
-            "all": "👥 All Users",
-            "active_7d": "🔥 Active (7d)",
-            "active_30d": "📊 Active (30d)",
-            "with_balance": "💰 With Balance",
-            "paid_users": "💳 Paid Users",
-            "new_users": "🆕 New Users",
-        }
-
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -713,19 +726,23 @@ class AdminKeyboard:
 
         # Add cancel button if still running
         if status in ("pending", "running"):
-            rows.append([
-                InlineKeyboardButton(
-                    text="⛔ Cancel Broadcast",
-                    callback_data=f"admin:broadcast:cancel:{public_id}",
-                )
-            ])
-
-        rows.append([
-            InlineKeyboardButton(
-                text=_(TranslationKey.BACK, None),
-                callback_data=AdminCallback.BROADCAST,
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        text="⛔ Cancel Broadcast",
+                        callback_data=f"admin:broadcast:cancel:{public_id}",
+                    )
+                ]
             )
-        ])
+
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_(TranslationKey.BACK, None),
+                    callback_data=AdminCallback.BROADCAST,
+                )
+            ]
+        )
 
         return InlineKeyboardMarkup(inline_keyboard=rows)
 

@@ -41,8 +41,6 @@ async def send_referral_menu(message: Message, user: User, _) -> None:
     await message.answer(text, reply_markup=referral_menu())
 
 
-
-
 @router.message(Command("referral"))
 async def referral_command(message: Message, _) -> None:
     user = message.from_user
@@ -58,4 +56,3 @@ async def referral_callback(call: CallbackQuery, _) -> None:
     if call.message:
         await call.message.delete()
         await send_referral_menu(call.message, call.from_user, _)
-

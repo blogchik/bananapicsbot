@@ -10,13 +10,13 @@ logger = get_logger(__name__)
 async def create_fsm_storage(settings) -> BaseStorage:
     """
     Create FSM storage.
-    
+
     If Redis URL is provided and connection succeeds, uses Redis storage.
     Otherwise, falls back to memory storage.
-    
+
     Args:
         settings: Application settings
-    
+
     Returns:
         FSM storage instance
     """

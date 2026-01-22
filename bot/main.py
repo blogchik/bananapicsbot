@@ -52,16 +52,20 @@ async def setup_middlewares(dp: Dispatcher) -> None:
     dp.callback_query.middleware(I18nMiddleware())
 
     # Throttling middleware
-    dp.message.middleware(ThrottlingMiddleware(
-        message_limit=settings.rate_limit_messages,
-        callback_limit=settings.rate_limit_callbacks,
-        window_seconds=settings.rate_limit_period,
-    ))
-    dp.callback_query.middleware(ThrottlingMiddleware(
-        message_limit=settings.rate_limit_messages,
-        callback_limit=settings.rate_limit_callbacks,
-        window_seconds=settings.rate_limit_period,
-    ))
+    dp.message.middleware(
+        ThrottlingMiddleware(
+            message_limit=settings.rate_limit_messages,
+            callback_limit=settings.rate_limit_callbacks,
+            window_seconds=settings.rate_limit_period,
+        )
+    )
+    dp.callback_query.middleware(
+        ThrottlingMiddleware(
+            message_limit=settings.rate_limit_messages,
+            callback_limit=settings.rate_limit_callbacks,
+            window_seconds=settings.rate_limit_period,
+        )
+    )
 
     # User context injection
     dp.message.middleware(UserContextMiddleware())
@@ -81,12 +85,8 @@ async def on_startup(bot: Bot) -> None:
             BotCommand(command="topup", description=_(TranslationKey.CMD_TOPUP, None)),
             BotCommand(command="referral", description=_(TranslationKey.CMD_REFERRAL, None)),
         ]
-        await bot.set_my_commands(
-            commands, language_code=lang_code, scope=BotCommandScopeDefault()
-        )
-        await bot.set_my_commands(
-            commands, language_code=lang_code, scope=BotCommandScopeAllPrivateChats()
-        )
+        await bot.set_my_commands(commands, language_code=lang_code, scope=BotCommandScopeDefault())
+        await bot.set_my_commands(commands, language_code=lang_code, scope=BotCommandScopeAllPrivateChats())
     default_lang = settings.default_language or "uz"
     if default_lang in manager.available_languages:
         _ = get_translator(default_lang)

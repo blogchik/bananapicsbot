@@ -83,10 +83,10 @@ class AdminService:
     ) -> list[dict]:
         """
         Get user's star payment transactions.
-        
+
         Returns list of payment transactions for the user.
         Each transaction has: id, amount, date
-        
+
         Note: Telegram API doesn't provide a way to check if a payment was
         already refunded without actually refunding it. So we return all
         payments and handle CHARGE_ALREADY_REFUNDED in the UI when user
@@ -140,11 +140,13 @@ class AdminService:
                 # Get date from transaction
                 tx_date = tx.get("date", 0)
 
-                payments.append({
-                    "id": tx_id,
-                    "amount": amount,
-                    "date": tx_date,
-                })
+                payments.append(
+                    {
+                        "id": tx_id,
+                        "amount": amount,
+                        "date": tx_date,
+                    }
+                )
 
             offset += limit
 
@@ -152,8 +154,6 @@ class AdminService:
         payments.sort(key=lambda x: x.get("date", 0), reverse=True)
 
         return payments
-
-
 
     @staticmethod
     async def refund_single_transaction(
@@ -163,7 +163,7 @@ class AdminService:
     ) -> tuple[bool, int, str | None]:
         """
         Refund a single transaction.
-        
+
         Returns: (success, amount, error_message)
         """
         # First, get the transaction to find amount
@@ -201,7 +201,7 @@ class AdminService:
     ) -> tuple[int, int, list[str], bool]:
         """
         Process refund for user.
-        
+
         Returns:
             Tuple of (refunded_total, refunded_count, errors, user_has_payments)
         """
@@ -273,9 +273,7 @@ class AdminService:
                 if not charge_id:
                     continue
 
-                ok, error = await AdminService.refund_star_payment(
-                    bot_token, user_id, charge_id
-                )
+                ok, error = await AdminService.refund_star_payment(bot_token, user_id, charge_id)
 
                 if ok:
                     refunded_total += amount
@@ -555,4 +553,3 @@ class AdminService:
                 "exchange_numerator": 1,
                 "exchange_denominator": 1,
             }
-

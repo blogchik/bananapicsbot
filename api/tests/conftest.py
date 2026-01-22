@@ -46,9 +46,11 @@ def mock_db_session():
             obj.id = 1
         if not getattr(obj, "created_at", None):
             from datetime import datetime
+
             obj.created_at = datetime.utcnow()
         if not getattr(obj, "updated_at", None):
             from datetime import datetime
+
             obj.updated_at = datetime.utcnow()
         if hasattr(obj, "public_id") and not getattr(obj, "public_id", None):
             obj.public_id = "test-uuid"
@@ -56,6 +58,7 @@ def mock_db_session():
     session.refresh = MagicMock(side_effect=refresh_side_effect)
     session.add = MagicMock()
     return session
+
 
 @pytest.fixture
 def client(mock_db_session):

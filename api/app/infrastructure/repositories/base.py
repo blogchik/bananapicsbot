@@ -1,4 +1,5 @@
 """Base repository with common functionality."""
+
 from typing import Any, Generic, Optional, Sequence, Type, TypeVar
 
 from sqlalchemy import func, select

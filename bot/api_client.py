@@ -107,14 +107,10 @@ class ApiClient:
         )
 
     async def get_generation_results(self, request_id: int, telegram_id: int) -> list[str]:
-        return await self._request(
-            "GET", f"/api/v1/generations/{request_id}/results?telegram_id={telegram_id}"
-        )
+        return await self._request("GET", f"/api/v1/generations/{request_id}/results?telegram_id={telegram_id}")
 
     async def get_active_generation(self, telegram_id: int) -> dict:
-        return await self._request(
-            "GET", f"/api/v1/generations/active?telegram_id={telegram_id}"
-        )
+        return await self._request("GET", f"/api/v1/generations/active?telegram_id={telegram_id}")
 
     async def upload_media(self, file_bytes: bytes, filename: str) -> str:
         data = await self._upload("/api/v1/media/upload", file_bytes, filename)
@@ -174,7 +170,7 @@ class ApiClient:
         is_image_to_image: bool = False,
     ) -> dict:
         """Get dynamic generation price from API.
-        
+
         Returns dict with:
             - model_id: int
             - model_key: str

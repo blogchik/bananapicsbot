@@ -22,9 +22,7 @@ def get_support_flags(data: dict) -> tuple[bool, bool, bool, bool, bool]:
     show_aspect = data.get("supports_aspect_ratio") and bool(data.get("aspect_ratio_options"))
     show_resolution = data.get("supports_resolution") and bool(data.get("resolution_options"))
     show_quality = data.get("supports_quality") and bool(data.get("quality_options"))
-    show_input_fidelity = data.get("supports_input_fidelity") and bool(
-        data.get("input_fidelity_options")
-    )
+    show_input_fidelity = data.get("supports_input_fidelity") and bool(data.get("input_fidelity_options"))
     return show_size, show_aspect, show_resolution, show_quality, show_input_fidelity
 
 
@@ -71,7 +69,7 @@ async def handle_prompt_message(
 
     # Limit prompt length
     if len(prompt) > BotConstants.MAX_PROMPT_LENGTH:
-        prompt = prompt[:BotConstants.MAX_PROMPT_LENGTH]
+        prompt = prompt[: BotConstants.MAX_PROMPT_LENGTH]
 
     # Show loading indicator immediately
     loading_msg = await message.answer("⏳")
@@ -125,9 +123,7 @@ async def handle_prompt_message(
     show_aspect = selected_model.supports_aspect_ratio and bool(selected_model.aspect_ratio_options)
     show_resolution = selected_model.supports_resolution and bool(selected_model.resolution_options)
     show_quality = selected_model.supports_quality and bool(selected_model.quality_options)
-    show_input_fidelity = selected_model.supports_input_fidelity and bool(
-        selected_model.input_fidelity_options
-    )
+    show_input_fidelity = selected_model.supports_input_fidelity and bool(selected_model.input_fidelity_options)
 
     size = defaults.get("size") if show_size else None
     aspect_ratio = defaults.get("aspect_ratio") if show_aspect else None
@@ -143,7 +139,11 @@ async def handle_prompt_message(
         resolution = None
     if quality and selected_model.quality_options and quality not in selected_model.quality_options:
         quality = None
-    if input_fidelity and selected_model.input_fidelity_options and input_fidelity not in selected_model.input_fidelity_options:
+    if (
+        input_fidelity
+        and selected_model.input_fidelity_options
+        and input_fidelity not in selected_model.input_fidelity_options
+    ):
         input_fidelity = None
 
     # Save state
@@ -183,13 +183,25 @@ async def handle_prompt_message(
 
     # Build menu text
     menu_text = build_generation_text(
-        prompt, selected_model.name, size, aspect_ratio, resolution,
-        show_size, show_aspect, show_resolution, has_reference, _,
+        prompt,
+        selected_model.name,
+        size,
+        aspect_ratio,
+        resolution,
+        show_size,
+        show_aspect,
+        show_resolution,
+        has_reference,
+        _,
     )
 
     # Send menu
     menu = GenerationKeyboard.main(
-        _, selected_model.name, size, aspect_ratio, resolution,
+        _,
+        selected_model.name,
+        size,
+        aspect_ratio,
+        resolution,
         quality,
         input_fidelity,
         await GenerationService.get_dynamic_price(

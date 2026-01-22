@@ -28,9 +28,7 @@ def upgrade() -> None:
         sa.Column("invoice_payload", sa.String(length=200), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
-    op.create_index(
-        "ix_payment_ledger_user_id", "payment_ledger", ["user_id"], unique=False
-    )
+    op.create_index("ix_payment_ledger_user_id", "payment_ledger", ["user_id"], unique=False)
     op.create_index(
         "ix_payment_ledger_telegram_charge_id",
         "payment_ledger",

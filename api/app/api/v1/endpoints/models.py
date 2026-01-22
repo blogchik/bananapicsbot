@@ -23,12 +23,10 @@ async def list_models(db: Session = Depends(db_session_dep)) -> list[ModelCatalo
     """List all active models with prices (including admin markup)."""
     settings = get_settings()
     markup = settings.generation_price_markup
-    
+
     models = list_active_models(db)
     prices_by_model = list_active_prices_for_models(db, [model.id for model in models])
-    options_list = await asyncio.gather(
-        *(get_model_parameter_options_from_wavespeed(model.key) for model in models)
-    )
+    options_list = await asyncio.gather(*(get_model_parameter_options_from_wavespeed(model.key) for model in models))
     response = []
     for model, options in zip(models, options_list):
         options_out = ModelOptionsOut(
@@ -47,9 +45,7 @@ async def list_models(db: Session = Depends(db_session_dep)) -> list[ModelCatalo
             quality_options=options.quality_options,
             input_fidelity_options=options.input_fidelity_options,
         )
-        model_out = ModelCatalogOut.model_validate(model).model_copy(
-            update={"options": options_out}
-        )
+        model_out = ModelCatalogOut.model_validate(model).model_copy(update={"options": options_out})
         response.append(
             ModelCatalogWithPricesOut(
                 model=model_out,

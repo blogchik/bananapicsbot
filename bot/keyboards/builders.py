@@ -7,7 +7,7 @@ from dataclasses import dataclass
 class CallbackDataBuilder:
     """
     Callback data builder utility.
-    
+
     Helps create and parse callback data strings with type safety.
     """
 

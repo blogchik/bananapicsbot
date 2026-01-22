@@ -17,7 +17,7 @@ SUPPORTED_LANGUAGES = {"uz", "ru", "en"}
 class I18nMiddleware(BaseMiddleware):
     """
     Internationalization middleware.
-    
+
     Loads user's preferred language and provides translator.
     Falls back to Telegram language, then to default language.
     """
@@ -38,6 +38,7 @@ class I18nMiddleware(BaseMiddleware):
 
         # Debug log for language detection
         from core.logging import get_logger
+
         logger = get_logger(__name__)
         logger.info("Language detected", user_id=user_id, telegram_lang=telegram_language, final_lang=language)
 
