@@ -42,8 +42,23 @@ def run_async(coro):
         loop.close()
 
 
-# Track last known status per generation to avoid redundant updates
-_generation_last_status: dict[int, str] = {}
+# Redis key prefix for generation status tracking
+_GEN_STATUS_PREFIX = "gen_status:"
+_GEN_STATUS_TTL = 3600  # 1 hour TTL for automatic cleanup
+
+
+async def _get_generation_status(chat_id: int, message_id: int) -> str | None:
+    """Get last known generation status from Redis."""
+    redis = get_redis()
+    key = f"{_GEN_STATUS_PREFIX}{chat_id}:{message_id}"
+    return await redis.get(key)
+
+
+async def _set_generation_status(chat_id: int, message_id: int, status: str) -> None:
+    """Set generation status in Redis with TTL."""
+    redis = get_redis()
+    key = f"{_GEN_STATUS_PREFIX}{chat_id}:{message_id}"
+    await redis.set(key, status, ex=_GEN_STATUS_TTL)
 
 
 @shared_task(bind=True, max_retries=3)
@@ -509,19 +524,16 @@ def _update_user_generation_status(
     language: str,
 ) -> None:
     """Update user's status message with current generation status."""
-    global _generation_last_status
-    
-    # Get unique key for this generation
-    status_key = (chat_id, message_id)
-    last_status = _generation_last_status.get(status_key)
-    
+    # Get last status from Redis
+    last_status = run_async(_get_generation_status(chat_id, message_id))
+
     # Only update if status actually changed
     if last_status == status:
         return
-    
-    # Update tracking
-    _generation_last_status[status_key] = status
-    
+
+    # Update tracking in Redis
+    run_async(_set_generation_status(chat_id, message_id, status))
+
     # Build status message based on Wavespeed status
     if status in ("processing", "in_progress", "running"):
         if get_text and TranslationKey:
@@ -536,11 +548,11 @@ def _update_user_generation_status(
     else:
         # Unknown status, don't update
         return
-    
+
     # Update message
     if not settings.bot_token:
         return
-    
+
     try:
         run_async(_edit_telegram_message(chat_id, message_id, text))
     except Exception as e:
