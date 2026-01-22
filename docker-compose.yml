@@ -73,7 +73,7 @@ services:
       context: ./webapp
     image: ghcr.io/blogchik/bananapicsbot/webapp:${IMAGE_TAG:-latest}
     ports:
-      - "3000:80"
+      - "3033:80"
     networks:
       - app_net
     depends_on:
