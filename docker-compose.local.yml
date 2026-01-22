@@ -35,7 +35,8 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/api/v1/health').read()"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   celery-worker:
@@ -77,7 +78,7 @@ services:
       - "6479:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes --requirepass "localpassword123"
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
     networks:
       - app_net
     restart: unless-stopped
@@ -85,9 +86,9 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: bananapics
-      POSTGRES_PASSWORD: localpassword123
-      POSTGRES_DB: bananapics
+      POSTGRES_USER: ${POSTGRES_USER:-bananapics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bananapics}
+      POSTGRES_DB: ${POSTGRES_DB:-bananapics}
     ports:
       - "5433:5432"
     volumes:
@@ -95,7 +96,7 @@ services:
     networks:
       - app_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bananapics -d bananapics"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bananapics} -d ${POSTGRES_DB:-bananapics}"]
       interval: 10s
       timeout: 5s
       retries: 5

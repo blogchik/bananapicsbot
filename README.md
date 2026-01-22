@@ -5,7 +5,7 @@ A professional Telegram bot for AI-powered image generation with integrated paym
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11+-green.svg)](https://www.python.org/)
 [![aiogram](https://img.shields.io/badge/aiogram-3.x-blue.svg)](https://docs.aiogram.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-green.svg)](https://fastapi.tiangolo.com/)
 
 ## 📖 Overview
 
@@ -22,6 +22,12 @@ Bananapics Bot is a production-ready Telegram bot that provides AI image generat
 - 🔒 **Security** - Rate limiting, input validation, and secure payment handling
 - 📈 **Scalability** - Multi-instance bot support with Redis FSM storage
 - 🛠️ **Professional Architecture** - Clean architecture with DDD principles
+
+### Project Policies
+
+- Code of Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security Policy: [SECURITY.md](SECURITY.md)
+- Legal: [legal/README.md](legal/README.md)
 
 ## 🏗️ Architecture
 
@@ -131,6 +137,17 @@ SENTRY_DSN=your_sentry_dsn
 docker compose up -d --build
 ```
 
+#### Local development compose (recommended)
+
+This repository also includes a local compose file ([docker-compose.local.yml](docker-compose.local.yml)) that uses a separate env file.
+
+```bash
+cp .env.example .env.local
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+Make sure `.env.local` matches what the compose file expects (at minimum set `POSTGRES_*` and `REDIS_PASSWORD`, and update `REDIS_URL` if you use a Redis password).
+
 4. **Check status**
 
 ```bash
@@ -146,6 +163,7 @@ Open Telegram and send `/start` to your bot.
 
 - **Bot**: Your Telegram bot
 - **API**: http://localhost:9000/api/v1/health
+- **API docs**: http://localhost:9000/docs
 - **Redis**: localhost:6479
 - **PostgreSQL**: localhost:5433
 
@@ -158,7 +176,7 @@ Open Telegram and send `/start` to your bot.
 | `BOT_TOKEN`         | Telegram bot token               | -       | ✅       |
 | `WAVESPEED_API_KEY` | Wavespeed API key                | -       | ✅       |
 | `ADMIN_IDS`         | Admin user IDs (comma-separated) | -       | ✅       |
-| `DEFAULT_LANGUAGE`  | Default language (uz/ru/en)      | `ru`    | ❌       |
+| `DEFAULT_LANGUAGE`  | Default language (uz/ru/en)      | `uz`    | ❌       |
 
 ### Bot Configuration
 
@@ -169,6 +187,8 @@ Open Telegram and send `/start` to your bot.
 | `API_BASE_URL`         | API base URL               | `http://api:9000`      |
 | `RATE_LIMIT_MESSAGES`  | Messages per minute limit  | `30`                   |
 | `RATE_LIMIT_CALLBACKS` | Callbacks per minute limit | `60`                   |
+
+If you set a Redis password (`REDIS_PASSWORD`), make sure `REDIS_URL` includes it (example: `redis://:yourpass@redis:6379/0`).
 
 ### API Configuration
 
@@ -463,6 +483,38 @@ Configure Sentry for:
 - Timeout errors
 
 ## 🚀 Deployment
+
+### CI/CD (GitHub Actions)
+
+This repo uses a GitHub Actions workflow ([.github/workflows/ci.yml](.github/workflows/ci.yml)) that:
+
+- Runs `ruff` lint + format checks
+- Runs API tests with Postgres + Redis services
+- Runs a Trivy security scan
+- Builds and pushes `api` and `bot` images to GHCR
+- Deploys to production from `main` via SSH + `docker compose`
+
+Notes:
+
+- The Trivy SARIF upload requires GitHub Code Scanning to be enabled in the repo settings.
+- Images are tagged using `docker/metadata-action` (including `sha-<shortsha>` tags). The production deploy uses `IMAGE_TAG=sha-<shortsha>`.
+
+### Production deploy via GitHub Actions
+
+The workflow deploy step connects to your server via SSH, writes the production `.env` from a secret, pulls the tagged images from GHCR, and runs `docker compose up -d`.
+
+Required repository secrets (names used by the workflow):
+
+- `SSH_KEY` (private key)
+- `SSH_HOST` (server host/IP)
+- `SSH_USERNAME` (SSH user)
+- `PROD_ENV_FILE` (full `.env` file contents for production)
+
+Server prerequisites:
+
+- Docker + Docker Compose plugin installed
+- Repo directory exists on server: `~/bananapicsbot/`
+- GHCR pull access (the workflow logs in on the server before pulling)
 
 ### Production Checklist
 
