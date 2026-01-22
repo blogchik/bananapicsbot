@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-01-22
+
 ### Security
 - **CVE-2024-53981**: Updated `python-multipart` from 0.0.9 to 0.0.18 to fix DoS vulnerability via malformed `multipart/form-data` boundary
+- Updated `sentry-sdk` to version 2.19.2 for latest security patches
 
 ### Added
 - Image processing tools with 5 new features:
@@ -21,11 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - QWEN model emoji representation in generation callbacks
 - Comprehensive project documentation in CLAUDE.md with architecture patterns, linting, and testing guidelines
 - Legal documents: Privacy Policy, Terms of Service, and User Agreement
+- Code of Conduct and Security Policy documents
+- Cleanup tools for standardizing package naming format
 
 ### Changed
 - Replaced global mutable dict with Redis for generation status tracking (improved concurrency and reliability)
 - Updated localization files for improved clarity and consistency in image generation and watermark removal messages
 - Code refactoring for improved readability and maintainability
+- Improved README documentation to reflect current development and deployment setup
 
 ### Fixed
 - Added missing permissions for security job in CI/CD workflow
@@ -33,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `psycopg2-binary` dependency for entrypoint database wait script
 - Added `start_period: 60s` to API health check to allow time for database migrations
 - Increased health check retries from 5 to 10 for more stability during deployment
+- Resolved CI/CD deployment and annotation issues
+- Organized imports in keyboard modules to pass ruff lint
+- Formatted worker tasks with ruff for code consistency
 
 ### Improved
 - CI/CD workflow now includes:
@@ -46,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `passlib[bcrypt]` - was not used in codebase
   - `psycopg2-binary` - replaced by asyncpg
   - `greenlet` - not needed with async SQLAlchemy
+- Cleaned up unused code from worker tasks
 
 ## [0.1.1] - 2026-01-19
 
@@ -82,6 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/CD pipeline with GitHub Actions
 - Comprehensive documentation
 
-[Unreleased]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/abduroziq/bananapicsbot/releases/tag/v0.1.0
