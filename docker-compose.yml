@@ -2,7 +2,7 @@ services:
   bot:
     build:
       context: ./bot
-    image: ghcr.io/blogchik/bananapicsbot/bot:latest
+    image: ghcr.io/blogchik/bananapicsbot/bot:${IMAGE_TAG:-latest}
     env_file:
       - .env
     networks:
@@ -15,7 +15,7 @@ services:
   api:
     build:
       context: ./api
-    image: ghcr.io/blogchik/bananapicsbot/api:latest
+    image: ghcr.io/blogchik/bananapicsbot/api:${IMAGE_TAG:-latest}
     env_file:
       - .env
     environment:
@@ -39,7 +39,7 @@ services:
   celery-worker:
     build:
       context: ./api
-    image: ghcr.io/blogchik/bananapicsbot/api:latest
+    image: ghcr.io/blogchik/bananapicsbot/api:${IMAGE_TAG:-latest}
     command: ["celery", "-A", "app.worker.celery", "worker", "--loglevel", "info", "--concurrency", "4"]
     env_file:
       - .env
@@ -55,7 +55,7 @@ services:
   celery-beat:
     build:
       context: ./api
-    image: ghcr.io/blogchik/bananapicsbot/api:latest
+    image: ghcr.io/blogchik/bananapicsbot/api:${IMAGE_TAG:-latest}
     command: ["celery", "-A", "app.worker.celery", "beat", "--loglevel", "info"]
     env_file:
       - .env

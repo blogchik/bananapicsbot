@@ -158,7 +158,7 @@ Open Telegram and send `/start` to your bot.
 | `BOT_TOKEN`         | Telegram bot token               | -       | ✅       |
 | `WAVESPEED_API_KEY` | Wavespeed API key                | -       | ✅       |
 | `ADMIN_IDS`         | Admin user IDs (comma-separated) | -       | ✅       |
-| `DEFAULT_LANGUAGE`  | Default language (uz/ru/en)      | `uz`    | ❌       |
+| `DEFAULT_LANGUAGE`  | Default language (uz/ru/en)      | `ru`    | ❌       |
 
 ### Bot Configuration
 
