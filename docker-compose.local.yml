@@ -78,7 +78,7 @@ services:
       dockerfile: Dockerfile
     # Local build - no image pull
     ports:
-      - "3000:80"
+      - "3033:80"
     networks:
       - app_net
     depends_on:
