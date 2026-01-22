@@ -1,0 +1,115 @@
+{
+  "access": {
+    "title": "Требуется Telegram",
+    "description": "Это приложение доступно только через Telegram. Пожалуйста, откройте его из приложения Telegram.",
+    "howToOpen": "Как открыть:",
+    "step1": "Откройте приложение Telegram",
+    "step2": "Найдите бота @bananapicsbot",
+    "step3": "Нажмите кнопку \"Открыть приложение\"",
+    "openTelegram": "Открыть в Telegram"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Произошла ошибка",
+    "retry": "Повторить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "close": "Закрыть",
+    "back": "Назад",
+    "next": "Далее",
+    "done": "Готово",
+    "credits": "кредитов",
+    "stars": "звёзд"
+  },
+  "nav": {
+    "home": "Главная",
+    "generate": "Создать",
+    "gallery": "Галерея",
+    "tools": "Инструменты",
+    "wallet": "Кошелёк"
+  },
+  "home": {
+    "welcome": "Привет, {{name}}!",
+    "balance": "Баланс",
+    "trial": "Бесплатная проба",
+    "trialAvailable": "1 бесплатная генерация доступна",
+    "trialUsed": "Бесплатная проба использована",
+    "quickActions": "Быстрые действия",
+    "generateImage": "Создать изображение",
+    "viewGallery": "Открыть галерею",
+    "imageTools": "Инструменты",
+    "topUp": "Пополнить баланс",
+    "referral": "Реферал",
+    "referralCode": "Ваш реферальный код",
+    "copyCode": "Скопировать",
+    "copied": "Скопировано!"
+  },
+  "generate": {
+    "title": "Создание изображения",
+    "selectModel": "Выберите модель",
+    "prompt": "Описание",
+    "promptPlaceholder": "Опишите изображение...",
+    "references": "Референсные изображения",
+    "addReference": "Добавить изображение",
+    "options": "Настройки",
+    "size": "Размер",
+    "aspectRatio": "Соотношение",
+    "quality": "Качество",
+    "resolution": "Разрешение",
+    "price": "Цена",
+    "generate": "Создать",
+    "generating": "Создаётся...",
+    "insufficientBalance": "Недостаточно средств",
+    "useFreeTrial": "Использовать бесплатную пробу"
+  },
+  "gallery": {
+    "title": "Галерея",
+    "empty": "Изображений пока нет",
+    "emptyHint": "Создайте своё первое изображение!",
+    "download": "Скачать",
+    "share": "Поделиться",
+    "delete": "Удалить"
+  },
+  "tools": {
+    "title": "Инструменты",
+    "watermarkRemove": "Удаление водяного знака",
+    "watermarkRemoveDesc": "Удалить водяной знак с изображения",
+    "upscale": "Увеличение",
+    "upscaleDesc": "Увеличить разрешение до 2K/4K/8K",
+    "denoise": "Шумоподавление",
+    "denoiseDesc": "Убрать шум с изображения",
+    "restore": "Восстановление",
+    "restoreDesc": "Восстановить старые фотографии",
+    "enhance": "Улучшение",
+    "enhanceDesc": "Улучшить качество изображения",
+    "selectImage": "Выберите изображение",
+    "process": "Обработать"
+  },
+  "wallet": {
+    "title": "Кошелёк",
+    "balance": "Текущий баланс",
+    "topUp": "Пополнить",
+    "selectAmount": "Выберите сумму",
+    "customAmount": "Другая сумма",
+    "youGet": "Вы получите",
+    "pay": "Оплатить",
+    "paymentSuccess": "Оплата успешна!",
+    "paymentFailed": "Оплата не удалась"
+  },
+  "referral": {
+    "title": "Реферальная программа",
+    "yourCode": "Ваш код",
+    "share": "Поделиться с друзьями",
+    "stats": "Статистика",
+    "invited": "Приглашено",
+    "earned": "Заработано",
+    "bonus": "Бонус"
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "theme": "Тема",
+    "about": "О приложении",
+    "version": "Версия"
+  }
+}

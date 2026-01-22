@@ -81,24 +81,40 @@ class Settings(BaseSettings):
     # Admin
     admin_telegram_ids: str = ""
 
-    # Bot token (for Celery broadcast tasks)
+    # Bot token (for Celery broadcast tasks and WebApp auth)
     bot_token: str = ""
+
+    # WebApp
+    webapp_url: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
     def cors_origins_list(self) -> List[str]:
+        origins = []
+
+        # Parse from env variable
         value = self.cors_origins.strip()
-        if not value:
-            return []
-        if value.startswith("["):
-            try:
-                parsed = json.loads(value)
-                if isinstance(parsed, list):
-                    return [str(item) for item in parsed]
-            except json.JSONDecodeError:
-                pass
-        return [item.strip() for item in value.split(",") if item.strip()]
+        if value:
+            if value.startswith("["):
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, list):
+                        origins.extend(str(item) for item in parsed)
+                except json.JSONDecodeError:
+                    pass
+            else:
+                origins.extend(item.strip() for item in value.split(",") if item.strip())
+
+        # Add webapp URL if configured
+        if self.webapp_url:
+            origins.append(self.webapp_url)
+
+        # Add Telegram domain for WebApp iframe
+        if "https://t.me" not in origins:
+            origins.append("https://t.me")
+
+        return origins
 
     @property
     def database_url(self) -> str:
