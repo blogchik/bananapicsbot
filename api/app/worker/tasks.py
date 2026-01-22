@@ -1180,5 +1180,3 @@ def cleanup_expired_generations():
         logger.error("Generation cleanup failed", error=str(e))
 
     return {"cleaned_up": cleaned_count}
-
-
