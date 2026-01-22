@@ -1,5 +1,6 @@
 pytest
 pytest-asyncio
 pytest-mock
+pytest-cov
 polyfactory
 httpx
