@@ -1,0 +1,115 @@
+{
+  "access": {
+    "title": "Telegram talab qilinadi",
+    "description": "Bu ilovaga faqat Telegram orqali kirish mumkin. Iltimos, uni Telegram ilovasidan oching.",
+    "howToOpen": "Qanday ochish kerak:",
+    "step1": "Telegram ilovasini oching",
+    "step2": "@bananapicsbot botini toping",
+    "step3": "\"Ilovani ochish\" tugmasini bosing",
+    "openTelegram": "Telegramda ochish"
+  },
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik yuz berdi",
+    "retry": "Qayta urinish",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "close": "Yopish",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "done": "Tayyor",
+    "credits": "kredit",
+    "stars": "yulduz"
+  },
+  "nav": {
+    "home": "Bosh sahifa",
+    "generate": "Yaratish",
+    "gallery": "Galereya",
+    "tools": "Asboblar",
+    "wallet": "Hamyon"
+  },
+  "home": {
+    "welcome": "Salom, {{name}}!",
+    "balance": "Balans",
+    "trial": "Bepul sinov",
+    "trialAvailable": "1 ta bepul generatsiya mavjud",
+    "trialUsed": "Bepul sinov ishlatilgan",
+    "quickActions": "Tez amallar",
+    "generateImage": "Rasm yaratish",
+    "viewGallery": "Galereyani ko'rish",
+    "imageTools": "Rasm asboblari",
+    "topUp": "Balansni to'ldirish",
+    "referral": "Referral",
+    "referralCode": "Sizning referral kodingiz",
+    "copyCode": "Nusxalash",
+    "copied": "Nusxalandi!"
+  },
+  "generate": {
+    "title": "Rasm yaratish",
+    "selectModel": "Modelni tanlang",
+    "prompt": "Tavsif",
+    "promptPlaceholder": "Rasm tavsifini kiriting...",
+    "references": "Referans rasmlar",
+    "addReference": "Rasm qo'shish",
+    "options": "Sozlamalar",
+    "size": "O'lcham",
+    "aspectRatio": "Nisbat",
+    "quality": "Sifat",
+    "resolution": "Piksellar",
+    "price": "Narx",
+    "generate": "Yaratish",
+    "generating": "Yaratilmoqda...",
+    "insufficientBalance": "Balans yetarli emas",
+    "useFreeTrial": "Bepul sinov ishlatish"
+  },
+  "gallery": {
+    "title": "Galereya",
+    "empty": "Hali rasmlar yo'q",
+    "emptyHint": "Birinchi rasmingizni yarating!",
+    "download": "Yuklab olish",
+    "share": "Ulashish",
+    "delete": "O'chirish"
+  },
+  "tools": {
+    "title": "Rasm asboblari",
+    "watermarkRemove": "Watermark o'chirish",
+    "watermarkRemoveDesc": "Rasmdan watermarkni olib tashlash",
+    "upscale": "Kattalashtirish",
+    "upscaleDesc": "Rasm sifatini 2K/4K/8K ga oshirish",
+    "denoise": "Shovqin tozalash",
+    "denoiseDesc": "Rasmdan shovqinni olib tashlash",
+    "restore": "Qayta tiklash",
+    "restoreDesc": "Eski rasmlarni tiklash",
+    "enhance": "Yaxshilash",
+    "enhanceDesc": "Rasm sifatini oshirish",
+    "selectImage": "Rasmni tanlang",
+    "process": "Ishlov berish"
+  },
+  "wallet": {
+    "title": "Hamyon",
+    "balance": "Joriy balans",
+    "topUp": "To'ldirish",
+    "selectAmount": "Miqdorni tanlang",
+    "customAmount": "Boshqa miqdor",
+    "youGet": "Siz olasiz",
+    "pay": "To'lash",
+    "paymentSuccess": "To'lov muvaffaqiyatli!",
+    "paymentFailed": "To'lov amalga oshmadi"
+  },
+  "referral": {
+    "title": "Referral dasturi",
+    "yourCode": "Sizning kodingiz",
+    "share": "Do'stlarga ulashing",
+    "stats": "Statistika",
+    "invited": "Taklif qilingan",
+    "earned": "Ishlangan",
+    "bonus": "Bonus"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "language": "Til",
+    "theme": "Mavzu",
+    "about": "Ilova haqida",
+    "version": "Versiya"
+  }
+}
