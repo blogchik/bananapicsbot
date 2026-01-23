@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -44,6 +43,7 @@ from app.services.pricing import (
     usd_to_credits,
 )
 from app.services.redis_client import get_redis
+from app.services.telegram_utils import send_telegram_message_async
 from app.services.users import get_or_create_user, get_user_by_telegram_id
 
 router = APIRouter()
@@ -699,19 +699,21 @@ async def notify_admins_low_balance(
         pass
 
     text = f"Wavespeed balance low. balance={balance:.4f} threshold={threshold:.4f}. Generations paused."
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        for admin_id in settings.admin_ids_list:
-            try:
-                await client.post(
-                    f"https://api.telegram.org/bot{settings.bot_token}/sendMessage",
-                    json={"chat_id": admin_id, "text": text},
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Failed to notify admin about low balance",
-                    admin_id=admin_id,
-                    error=str(exc),
-                )
+    for admin_id in settings.admin_ids_list:
+        try:
+            await send_telegram_message_async(
+                bot_token=settings.bot_token,
+                chat_id=admin_id,
+                text=text,
+                parse_mode="HTML",
+                timeout=10.0,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Failed to notify admin about low balance",
+                admin_id=admin_id,
+                error=str(exc),
+            )
 
 
 async def ensure_wavespeed_balance(settings) -> float | None:

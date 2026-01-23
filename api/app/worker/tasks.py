@@ -16,6 +16,13 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.infrastructure.logging import get_logger
 from app.services.redis_client import get_redis
+from app.services.telegram_utils import (
+    build_inline_keyboard,
+    build_telegram_api_url,
+    escape_html,
+    format_model_hashtag,
+    send_telegram_message,
+)
 
 logger = get_logger(__name__)
 
@@ -432,26 +439,14 @@ def _notify_user_generation_failed(
         logger.error("Failed to send failure notification", error=str(e))
 
 
-def _escape_html(text: str) -> str:
-    """Escape HTML special characters."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-def _format_model_hashtag(model_name: str) -> str:
-    cleaned = re.sub(r"[^A-Za-z0-9]+", "", model_name.title())
-    if not cleaned:
-        return "#Model"
-    return f"#{cleaned}"
-
-
 def _build_result_caption(
     language: str,
     prompt: str,
     model_name: str,
     cost: int,
 ) -> str:
-    safe_prompt = _escape_html(prompt[:500])
-    hashtag = _format_model_hashtag(model_name)
+    safe_prompt = escape_html(prompt[:500])
+    hashtag = format_model_hashtag(model_name)
     if get_text and TranslationKey:
         return get_text(
             TranslationKey.GEN_RESULT_CAPTION,
@@ -467,7 +462,7 @@ def _build_result_caption(
 
 def _build_failure_message(language: str, error_message: str, refunded_credits: int = 0) -> str:
     """Build failure message with error details and refund info."""
-    safe_error = _escape_html(error_message)
+    safe_error = escape_html(error_message)
 
     # Build base message
     if get_text and TranslationKey:
@@ -991,23 +986,13 @@ def _notify_admin_broadcast_completed(
     )
 
     try:
-        import httpx
-
-        with httpx.Client(timeout=10.0) as client:
-            response = client.post(
-                f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={
-                    "chat_id": admin_id,
-                    "text": message,
-                    "parse_mode": "HTML",
-                },
-            )
-            if not response.json().get("ok"):
-                logger.warning(
-                    "Failed to send admin notification",
-                    admin_id=admin_id,
-                    error=response.json(),
-                )
+        send_telegram_message(
+            bot_token=bot_token,
+            chat_id=admin_id,
+            text=message,
+            parse_mode="HTML",
+            timeout=10.0,
+        )
     except Exception as e:
         logger.error("Failed to send admin notification", error=str(e))
 
@@ -1025,16 +1010,15 @@ def _send_telegram_message(
     if not bot_token:
         return {"success": False, "error": "BOT_TOKEN not configured"}
 
-    base_url = f"https://api.telegram.org/bot{bot_token}"
-
     # Build inline keyboard if button provided
     reply_markup = None
     if inline_button_text and inline_button_url:
-        reply_markup = {"inline_keyboard": [[{"text": inline_button_text, "url": inline_button_url}]]}
+        reply_markup = build_inline_keyboard(inline_button_text, inline_button_url)
 
     try:
         with httpx.Client(timeout=30.0) as client:
             if content_type == "text":
+                url = build_telegram_api_url(bot_token, "sendMessage")
                 payload = {
                     "chat_id": telegram_id,
                     "text": text or "",
@@ -1042,9 +1026,10 @@ def _send_telegram_message(
                 }
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
-                response = client.post(f"{base_url}/sendMessage", json=payload)
+                response = client.post(url, json=payload)
 
             elif content_type == "photo":
+                url = build_telegram_api_url(bot_token, "sendPhoto")
                 payload = {
                     "chat_id": telegram_id,
                     "photo": media_file_id,
@@ -1053,9 +1038,10 @@ def _send_telegram_message(
                 }
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
-                response = client.post(f"{base_url}/sendPhoto", json=payload)
+                response = client.post(url, json=payload)
 
             elif content_type == "video":
+                url = build_telegram_api_url(bot_token, "sendVideo")
                 payload = {
                     "chat_id": telegram_id,
                     "video": media_file_id,
@@ -1064,9 +1050,10 @@ def _send_telegram_message(
                 }
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
-                response = client.post(f"{base_url}/sendVideo", json=payload)
+                response = client.post(url, json=payload)
 
             elif content_type == "audio":
+                url = build_telegram_api_url(bot_token, "sendAudio")
                 payload = {
                     "chat_id": telegram_id,
                     "audio": media_file_id,
@@ -1075,14 +1062,15 @@ def _send_telegram_message(
                 }
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
-                response = client.post(f"{base_url}/sendAudio", json=payload)
+                response = client.post(url, json=payload)
 
             elif content_type == "sticker":
+                url = build_telegram_api_url(bot_token, "sendSticker")
                 payload = {
                     "chat_id": telegram_id,
                     "sticker": media_file_id,
                 }
-                response = client.post(f"{base_url}/sendSticker", json=payload)
+                response = client.post(url, json=payload)
 
             else:
                 return {"success": False, "error": f"Unknown content type: {content_type}"}
@@ -1430,17 +1418,10 @@ def _send_telegram_report(admin_id: int, text: str) -> None:
     if not bot_token:
         raise ValueError("BOT_TOKEN not configured")
 
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-
-    with httpx.Client(timeout=10.0) as client:
-        response = client.post(
-            url,
-            json={
-                "chat_id": admin_id,
-                "text": text,
-                "parse_mode": "HTML",
-            },
-        )
-        data = response.json()
-        if not data.get("ok"):
-            raise Exception(f"Telegram API error: {data.get('description', 'Unknown error')}")
+    send_telegram_message(
+        bot_token=bot_token,
+        chat_id=admin_id,
+        text=text,
+        parse_mode="HTML",
+        timeout=10.0,
+    )
