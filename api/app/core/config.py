@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     # Bot token (for Celery broadcast tasks and WebApp auth)
     bot_token: str = ""
 
+    # Telegram API
+    telegram_api_base_url: str = "https://api.telegram.org"
+
     # WebApp
     webapp_url: str = ""
 

@@ -6,6 +6,8 @@ used by both the API layer (endpoints) and the Celery task layer (workers).
 
 import httpx
 
+from app.core.config import get_settings
+
 
 def escape_html(text: str) -> str:
     """Escape HTML special characters for Telegram parse_mode='HTML'.
@@ -29,7 +31,8 @@ def build_telegram_api_url(bot_token: str, method: str) -> str:
     Returns:
         Full URL for the API endpoint
     """
-    return f"https://api.telegram.org/bot{bot_token}/{method}"
+    settings = get_settings()
+    return f"{settings.telegram_api_base_url}/bot{bot_token}/{method}"
 
 
 def build_inline_keyboard(button_text: str, button_url: str) -> dict:

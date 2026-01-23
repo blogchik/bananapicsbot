@@ -558,14 +558,14 @@ def _get_language_from_redis(telegram_id: int) -> str | None:
 
 async def _delete_telegram_message(chat_id: int, message_id: int) -> None:
     """Delete a Telegram message."""
-    url = f"https://api.telegram.org/bot{settings.bot_token}/deleteMessage"
+    url = build_telegram_api_url(settings.bot_token, "deleteMessage")
     async with httpx.AsyncClient() as client:
         await client.post(url, json={"chat_id": chat_id, "message_id": message_id})
 
 
 async def _edit_telegram_message(chat_id: int, message_id: int, text: str) -> None:
     """Edit a Telegram message."""
-    url = f"https://api.telegram.org/bot{settings.bot_token}/editMessageText"
+    url = build_telegram_api_url(settings.bot_token, "editMessageText")
     async with httpx.AsyncClient() as client:
         await client.post(
             url,
@@ -584,7 +584,7 @@ async def _send_telegram_document(
     prompt_message_id: int | None,
 ) -> None:
     """Send a document via Telegram."""
-    url = f"https://api.telegram.org/bot{settings.bot_token}/sendDocument"
+    url = build_telegram_api_url(settings.bot_token, "sendDocument")
     async with httpx.AsyncClient(timeout=60) as client:
         data = {
             "chat_id": chat_id,
