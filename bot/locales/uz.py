@@ -61,6 +61,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_result_caption": "✅ Natija tayyor\nModel: {model}\nCredit: {credits}\nPrompt:\n<blockquote>{prompt}</blockquote>",
     "gen_active_exists": "Sizda hozir aktiv generatsiya bor. Iltimos, tugashini kuting va keyinroq urinib ko'ring.",
     "gen_prompt_required": "Prompt bo'sh bo'lmasin.",
+    "gen_prompt_too_long": "Prompt juda uzun. Maksimal 2000 belgidan oshmasin.",
     "gen_prompt_with_image": "Rasmni prompt bilan yuboring.",
     "gen_max_references": "Maksimal {max} ta reference rasm yuborish mumkin.",
     "gen_upload_error": "Rasm yuklashda xatolik. Keyinroq urinib ko'ring.",

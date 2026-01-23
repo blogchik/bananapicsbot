@@ -69,6 +69,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_result_caption": "✅ Результат готов\nМодель: {model}\nКредиты: {credits}\nПромпт:\n<blockquote>{prompt}</blockquote>",
     "gen_active_exists": "У вас уже есть активная генерация. Пожалуйста, дождитесь её завершения.",
     "gen_prompt_required": "Промпт не может быть пустым.",
+    "gen_prompt_too_long": "Промпт слишком длинный. Максимум 2000 символов.",
     "gen_prompt_with_image": "Отправьте изображение вместе с промптом.",
     "gen_max_references": "Максимум {max} референсных изображений.",
     "gen_upload_error": "Ошибка загрузки изображения. Попробуйте позже.",

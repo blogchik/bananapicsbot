@@ -1,20 +1,28 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class GenerationRequestCreate(BaseModel):
     model_id: int
-    prompt: str
+    prompt: str = Field(..., min_length=1, max_length=2000)
     size: str | None = None
     aspect_ratio: str | None = None
     style: str | None = None
+
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Prompt cannot be empty")
+        return v
 
 
 class GenerationSubmitIn(BaseModel):
     telegram_id: int
     model_id: int
-    prompt: str
+    prompt: str = Field(..., min_length=1, max_length=2000)
     size: str | None = None
     aspect_ratio: str | None = None
     resolution: str | None = None
@@ -26,6 +34,14 @@ class GenerationSubmitIn(BaseModel):
     chat_id: int | None = None
     message_id: int | None = None
     prompt_message_id: int | None = None
+
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Prompt cannot be empty")
+        return v
 
 
 class GenerationAccessIn(BaseModel):

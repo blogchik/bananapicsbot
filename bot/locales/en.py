@@ -69,6 +69,7 @@ TRANSLATIONS: dict[str, str] = {
     "gen_result_caption": "✅ Result ready\nModel: {model}\nCredits: {credits}\nPrompt:\n<blockquote>{prompt}</blockquote>",
     "gen_active_exists": "You have an active generation. Please wait for it to complete.",
     "gen_prompt_required": "Prompt cannot be empty.",
+    "gen_prompt_too_long": "Prompt is too long. Maximum 2000 characters.",
     "gen_prompt_with_image": "Please send the image with a prompt.",
     "gen_max_references": "Maximum {max} reference images allowed.",
     "gen_upload_error": "Error uploading image. Please try again later.",

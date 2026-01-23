@@ -95,6 +95,7 @@ class TranslationKey(str, Enum):
     GEN_RESULT_CAPTION = "gen_result_caption"
     GEN_ACTIVE_EXISTS = "gen_active_exists"
     GEN_PROMPT_REQUIRED = "gen_prompt_required"
+    GEN_PROMPT_TOO_LONG = "gen_prompt_too_long"
     GEN_PROMPT_WITH_IMAGE = "gen_prompt_with_image"
     GEN_MAX_REFERENCES = "gen_max_references"
     GEN_UPLOAD_ERROR = "gen_upload_error"

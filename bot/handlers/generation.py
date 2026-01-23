@@ -476,6 +476,9 @@ async def handle_prompt_message(message: Message, state: FSMContext, _: Localiza
     if not prompt:
         await message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED))
         return
+    if len(prompt) > 2000:
+        await message.answer(_(TranslationKey.GEN_PROMPT_TOO_LONG))
+        return
 
     settings = load_settings()
     client = ApiClient(settings.api_base_url, settings.api_timeout_seconds)
