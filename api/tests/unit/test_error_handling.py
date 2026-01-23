@@ -9,7 +9,6 @@ from app.core.model_options import ModelParameterOptions
 from app.services.pricing import usd_to_credits
 from fastapi import HTTPException
 
-
 # === Size Validation Tests ===
 
 
@@ -117,7 +116,9 @@ def test_validate_model_options_size_not_supported():
     options = ModelParameterOptions(supports_size=False)
 
     with pytest.raises(HTTPException) as exc:
-        validate_model_options(options, size="1024*1024", aspect_ratio=None, resolution=None, quality=None, input_fidelity=None)
+        validate_model_options(
+            options, size="1024*1024", aspect_ratio=None, resolution=None, quality=None, input_fidelity=None
+        )
     assert exc.value.status_code == 400
     assert "Size not supported" in str(exc.value.detail)
 
@@ -127,7 +128,9 @@ def test_validate_model_options_aspect_ratio_not_supported():
     options = ModelParameterOptions(supports_aspect_ratio=False)
 
     with pytest.raises(HTTPException) as exc:
-        validate_model_options(options, size=None, aspect_ratio="16:9", resolution=None, quality=None, input_fidelity=None)
+        validate_model_options(
+            options, size=None, aspect_ratio="16:9", resolution=None, quality=None, input_fidelity=None
+        )
     assert exc.value.status_code == 400
     assert "Aspect ratio not supported" in str(exc.value.detail)
 
@@ -137,7 +140,9 @@ def test_validate_model_options_resolution_not_supported():
     options = ModelParameterOptions(supports_resolution=False)
 
     with pytest.raises(HTTPException) as exc:
-        validate_model_options(options, size=None, aspect_ratio=None, resolution="4K", quality=None, input_fidelity=None)
+        validate_model_options(
+            options, size=None, aspect_ratio=None, resolution="4K", quality=None, input_fidelity=None
+        )
     assert exc.value.status_code == 400
     assert "Resolution not supported" in str(exc.value.detail)
 
@@ -195,7 +200,9 @@ def test_validate_model_options_invalid_resolution_option():
     options = ModelParameterOptions(supports_resolution=True, resolution_options=["FHD", "4K"])
 
     with pytest.raises(HTTPException) as exc:
-        validate_model_options(options, size=None, aspect_ratio=None, resolution="8K", quality=None, input_fidelity=None)
+        validate_model_options(
+            options, size=None, aspect_ratio=None, resolution="8K", quality=None, input_fidelity=None
+        )
     assert exc.value.status_code == 400
     assert "Invalid resolution" in str(exc.value.detail)
 

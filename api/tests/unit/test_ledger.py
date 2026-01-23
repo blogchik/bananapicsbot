@@ -5,7 +5,6 @@ from decimal import Decimal
 import pytest
 from app.domain.entities.ledger import LedgerEntryType
 
-
 # === Ledger Entity Tests ===
 
 
