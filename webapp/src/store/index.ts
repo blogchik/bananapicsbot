@@ -1,64 +1,80 @@
 import { create } from 'zustand';
 import type { AppState, GenerationItem, Toast } from '../types';
 import { logger } from '../services/logger';
+import { api, ApiError } from '../services/api';
 
 // Generate unique ID using crypto API
 const generateId = () => crypto.randomUUID();
 
-// Mock delay to simulate API calls
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Polling interval for active generations (in ms)
+const POLL_INTERVAL = 3000;
 
-// Mock image URLs for demo
-const MOCK_IMAGES = [
-  'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&q=80', // banana
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80', // portrait
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80', // model
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80', // woman
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80', // man portrait
-];
+// Map backend status to frontend status
+function mapStatus(backendStatus: string): GenerationItem['status'] {
+  switch (backendStatus.toLowerCase()) {
+    case 'completed':
+      return 'done';
+    case 'failed':
+    case 'cancelled':
+      return 'error';
+    case 'pending':
+    case 'configuring':
+    case 'queued':
+    case 'running':
+      return 'generating';
+    default:
+      return 'idle';
+  }
+}
 
-// Initial mock generations data
-const INITIAL_GENERATIONS: GenerationItem[] = [
-  {
-    id: '1',
-    createdAt: Date.now() - 3600000,
-    mode: 't2i',
-    prompt: 'Full-body portrait of the reference woman standing upright, neutral pose with relaxed arms, simple modern outfit (solid-color shirt and jeans), clean white studio background, softbox lighting from both sides, photorealistic ultra-detailed texture, realistic skin tone, fine hair detail, cinematic color grading, 4K resolution, sharp focus, professional fashion photo style.',
-    attachments: [],
-    resultUrl: MOCK_IMAGES[1],
-    model: 'Nano Banana Pro',
-    ratio: '9:16',
-    quality: 'High (4K)',
-    liked: true,
-    status: 'done',
-  },
-  {
-    id: '2',
-    createdAt: Date.now() - 7200000,
-    mode: 'i2i',
-    prompt: 'A ripe yellow banana on a neutral gray background, studio lighting, product photography style, high detail',
-    attachments: [{ id: 'a1', url: MOCK_IMAGES[0] }],
-    resultUrl: MOCK_IMAGES[0],
-    model: 'Nano Banana Pro',
-    ratio: '16:9',
-    quality: 'High (4K)',
-    liked: false,
-    status: 'done',
-  },
-];
+// Model info type
+interface ModelInfo {
+  id: number;
+  key: string;
+  name: string;
+  options: {
+    supports_aspect_ratio: boolean;
+    supports_resolution: boolean;
+    supports_quality: boolean;
+    aspect_ratio_options: string[] | null;
+    resolution_options: string[] | null;
+    quality_options: string[] | null;
+  };
+  basePrice: number;
+}
 
-export const useAppStore = create<AppState>((set, get) => ({
+// Extended state with internal fields
+interface ExtendedState extends AppState {
+  // Internal state
+  telegramId: number | null;
+  isInitialized: boolean;
+  models: ModelInfo[];
+  selectedModelId: number | null;
+  pollingIntervalId: ReturnType<typeof setInterval> | null;
+  trialAvailable: boolean;
+
+  // Internal actions
+  initialize: (telegramId: number) => Promise<void>;
+  loadModels: () => Promise<void>;
+  loadBalance: () => Promise<void>;
+  startPolling: () => void;
+  stopPolling: () => void;
+  pollActiveGeneration: () => Promise<void>;
+  setSelectedModel: (modelId: number) => void;
+}
+
+export const useAppStore = create<ExtendedState>((set, get) => ({
   // Initial state
   generations: [],
   isLoading: true,
   isRefreshing: false,
 
   settings: {
-    model: 'Nano Banana Pro',
-    ratio: '16:9',
-    quality: 'High (4K)',
-    creditsPerImage: 240,
-    balance: 1200,
+    model: '',
+    ratio: '1:1',
+    quality: '',
+    creditsPerImage: 0,
+    balance: 0,
   },
 
   prompt: '',
@@ -68,6 +84,134 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedGeneration: null,
   menuGeneration: null,
   toasts: [],
+
+  // Internal state
+  telegramId: null,
+  isInitialized: false,
+  models: [],
+  selectedModelId: null,
+  pollingIntervalId: null,
+  trialAvailable: false,
+
+  // Initialize store with telegram user ID
+  initialize: async (telegramId: number) => {
+    if (get().isInitialized && get().telegramId === telegramId) {
+      logger.api.debug('Store already initialized for this user');
+      return;
+    }
+
+    logger.api.info('Initializing store', { telegramId });
+    set({ telegramId, isLoading: true });
+
+    try {
+      // Sync user with backend
+      await api.syncUser(telegramId);
+      logger.api.info('User synced');
+
+      // Load data in parallel
+      await Promise.all([get().loadModels(), get().loadBalance(), get().loadGenerations()]);
+
+      // Check trial status
+      try {
+        const trialStatus = await api.getTrialStatus(telegramId);
+        set({ trialAvailable: trialStatus.trial_available });
+      } catch {
+        logger.api.warn('Failed to get trial status');
+      }
+
+      set({ isInitialized: true, isLoading: false });
+
+      // Start polling for active generations
+      get().startPolling();
+
+      logger.api.info('Store initialization complete');
+    } catch (error) {
+      logger.api.error('Store initialization failed', { error });
+      set({ isLoading: false });
+      get().addToast({ message: 'Failed to load data', type: 'error' });
+    }
+  },
+
+  // Load available models
+  loadModels: async () => {
+    try {
+      const modelsData = await api.getModels();
+      const models: ModelInfo[] = modelsData.map((item) => ({
+        id: item.model.id,
+        key: item.model.key,
+        name: item.model.name,
+        options: {
+          supports_aspect_ratio: item.model.options.supports_aspect_ratio,
+          supports_resolution: item.model.options.supports_resolution,
+          supports_quality: item.model.options.supports_quality,
+          aspect_ratio_options: item.model.options.aspect_ratio_options,
+          resolution_options: item.model.options.resolution_options,
+          quality_options: item.model.options.quality_options,
+        },
+        basePrice: item.prices[0]?.unit_price || 0,
+      }));
+
+      // Set default model if not set
+      const currentModelId = get().selectedModelId;
+      const defaultModel = models[0];
+
+      if (!currentModelId && defaultModel) {
+        set({
+          models,
+          selectedModelId: defaultModel.id,
+          settings: {
+            ...get().settings,
+            model: defaultModel.name,
+            ratio: defaultModel.options.aspect_ratio_options?.[0] || '1:1',
+            quality: defaultModel.options.resolution_options?.[0] || '',
+            creditsPerImage: defaultModel.basePrice,
+          },
+        });
+      } else {
+        set({ models });
+      }
+
+      logger.api.info('Models loaded', { count: models.length });
+    } catch (error) {
+      logger.api.error('Failed to load models', { error });
+    }
+  },
+
+  // Load user balance
+  loadBalance: async () => {
+    const telegramId = get().telegramId;
+    if (!telegramId) return;
+
+    try {
+      const balanceData = await api.getBalance(telegramId);
+      set({
+        settings: {
+          ...get().settings,
+          balance: balanceData.balance,
+        },
+      });
+      logger.api.debug('Balance loaded', { balance: balanceData.balance });
+    } catch (error) {
+      logger.api.error('Failed to load balance', { error });
+    }
+  },
+
+  // Set selected model
+  setSelectedModel: (modelId: number) => {
+    const model = get().models.find((m) => m.id === modelId);
+    if (model) {
+      set({
+        selectedModelId: modelId,
+        settings: {
+          ...get().settings,
+          model: model.name,
+          ratio: model.options.aspect_ratio_options?.[0] || get().settings.ratio,
+          quality: model.options.resolution_options?.[0] || get().settings.quality,
+          creditsPerImage: model.basePrice,
+        },
+      });
+    }
+  },
 
   // Prompt actions
   setPrompt: (prompt) => set({ prompt }),
@@ -82,7 +226,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   removeAttachment: (id) => {
     const { attachments } = get();
-    // Revoke Object URL to prevent memory leak
     const attachment = attachments.find((a) => a.id === id);
     if (attachment?.url.startsWith('blob:')) {
       URL.revokeObjectURL(attachment.url);
@@ -92,7 +235,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearAttachments: () => {
     const { attachments } = get();
-    // Revoke all Object URLs to prevent memory leaks
     attachments.forEach((a) => {
       if (a.url.startsWith('blob:')) {
         URL.revokeObjectURL(a.url);
@@ -103,10 +245,28 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Generation submission
   submitGeneration: async () => {
-    const { prompt, attachments, settings } = get();
+    const { prompt, attachments, settings, telegramId, selectedModelId, models } = get();
+
+    if (!telegramId) {
+      logger.generation.error('Cannot submit: not initialized');
+      get().addToast({ message: 'Please wait for app to load', type: 'error' });
+      return;
+    }
 
     if (!prompt.trim() && attachments.length === 0) {
       logger.generation.warn('Submit cancelled: empty prompt and no attachments');
+      return;
+    }
+
+    if (!selectedModelId) {
+      logger.generation.error('Cannot submit: no model selected');
+      get().addToast({ message: 'Please select a model', type: 'error' });
+      return;
+    }
+
+    const model = models.find((m) => m.id === selectedModelId);
+    if (!model) {
+      logger.generation.error('Cannot submit: model not found');
       return;
     }
 
@@ -114,107 +274,175 @@ export const useAppStore = create<AppState>((set, get) => ({
       promptLength: prompt.length,
       attachmentCount: attachments.length,
       mode: attachments.length > 0 ? 'i2i' : 't2i',
-      model: settings.model,
+      model: model.name,
       ratio: settings.ratio,
       quality: settings.quality,
     });
 
     set({ isSending: true });
 
-    // Create optimistic generation
-    const newGeneration: GenerationItem = {
-      id: generateId(),
+    // Create optimistic generation for immediate UI feedback
+    const optimisticId = generateId();
+    const optimisticGeneration: GenerationItem = {
+      id: optimisticId,
       createdAt: Date.now(),
       mode: attachments.length > 0 ? 'i2i' : 't2i',
       prompt: prompt.trim(),
       attachments: [...attachments],
-      model: settings.model,
+      model: model.name,
       ratio: settings.ratio,
       quality: settings.quality,
       liked: false,
       status: 'generating',
     };
 
-    logger.generation.debug('Generation created', { generationId: newGeneration.id });
-
-    // Add to top of feed using functional updater to avoid race conditions
+    // Add optimistic generation to top of feed
     set((state) => ({
-      generations: [newGeneration, ...state.generations],
+      generations: [optimisticGeneration, ...state.generations],
       prompt: '',
       attachments: [],
       isSending: false,
     }));
 
-    // Simulate generation delay (2-4 seconds)
-    await delay(2000 + Math.random() * 2000);
+    try {
+      // Upload attachments and get URLs (for now, use the blob URLs - in real app you'd upload to server)
+      // TODO: Implement file upload endpoint
+      const referenceUrls = attachments
+        .filter((a) => !a.url.startsWith('blob:'))
+        .map((a) => a.url);
 
-    // Simulate success/failure (90% success rate)
-    const success = Math.random() > 0.1;
+      const response = await api.submitGeneration({
+        telegram_id: telegramId,
+        model_id: selectedModelId,
+        prompt: prompt.trim(),
+        aspect_ratio: settings.ratio,
+        resolution: settings.quality,
+        reference_urls: referenceUrls,
+      });
 
-    set({
-      generations: get().generations.map((g) =>
-        g.id === newGeneration.id
-          ? {
-              ...g,
-              status: success ? 'done' : 'error',
-              resultUrl: success ? MOCK_IMAGES[Math.floor(Math.random() * MOCK_IMAGES.length)] : undefined,
-              errorMessage: success ? undefined : 'Generation failed. Please try again.',
-            }
-          : g
-      ),
-    });
+      logger.generation.info('Generation submitted', {
+        requestId: response.request.id,
+        publicId: response.request.public_id,
+        trialUsed: response.trial_used,
+      });
 
-    if (success) {
-      logger.generation.info('Generation completed', { generationId: newGeneration.id });
-    } else {
-      logger.generation.error('Generation failed', { generationId: newGeneration.id });
-      get().addToast({ message: 'Generation failed', type: 'error' });
+      // Update optimistic generation with real ID
+      set((state) => ({
+        generations: state.generations.map((g) =>
+          g.id === optimisticId
+            ? {
+                ...g,
+                id: response.request.public_id,
+                status: mapStatus(response.request.status),
+              }
+            : g
+        ),
+      }));
+
+      // Refresh balance after submission
+      get().loadBalance();
+
+      // Start polling for this generation
+      get().startPolling();
+    } catch (error) {
+      logger.generation.error('Generation submission failed', { error });
+
+      // Update optimistic generation to error state
+      set((state) => ({
+        generations: state.generations.map((g) =>
+          g.id === optimisticId
+            ? {
+                ...g,
+                status: 'error',
+                errorMessage:
+                  error instanceof ApiError
+                    ? error.detail
+                    : 'Failed to submit generation',
+              }
+            : g
+        ),
+      }));
+
+      const message =
+        error instanceof ApiError
+          ? error.statusCode === 402
+            ? 'Insufficient balance'
+            : error.detail
+          : 'Failed to submit generation';
+
+      get().addToast({ message, type: 'error' });
     }
   },
 
   // Retry failed generation
   retryGeneration: async (id) => {
+    const { generations, telegramId, selectedModelId } = get();
+    const generation = generations.find((g) => g.id === id);
+
+    if (!generation || !telegramId || !selectedModelId) {
+      logger.generation.error('Cannot retry: missing data');
+      return;
+    }
+
     logger.generation.info('Retrying generation', { generationId: id });
 
-    // Use functional updater to avoid race conditions with stale state
+    // Update to generating state
     set((state) => ({
       generations: state.generations.map((g) =>
         g.id === id ? { ...g, status: 'generating', errorMessage: undefined } : g
       ),
     }));
 
-    await delay(2000 + Math.random() * 2000);
+    try {
+      const response = await api.submitGeneration({
+        telegram_id: telegramId,
+        model_id: selectedModelId,
+        prompt: generation.prompt,
+        aspect_ratio: generation.ratio,
+        resolution: generation.quality,
+        reference_urls: generation.attachments
+          .filter((a) => !a.url.startsWith('blob:'))
+          .map((a) => a.url),
+      });
 
-    // Higher success rate on retry
-    const success = Math.random() > 0.05;
+      // Update generation with new ID
+      set((state) => ({
+        generations: state.generations.map((g) =>
+          g.id === id
+            ? {
+                ...g,
+                id: response.request.public_id,
+                status: mapStatus(response.request.status),
+              }
+            : g
+        ),
+      }));
 
-    set({
-      generations: get().generations.map((g) =>
-        g.id === id
-          ? {
-              ...g,
-              status: success ? 'done' : 'error',
-              resultUrl: success ? MOCK_IMAGES[Math.floor(Math.random() * MOCK_IMAGES.length)] : undefined,
-              errorMessage: success ? undefined : 'Generation failed again. Please try later.',
-            }
-          : g
-      ),
-    });
-
-    if (success) {
-      logger.generation.info('Retry successful', { generationId: id });
-      get().addToast({ message: 'Generation complete!', type: 'success' });
-    } else {
-      logger.generation.error('Retry failed', { generationId: id });
+      get().loadBalance();
+      get().startPolling();
+      logger.generation.info('Retry successful', { newId: response.request.public_id });
+    } catch (error) {
+      logger.generation.error('Retry failed', { error });
+      set((state) => ({
+        generations: state.generations.map((g) =>
+          g.id === id
+            ? {
+                ...g,
+                status: 'error',
+                errorMessage:
+                  error instanceof ApiError ? error.detail : 'Retry failed',
+              }
+            : g
+        ),
+      }));
       get().addToast({ message: 'Retry failed', type: 'error' });
     }
   },
 
-  // Delete generation
+  // Delete generation (local only for now)
   deleteGeneration: (id) => {
     const { generations } = get();
     logger.generation.info('Deleting generation', { generationId: id });
-    // Revoke Object URLs from attachments to prevent memory leaks
     const generation = generations.find((g) => g.id === id);
     if (generation) {
       generation.attachments.forEach((a) => {
@@ -227,7 +455,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().addToast({ message: 'Generation deleted', type: 'info' });
   },
 
-  // Toggle like
+  // Toggle like (local only for now)
   toggleLike: (id) => {
     const { generations } = get();
     const generation = generations.find((g) => g.id === id);
@@ -236,7 +464,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       generations: generations.map((g) => (g.id === id ? { ...g, liked: !g.liked } : g)),
     });
-    // Telegram haptic feedback
     if (window.Telegram?.WebApp?.HapticFeedback) {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
     }
@@ -251,8 +478,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     const id = generateId();
     const newToast: Toast = { ...toast, id, duration: toast.duration ?? 3000 };
     set({ toasts: [...get().toasts, newToast] });
-
-    // Auto-remove after duration
     setTimeout(() => {
       get().removeToast(id);
     }, newToast.duration);
@@ -262,20 +487,56 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ toasts: get().toasts.filter((t) => t.id !== id) });
   },
 
-  // Load generations (initial load)
+  // Load generations from API
   loadGenerations: async () => {
+    const telegramId = get().telegramId;
+    if (!telegramId) {
+      logger.generation.warn('Cannot load generations: not initialized');
+      set({ isLoading: false, generations: [] });
+      return;
+    }
+
     logger.generation.info('Loading generations...');
     set({ isLoading: true });
-    await delay(1500); // Simulate API call
-    set({ generations: INITIAL_GENERATIONS, isLoading: false });
-    logger.generation.info('Generations loaded', { count: INITIAL_GENERATIONS.length });
+
+    try {
+      const response = await api.listGenerations(telegramId);
+
+      const generations: GenerationItem[] = response.items.map((item) => ({
+        id: item.public_id,
+        createdAt: new Date(item.created_at).getTime(),
+        mode: item.mode,
+        prompt: item.prompt,
+        attachments: item.reference_urls.map((url, idx) => ({
+          id: `ref-${idx}`,
+          url,
+        })),
+        resultUrl: item.result_urls[0],
+        model: item.model_name,
+        ratio: item.aspect_ratio || '1:1',
+        quality: item.resolution || item.quality || '',
+        liked: false,
+        status: mapStatus(item.status),
+        errorMessage: item.error_message || undefined,
+      }));
+
+      set({ generations, isLoading: false });
+      logger.generation.info('Generations loaded', { count: generations.length });
+    } catch (error) {
+      logger.generation.error('Failed to load generations', { error });
+      set({ isLoading: false, generations: [] });
+      get().addToast({ message: 'Failed to load generations', type: 'error' });
+    }
   },
 
   // Refresh generations (pull-to-refresh)
   refreshGenerations: async () => {
     logger.generation.info('Refreshing generations...');
     set({ isRefreshing: true });
-    await delay(1000);
+
+    await get().loadGenerations();
+    await get().loadBalance();
+
     set({ isRefreshing: false });
     logger.generation.debug('Generations refreshed');
     get().addToast({ message: 'Feed updated', type: 'info' });
@@ -285,5 +546,87 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateSettings: (newSettings) => {
     logger.ui.debug('Settings updated', { newSettings });
     set({ settings: { ...get().settings, ...newSettings } });
+  },
+
+  // Start polling for active generations
+  startPolling: () => {
+    const existing = get().pollingIntervalId;
+    if (existing) {
+      return; // Already polling
+    }
+
+    logger.api.debug('Starting generation polling');
+    const intervalId = setInterval(() => {
+      get().pollActiveGeneration();
+    }, POLL_INTERVAL);
+
+    set({ pollingIntervalId: intervalId });
+
+    // Also poll immediately
+    get().pollActiveGeneration();
+  },
+
+  // Stop polling
+  stopPolling: () => {
+    const intervalId = get().pollingIntervalId;
+    if (intervalId) {
+      clearInterval(intervalId);
+      set({ pollingIntervalId: null });
+      logger.api.debug('Stopped generation polling');
+    }
+  },
+
+  // Poll for active generation updates
+  pollActiveGeneration: async () => {
+    const { telegramId, generations } = get();
+    if (!telegramId) return;
+
+    // Check if there are any generating items
+    const generatingItems = generations.filter((g) => g.status === 'generating');
+    if (generatingItems.length === 0) {
+      get().stopPolling();
+      return;
+    }
+
+    try {
+      // Refresh the full list to get updated statuses
+      const response = await api.listGenerations(telegramId, 20);
+
+      // Update only the status and results for existing items
+      set((state) => ({
+        generations: state.generations.map((gen) => {
+          const updated = response.items.find((item) => item.public_id === gen.id);
+          if (updated) {
+            const newStatus = mapStatus(updated.status);
+            // Only update if something changed
+            if (newStatus !== gen.status || (updated.result_urls[0] && !gen.resultUrl)) {
+              logger.generation.debug('Generation status updated', {
+                id: gen.id,
+                oldStatus: gen.status,
+                newStatus,
+                hasResult: !!updated.result_urls[0],
+              });
+              return {
+                ...gen,
+                status: newStatus,
+                resultUrl: updated.result_urls[0] || gen.resultUrl,
+                errorMessage: updated.error_message || gen.errorMessage,
+              };
+            }
+          }
+          return gen;
+        }),
+      }));
+
+      // Refresh balance when generations complete
+      const hadGenerating = generatingItems.length > 0;
+      const stillGenerating = get().generations.filter((g) => g.status === 'generating').length > 0;
+      if (hadGenerating && !stillGenerating) {
+        get().loadBalance();
+        get().stopPolling();
+      }
+    } catch (error) {
+      logger.api.warn('Polling failed', { error });
+    }
   },
 }));

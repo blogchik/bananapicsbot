@@ -150,6 +150,32 @@ export const api = {
     ),
 
   // Generations
+  listGenerations: (telegramId: number, limit = 50, offset = 0) =>
+    request<{
+      items: Array<{
+        id: number;
+        public_id: string;
+        prompt: string;
+        status: string;
+        mode: 't2i' | 'i2i';
+        model_key: string;
+        model_name: string;
+        aspect_ratio: string | null;
+        size: string | null;
+        resolution: string | null;
+        quality: string | null;
+        cost: number | null;
+        result_urls: string[];
+        reference_urls: string[];
+        error_message: string | null;
+        created_at: string;
+        completed_at: string | null;
+      }>;
+      total: number;
+      limit: number;
+      offset: number;
+    }>(`/generations?telegram_id=${telegramId}&limit=${limit}&offset=${offset}`),
+
   getGenerationPrice: (data: {
     telegram_id: number;
     model_id: number;
@@ -158,8 +184,16 @@ export const api = {
     quality?: string;
     aspect_ratio?: string;
     reference_count?: number;
+    is_image_to_image?: boolean;
   }) =>
-    request<{ price: number; model_id: number }>('/generations/price', {
+    request<{
+      model_id: number;
+      model_key: string;
+      price_credits: number;
+      price_usd: number;
+      is_dynamic: boolean;
+      cached: boolean;
+    }>('/generations/price', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -172,12 +206,20 @@ export const api = {
     resolution?: string;
     quality?: string;
     aspect_ratio?: string;
+    input_fidelity?: string;
     reference_urls?: string[];
     reference_file_ids?: string[];
   }) =>
     request<{
-      request: { id: number; status: string };
+      request: {
+        id: number;
+        public_id: string;
+        status: string;
+        prompt: string;
+        created_at: string;
+      };
       job_id: number;
+      provider_job_id: string | null;
       trial_used: boolean;
     }>('/generations/submit', {
       method: 'POST',
@@ -219,10 +261,41 @@ export const api = {
   getModels: () =>
     request<
       Array<{
-        id: number;
-        key: string;
-        display_name: string;
-        is_active: boolean;
+        model: {
+          id: number;
+          key: string;
+          name: string;
+          provider: string;
+          supports_text_to_image: boolean;
+          supports_image_to_image: boolean;
+          supports_reference: boolean;
+          supports_aspect_ratio: boolean;
+          supports_style: boolean;
+          is_active: boolean;
+          options: {
+            supports_size: boolean;
+            supports_aspect_ratio: boolean;
+            supports_resolution: boolean;
+            supports_quality: boolean;
+            supports_input_fidelity: boolean;
+            quality_stars: number | null;
+            avg_duration_seconds_min: number | null;
+            avg_duration_seconds_max: number | null;
+            avg_duration_text: string | null;
+            size_options: string[] | null;
+            aspect_ratio_options: string[] | null;
+            resolution_options: string[] | null;
+            quality_options: string[] | null;
+            input_fidelity_options: string[] | null;
+          };
+        };
+        prices: Array<{
+          id: number;
+          model_id: number;
+          currency: string;
+          unit_price: number;
+          is_active: boolean;
+        }>;
       }>
     >('/models'),
 };

@@ -17,7 +17,7 @@ import { logger } from '../services/logger';
  * Combines feed, composer, viewer, and other UI elements
  */
 export function GenerationsPage() {
-  const { loadGenerations, isLoading } = useAppStore();
+  const { initialize, isLoading, stopPolling } = useAppStore();
   const { isReady, user } = useTelegram();
 
   // Log page mount
@@ -25,16 +25,18 @@ export function GenerationsPage() {
     logger.ui.info('GenerationsPage mounted');
     return () => {
       logger.ui.debug('GenerationsPage unmounted');
+      // Stop polling on unmount
+      stopPolling();
     };
-  }, []);
+  }, [stopPolling]);
 
-  // Load generations on mount
+  // Initialize store with user's telegram ID
   useEffect(() => {
-    if (isReady) {
-      logger.generation.info('Loading generations', { userId: user?.id });
-      loadGenerations();
+    if (isReady && user?.id) {
+      logger.generation.info('Initializing store', { userId: user.id });
+      initialize(user.id);
     }
-  }, [isReady, loadGenerations, user?.id]);
+  }, [isReady, user?.id, initialize]);
 
   return (
     <motion.div

@@ -28,6 +28,8 @@ from app.infrastructure.logging import get_logger
 from app.schemas.generation import (
     GenerationAccessIn,
     GenerationActiveOut,
+    GenerationHistoryItemOut,
+    GenerationHistoryOut,
     GenerationRequestOut,
     GenerationSubmitIn,
     GenerationSubmitOut,
@@ -324,6 +326,103 @@ async def get_generation_price(
     base_price = int(price.unit_price)
     markup = settings.generation_price_markup
     return apply_price_markup(base_price, markup)
+
+
+@router.get("/generations", response_model=GenerationHistoryOut)
+async def list_generations(
+    tg_user: TelegramUserDep,
+    telegram_id: int = Query(..., gt=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(db_session_dep),
+) -> GenerationHistoryOut:
+    """List user's generation history with results.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only access their own generations
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access generations for another user",
+        )
+
+    user = get_user_by_telegram_id(db, telegram_id)
+    if not user:
+        return GenerationHistoryOut(items=[], total=0, limit=limit, offset=offset)
+
+    # Get total count
+    total_count = db.execute(
+        select(func.count()).select_from(GenerationRequest).where(GenerationRequest.user_id == user.id)
+    ).scalar_one()
+
+    # Get generations with model info, ordered by newest first
+    requests = (
+        db.execute(
+            select(GenerationRequest)
+            .where(GenerationRequest.user_id == user.id)
+            .order_by(GenerationRequest.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        .scalars()
+        .all()
+    )
+
+    items = []
+    for req in requests:
+        # Get model info
+        model = db.execute(select(ModelCatalog).where(ModelCatalog.id == req.model_id)).scalar_one_or_none()
+        model_key = model.key if model else "unknown"
+        model_name = model.name if model else "Unknown"
+
+        # Get results (image URLs)
+        results = db.execute(select(GenerationResult).where(GenerationResult.request_id == req.id)).scalars().all()
+        result_urls = [r.image_url for r in results if r.image_url]
+
+        # Get references (input images for i2i)
+        references = db.execute(
+            select(GenerationReference).where(GenerationReference.request_id == req.id)
+        ).scalars().all()
+        reference_urls = [r.url for r in references if r.url]
+
+        # Determine mode (t2i or i2i)
+        mode = "i2i" if req.references_count > 0 or reference_urls else "t2i"
+
+        # Get error message if failed
+        error_message = None
+        if req.status == GenerationStatus.failed:
+            job = db.execute(select(GenerationJob).where(GenerationJob.request_id == req.id)).scalar_one_or_none()
+            if job and job.error_message:
+                error_message = job.error_message
+
+        # Get params from input_params
+        input_params = req.input_params or {}
+        resolution = input_params.get("resolution")
+        quality = input_params.get("quality")
+
+        items.append(
+            GenerationHistoryItemOut(
+                id=req.id,
+                public_id=req.public_id,
+                prompt=req.prompt,
+                status=req.status.value if hasattr(req.status, "value") else str(req.status),
+                mode=mode,
+                model_key=model_key,
+                model_name=model_name,
+                aspect_ratio=req.aspect_ratio,
+                size=req.size,
+                resolution=resolution,
+                quality=quality,
+                cost=req.cost,
+                result_urls=result_urls,
+                reference_urls=reference_urls,
+                error_message=error_message,
+                created_at=req.created_at,
+                completed_at=req.completed_at,
+            )
+        )
+
+    return GenerationHistoryOut(items=items, total=int(total_count), limit=limit, offset=offset)
 
 
 @router.post("/generations/price", response_model=GenerationPriceOut)

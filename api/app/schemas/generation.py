@@ -132,3 +132,37 @@ class TrialUseOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class GenerationHistoryItemOut(BaseModel):
+    """Generation item for history list with model info and results."""
+
+    id: int
+    public_id: str
+    prompt: str
+    status: str
+    mode: str  # 't2i' or 'i2i'
+    model_key: str
+    model_name: str
+    aspect_ratio: str | None = None
+    size: str | None = None
+    resolution: str | None = None
+    quality: str | None = None
+    cost: int | None = None
+    result_urls: list[str] = []
+    reference_urls: list[str] = []
+    error_message: str | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class GenerationHistoryOut(BaseModel):
+    """Paginated list of user's generations."""
+
+    items: list[GenerationHistoryItemOut]
+    total: int
+    limit: int
+    offset: int
