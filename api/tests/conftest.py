@@ -23,8 +23,22 @@ mock_deps_db.db_session_dep = MagicMock()
 
 # Let's import app now
 from app.deps.db import db_session_dep
+from app.deps.telegram_auth import TelegramUser, get_telegram_user
 from app.main import app
 from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def mock_telegram_user():
+    """Returns a mock TelegramUser for testing."""
+    return TelegramUser(
+        id=123456789,
+        first_name="Test",
+        last_name="User",
+        username="testuser",
+        language_code="en",
+        is_premium=False,
+    )
 
 
 @pytest.fixture
@@ -61,10 +75,10 @@ def mock_db_session():
 
 
 @pytest.fixture
-def client(mock_db_session):
+def client(mock_db_session, mock_telegram_user):
     """
-    Test client with mocked database session.
-    Overrides the db_session_dep dependency.
+    Test client with mocked database session and telegram auth.
+    Overrides the db_session_dep and get_telegram_user dependencies.
     """
     # Override the startup/shutdown handlers to plain AsyncMocks if they aren't already
     # (Since we imported app after mocking sys.modules, app.deps.db might be real,
@@ -82,6 +96,8 @@ def client(mock_db_session):
         # We might need to mock that too if init_database was not successfully patched above before startup
 
         app.dependency_overrides[db_session_dep] = lambda: mock_db_session
+        # Override Telegram auth to return mock user without validating initData
+        app.dependency_overrides[get_telegram_user] = lambda: mock_telegram_user
         with TestClient(app) as c:
             yield c
         app.dependency_overrides.clear()
