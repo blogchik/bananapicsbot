@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-01-25
+
+### Added
+- **Telegram Mini App (Webapp)** - Full-featured React-based web application for AI image generation
+  - Telegram WebApp SDK integration with initData authentication
+  - Mobile-first responsive design with dark theme
+  - Generation feed with real-time status updates
+  - Composer bar with prompt input and image attachments (up to 3 images, 20MB max)
+  - Fullscreen image viewer with swipe-to-close gesture
+  - Bottom sheet action menu (copy, download, regenerate, delete)
+  - Toast notification system
+  - Safe area handling for iOS notch and Android navigation
+  - Haptic feedback integration
+  - TelegramGate security screen for non-Telegram access attempts
+- Webapp service added to docker-compose.yml (port 3033)
+- Comprehensive webapp documentation in `docs/webapp.md`
+- Webapp code review report with 23 identified issues (`webapp/CODE_REVIEW_ISSUES.md`)
+
+### Changed
+- Updated README.md architecture diagram to include webapp service
+- Enhanced API documentation with Telegram Mini App authentication details
+- Updated functionality documentation with webapp features
+
+### Technical
+- **Webapp Tech Stack**: React 18, TypeScript, Vite, Zustand, Framer Motion, TailwindCSS
+- **Build**: Multi-stage Docker build with Nginx for production
+- **Security**: HMAC-SHA256 initData validation, 24h auth freshness check
+
 ## [0.1.3] - 2026-01-22
 
 ### Security
@@ -92,8 +120,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/CD pipeline with GitHub Actions
 - Comprehensive documentation
 
-[Unreleased]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.3...HEAD
-[0.1.3]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.2...v0.1.3
-[0.1.2]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.1...v0.1.2
-[0.1.1]: https://github.com/abduroziq/bananapicsbot/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/abduroziq/bananapicsbot/releases/tag/v0.1.0
+[Unreleased]: https://github.com/blogchik/bananapicsbot/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/blogchik/bananapicsbot/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/blogchik/bananapicsbot/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/blogchik/bananapicsbot/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/blogchik/bananapicsbot/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/blogchik/bananapicsbot/releases/tag/v0.1.0

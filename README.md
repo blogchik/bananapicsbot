@@ -14,6 +14,7 @@ Bananapics Bot is a production-ready Telegram bot that provides AI image generat
 ### Key Features
 
 - 🎨 **AI Image Generation** - Text-to-image and image-to-image generation with multiple models
+- 📱 **Telegram Mini App** - Modern React-based webapp with native mobile experience
 - 💰 **Payment System** - Integrated Telegram Stars payments with dynamic exchange rates
 - 👥 **Referral Program** - Automatic bonus system for referred users
 - 🌍 **Multi-language Support** - Uzbek, Russian, and English localization
@@ -34,10 +35,10 @@ Bananapics Bot is a production-ready Telegram bot that provides AI image generat
 The project is built with a microservices architecture:
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│  Telegram Bot   │────▶│   FastAPI API   │
-│   (aiogram)     │◀────│ (Clean Arch.)   │
-└─────────────────┘     └─────────────────┘
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Telegram Bot   │────▶│   FastAPI API   │◀────│  Mini App       │
+│   (aiogram)     │◀────│ (Clean Arch.)   │     │ (React + Vite)  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
                                │
          ┌─────────────────────┼─────────────────────┐
          │                     │                     │
@@ -51,6 +52,7 @@ The project is built with a microservices architecture:
 
 - **bot** - Telegram bot interface (aiogram 3.x)
 - **api** - FastAPI backend with Clean Architecture
+- **webapp** - Telegram Mini App (React 18 + TypeScript + Vite)
 - **celery-worker** - Background task processor for generations and broadcasts
 - **celery-beat** - Scheduled tasks (cleanup, monitoring)
 - **redis** - Caching, FSM storage, rate limiting, Celery broker
@@ -83,9 +85,20 @@ bananapicsbot/
 │   │   └── schemas/       # Pydantic models
 │   └── alembic/           # Database migrations
 │
+├── webapp/                # Telegram Mini App
+│   ├── src/
+│   │   ├── components/   # React UI components
+│   │   ├── hooks/        # Custom React hooks (useTelegram)
+│   │   ├── services/     # API client
+│   │   ├── store/        # Zustand state management
+│   │   └── types/        # TypeScript definitions
+│   ├── Dockerfile        # Production build
+│   └── vite.config.ts    # Vite configuration
+│
 ├── docs/                  # Project documentation
 │   ├── api.md            # API architecture details
 │   ├── bot.md            # Bot architecture details
+│   ├── webapp.md         # Mini App documentation
 │   ├── functionality.md  # Feature documentation
 │   └── env.md            # Environment variables guide
 │
@@ -612,7 +625,7 @@ For questions or issues:
 
 ## 📋 Project Status
 
-**Current Version:** 0.1.2
+**Current Version:** 0.1.4
 
 **Status:** Production Ready ✅
 
@@ -626,6 +639,7 @@ For questions or issues:
 - [ ] API rate limiting by user
 - [ ] Automated testing suite
 - [ ] Performance optimization
+- [x] Telegram Mini App (webapp)
 
 ---
 
