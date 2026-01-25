@@ -103,7 +103,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Generation submission
   submitGeneration: async () => {
-    const { prompt, attachments, settings, generations } = get();
+    const { prompt, attachments, settings } = get();
 
     if (!prompt.trim() && attachments.length === 0) {
       logger.generation.warn('Submit cancelled: empty prompt and no attachments');
