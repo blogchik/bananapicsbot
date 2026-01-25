@@ -380,9 +380,9 @@ async def list_generations(
         result_urls = [r.image_url for r in results if r.image_url]
 
         # Get references (input images for i2i)
-        references = db.execute(
-            select(GenerationReference).where(GenerationReference.request_id == req.id)
-        ).scalars().all()
+        references = (
+            db.execute(select(GenerationReference).where(GenerationReference.request_id == req.id)).scalars().all()
+        )
         reference_urls = [r.url for r in references if r.url]
 
         # Determine mode (t2i or i2i)
