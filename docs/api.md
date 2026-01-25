@@ -1,5 +1,62 @@
 # API tuzilmasi
 
+## Telegram Mini App Authentication
+
+Webapp va API o'rtasidagi xavfsiz autentifikatsiya Telegram initData orqali amalga oshiriladi.
+
+### Qanday ishlaydi
+
+1. **Webapp** Telegram orqali ochilganda `window.Telegram.WebApp.initData` mavjud bo'ladi
+2. Barcha API so'rovlari `X-Telegram-Init-Data` headerini yuboradi
+3. **API** initData imzosini HMAC-SHA256 bilan tekshiradi
+4. Auth date freshness tekshiriladi (24 soat)
+5. User ID mosligini tekshiradi (faqat o'z ma'lumotlariga kirish)
+
+### Validatsiya algoritmi
+
+```python
+# 1. Query string parse
+params = parse_qs(init_data)
+hash_value = params.get("hash")
+
+# 2. Data check string (hash'siz, alfabetik tartiblangan)
+data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()) if k != "hash")
+
+# 3. Secret key
+secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+
+# 4. Hash hisoblash va solishtirish
+calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+assert calculated_hash == hash_value
+```
+
+### FastAPI Dependency
+
+```python
+from app.deps.telegram_auth import TelegramUserDep
+
+@router.get("/protected")
+async def protected_endpoint(tg_user: TelegramUserDep):
+    return {"user_id": tg_user.id}
+```
+
+### Error kodlari
+
+| Status | Sabab |
+|--------|-------|
+| 401 Unauthorized | initData yo'q yoki imzo noto'g'ri |
+| 403 Forbidden | Boshqa user ma'lumotlariga kirish |
+
+### Protected endpointlar
+
+Quyidagi endpointlar `X-Telegram-Init-Data` header talab qiladi:
+
+- `/users/sync`, `/users/{id}/balance`, `/users/{id}/trial`
+- `/generations/price`, `/generations/submit`, `/generations/active`
+- `/generations/{id}`, `/generations/{id}/refresh`, `/generations/{id}/results`
+
+---
+
 ## Arxitektura
 
 API **Clean Architecture** (Domain-driven Design) asosida qurilgan:
@@ -40,7 +97,7 @@ app/
 - `app/core` - konfiguratsiya, constants.
 - `app/middlewares` - request id va rate limit.
 - `app/schemas` - Pydantic modellari.
-- `app/deps` - dependency funksiyalar.
+- `app/deps` - dependency funksiyalar (db, redis, telegram_auth, wavespeed).
 - `alembic/` - DB migratsiyalar.
 
 ## Admin Endpointlar

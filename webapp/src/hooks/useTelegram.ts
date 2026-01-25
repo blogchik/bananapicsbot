@@ -1,17 +1,38 @@
 import { useEffect, useState, useCallback } from 'react';
 
+// Store initData globally for API calls
+let globalInitData: string | null = null;
+
+/**
+ * Get the stored initData for API requests
+ */
+export function getInitData(): string | null {
+  return globalInitData;
+}
+
 /**
  * Hook for Telegram WebApp SDK integration
- * Provides theme params, haptic feedback, and other Telegram-specific features
+ * Provides theme params, haptic feedback, initData validation, and other Telegram-specific features
  */
 export function useTelegram() {
   const [isReady, setIsReady] = useState(false);
-  const [user, setUser] = useState<{ id: number; firstName: string; lastName?: string } | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [user, setUser] = useState<{
+    id: number;
+    firstName: string;
+    lastName?: string;
+    username?: string;
+    languageCode?: string;
+  } | null>(null);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
 
-    if (tg) {
+    // Check if running inside Telegram WebApp
+    if (tg && tg.initData && tg.initData.length > 0) {
+      // Store initData globally for API calls
+      globalInitData = tg.initData;
+
       // Signal that the app is ready
       tg.ready();
 
@@ -22,30 +43,23 @@ export function useTelegram() {
       tg.setHeaderColor('#121212');
       tg.setBackgroundColor('#121212');
 
-      // Extract user info if available
+      // Extract user info from initDataUnsafe (display only, validated on backend)
       if (tg.initDataUnsafe?.user) {
         setUser({
           id: tg.initDataUnsafe.user.id,
           firstName: tg.initDataUnsafe.user.first_name,
           lastName: tg.initDataUnsafe.user.last_name,
-        });
-      } else {
-        // Mock user for development (test user ID from CLAUDE.md)
-        setUser({
-          id: 686980246,
-          firstName: 'Test',
-          lastName: 'User',
+          username: tg.initDataUnsafe.user.username,
+          languageCode: tg.initDataUnsafe.user.language_code,
         });
       }
 
+      setIsAuthorized(true);
       setIsReady(true);
     } else {
-      // Not in Telegram - mock data for web testing
-      setUser({
-        id: 686980246,
-        firstName: 'Test',
-        lastName: 'User',
-      });
+      // Not in Telegram or no initData - block access
+      globalInitData = null;
+      setIsAuthorized(false);
       setIsReady(true);
     }
   }, []);
@@ -68,6 +82,11 @@ export function useTelegram() {
     window.Telegram?.WebApp?.close();
   }, []);
 
+  // Open Telegram link
+  const openTelegramLink = useCallback((url: string) => {
+    window.Telegram?.WebApp?.openTelegramLink?.(url);
+  }, []);
+
   // Get safe area insets (bottom padding for iOS)
   const getSafeAreaInset = useCallback(() => {
     // Try to get from CSS env variables
@@ -80,11 +99,14 @@ export function useTelegram() {
 
   return {
     isReady,
+    isAuthorized,
     user,
+    initData: globalInitData,
     hapticImpact,
     hapticNotification,
     hapticSelection,
     close,
+    openTelegramLink,
     getSafeAreaInset,
     isTelegram: !!window.Telegram?.WebApp,
   };

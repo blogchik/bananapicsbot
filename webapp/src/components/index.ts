@@ -8,4 +8,5 @@ export { AttachmentChips } from './AttachmentChips';
 export { FullscreenViewer } from './FullscreenViewer';
 export { BottomSheetMenu } from './BottomSheetMenu';
 export { ToastContainer } from './Toast';
+export { TelegramGate } from './TelegramGate';
 export * from './Icons';

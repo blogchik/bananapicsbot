@@ -32,6 +32,31 @@ User rasm yuborib, unga turli xil ishlov berish toollarni tanlay oladi:
 - **Restore** (20 credit) — eski rasmlarni tiklaydi, chang va tirnalishlarni olib tashlaydi (Topaz AI)
 - **Enhance** (30 credit) — rasmni yaxshilaydi, keskinlashtiradi va upscale qiladi (Topaz AI)
 
+## Telegram Mini App (Webapp)
+
+BananaPics Telegram Mini App - mobil-first interfeys:
+
+### Asosiy xususiyatlar
+
+- **Generation feed** - barcha generatsiyalar ro'yxati
+- **Composer bar** - prompt kiritish va reference rasm qo'shish
+- **Fullscreen viewer** - rasmlarni to'liq ekranda ko'rish
+- **Toast notifications** - status xabarlari
+
+### Xavfsizlik
+
+- **initData validatsiya** - faqat Telegram orqali ochish mumkin
+- **TelegramGate** - browser orqali ochilsa bloklangan ekran
+- **API authentication** - barcha so'rovlar initData bilan himoyalangan
+
+### Cheklovlar
+
+- Maximum 3 ta reference rasm
+- 20MB maksimal fayl hajmi
+- JPG, PNG, WebP, GIF, BMP, TIFF formatlar
+
+Batafsil: [webapp.md](webapp.md)
+
 ## Reja
 
 - Qo'shimcha modellar va narxlar boshqaruvi.

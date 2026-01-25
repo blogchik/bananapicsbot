@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.deps.db import db_session_dep
+from app.deps.telegram_auth import TelegramUserDep
 from app.schemas.balance import BalanceOut
 from app.schemas.trial import TrialStatusOut
 from app.schemas.user import UserSyncIn, UserSyncOut
@@ -13,7 +14,23 @@ router = APIRouter()
 
 
 @router.post("/users/sync", response_model=UserSyncOut, status_code=status.HTTP_200_OK)
-async def sync_user(payload: UserSyncIn, db: Session = Depends(db_session_dep)) -> UserSyncOut:
+async def sync_user(
+    payload: UserSyncIn,
+    tg_user: TelegramUserDep,
+    db: Session = Depends(db_session_dep),
+) -> UserSyncOut:
+    """
+    Sync user from Telegram to database.
+    Creates user if not exists, applies referral if provided.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only sync their own data
+    if payload.telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot sync data for another user",
+        )
+
     referral_code = payload.referral_code or ""
     if referral_code.startswith("r_"):
         referral_code = referral_code[2:]
@@ -32,7 +49,22 @@ async def sync_user(payload: UserSyncIn, db: Session = Depends(db_session_dep)) 
 
 
 @router.get("/users/{telegram_id}/balance", response_model=BalanceOut)
-async def get_balance(telegram_id: int, db: Session = Depends(db_session_dep)) -> BalanceOut:
+async def get_balance(
+    telegram_id: int,
+    tg_user: TelegramUserDep,
+    db: Session = Depends(db_session_dep),
+) -> BalanceOut:
+    """
+    Get user balance.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only access their own balance
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access balance for another user",
+        )
+
     user = get_user_by_telegram_id(db, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -41,7 +73,22 @@ async def get_balance(telegram_id: int, db: Session = Depends(db_session_dep)) -
 
 
 @router.get("/users/{telegram_id}/trial", response_model=TrialStatusOut)
-async def get_trial_status(telegram_id: int, db: Session = Depends(db_session_dep)) -> TrialStatusOut:
+async def get_trial_status(
+    telegram_id: int,
+    tg_user: TelegramUserDep,
+    db: Session = Depends(db_session_dep),
+) -> TrialStatusOut:
+    """
+    Get user trial status.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only access their own trial status
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access trial status for another user",
+        )
+
     user = get_user_by_telegram_id(db, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

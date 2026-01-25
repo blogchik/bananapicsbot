@@ -266,6 +266,20 @@ declare global {
         ready: () => void;
         expand: () => void;
         close: () => void;
+        initData: string;
+        initDataUnsafe: {
+          query_id?: string;
+          user?: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+            language_code?: string;
+            is_premium?: boolean;
+          };
+          auth_date?: number;
+          hash?: string;
+        };
         MainButton: {
           text: string;
           color: string;
@@ -302,17 +316,9 @@ declare global {
         headerColor: string;
         backgroundColor: string;
         isExpanded: boolean;
-        initDataUnsafe: {
-          user?: {
-            id: number;
-            first_name: string;
-            last_name?: string;
-            username?: string;
-            language_code?: string;
-          };
-        };
         setHeaderColor: (color: string) => void;
         setBackgroundColor: (color: string) => void;
+        openTelegramLink: (url: string) => void;
       };
     };
   }

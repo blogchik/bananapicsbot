@@ -75,6 +75,16 @@
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - `POSTGRES_HOST`, `POSTGRES_PORT`
 
+## Webapp
+
+- `WEBAPP_URL`: Webapp tashqi URL (CORS uchun). Masalan: `https://webapp.bananapics.com`
+- `VITE_API_URL`: API bazaviy URL (webapp build uchun, default: `/api/v1`)
+
+### initData Validatsiya
+
+- `BOT_TOKEN`: Bot tokeni - initData imzosini tekshirish uchun (API uchun majburiy)
+- initData freshness: 24 soat (hardcoded)
+
 ## Namuna
 
 ```env
@@ -167,6 +177,12 @@ POSTGRES_PASSWORD=bananapics
 POSTGRES_DB=bananapics
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
+
+# ===================
+# Webapp
+# ===================
+WEBAPP_URL=https://webapp.bananapics.com
+# VITE_API_URL=/api/v1  # Build time env (webapp)
 ```
 
 ## Tayyorlash

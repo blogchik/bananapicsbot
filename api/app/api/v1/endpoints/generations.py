@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -22,6 +22,7 @@ from app.db.models import (
     TrialUse,
 )
 from app.deps.db import db_session_dep
+from app.deps.telegram_auth import TelegramUserDep
 from app.deps.wavespeed import wavespeed_client
 from app.infrastructure.logging import get_logger
 from app.schemas.generation import (
@@ -328,9 +329,18 @@ async def get_generation_price(
 @router.post("/generations/price", response_model=GenerationPriceOut)
 async def calculate_generation_price(
     payload: GenerationPriceIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> GenerationPriceOut:
-    """Get dynamic generation price from Wavespeed pricing API."""
+    """Get dynamic generation price from Wavespeed pricing API.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only get prices for themselves
+    if payload.telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot get price for another user",
+        )
 
     settings = get_settings()
     markup = settings.generation_price_markup
@@ -877,8 +887,19 @@ async def submit_wavespeed_generation(
 @router.post("/generations/submit", response_model=GenerationSubmitOut)
 async def submit_generation(
     payload: GenerationSubmitIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> GenerationSubmitOut:
+    """Submit a new generation request.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only submit for themselves
+    if payload.telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot submit generation for another user",
+        )
+
     settings = get_settings()
     user, _, _ = get_or_create_user(db, payload.telegram_id)
     await ensure_wavespeed_balance(settings)
@@ -1053,9 +1074,20 @@ async def submit_generation(
 
 @router.get("/generations/active", response_model=GenerationActiveOut)
 async def get_active_generation_status(
+    tg_user: TelegramUserDep,
     telegram_id: int = Query(..., gt=0),
     db: Session = Depends(db_session_dep),
 ) -> GenerationActiveOut:
+    """Get active generation status.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only check their own generations
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access generations for another user",
+        )
+
     user = get_user_by_telegram_id(db, telegram_id)
     if not user:
         return GenerationActiveOut(has_active=False)
@@ -1073,9 +1105,20 @@ async def get_active_generation_status(
 @router.get("/generations/{request_id}", response_model=GenerationRequestOut)
 async def get_generation(
     request_id: int,
+    tg_user: TelegramUserDep,
     telegram_id: int = Query(..., gt=0),
     db: Session = Depends(db_session_dep),
 ) -> GenerationRequestOut:
+    """Get generation request details.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only access their own generations
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access generation for another user",
+        )
+
     request = get_request_for_user(db, request_id, telegram_id)
     return GenerationRequestOut.model_validate(request)
 
@@ -1084,8 +1127,19 @@ async def get_generation(
 async def refresh_generation(
     request_id: int,
     payload: GenerationAccessIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> GenerationRequestOut:
+    """Refresh generation status from provider.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only refresh their own generations
+    if payload.telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot refresh generation for another user",
+        )
+
     request = get_request_for_user(db, request_id, payload.telegram_id)
 
     job = db.execute(select(GenerationJob).where(GenerationJob.request_id == request.id)).scalar_one_or_none()
@@ -1135,9 +1189,20 @@ async def refresh_generation(
 @router.get("/generations/{request_id}/results")
 async def get_generation_results(
     request_id: int,
+    tg_user: TelegramUserDep,
     telegram_id: int = Query(..., gt=0),
     db: Session = Depends(db_session_dep),
 ) -> list[str]:
+    """Get generation result images.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only access their own generation results
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access generation results for another user",
+        )
+
     request = get_request_for_user(db, request_id, telegram_id)
     results = db.execute(select(GenerationResult).where(GenerationResult.request_id == request.id)).scalars().all()
     return [result.image_url for result in results if result.image_url]
