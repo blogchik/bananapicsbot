@@ -15,7 +15,7 @@ export const HeaderBar = memo(function HeaderBar() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-dark-500/80 backdrop-blur-xl"
+      className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 pt-safe bg-dark-500/80 backdrop-blur-xl"
     >
       {/* Mode Pill - shows model, ratio, quality */}
       <motion.div

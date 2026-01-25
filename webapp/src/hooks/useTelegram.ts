@@ -36,12 +36,25 @@ export function useTelegram() {
       // Signal that the app is ready
       tg.ready();
 
-      // Expand to full height
+      // Expand to full viewport height (critical for fullscreen)
       tg.expand();
+
+      // Request fullscreen mode on mobile/tablet
+      if (tg.isVersionAtLeast?.('6.1')) {
+        tg.requestFullscreen?.();
+      }
+
+      // Lock orientation to portrait on mobile (if supported)
+      if (tg.isVersionAtLeast?.('7.7')) {
+        tg.lockOrientation?.();
+      }
 
       // Set dark theme colors
       tg.setHeaderColor('#121212');
       tg.setBackgroundColor('#121212');
+
+      // Enable closing confirmation to prevent accidental exits
+      tg.enableClosingConfirmation();
 
       // Extract user info from initDataUnsafe (display only, validated on backend)
       if (tg.initDataUnsafe?.user) {
@@ -87,13 +100,32 @@ export function useTelegram() {
     window.Telegram?.WebApp?.openTelegramLink?.(url);
   }, []);
 
-  // Get safe area insets (bottom padding for iOS)
+  // Get safe area insets for proper spacing on mobile devices
   const getSafeAreaInset = useCallback(() => {
-    // Try to get from CSS env variables
-    const computedStyle = getComputedStyle(document.documentElement);
-    const bottomInset = computedStyle.getPropertyValue('--tg-viewport-stable-height');
+    const tg = window.Telegram?.WebApp;
+    
+    // Use Telegram's safe area if available (Telegram WebApp API 6.2+)
+    if (tg?.isVersionAtLeast?.('6.2') && tg.safeAreaInset) {
+      return {
+        top: tg.safeAreaInset.top || 0,
+        right: tg.safeAreaInset.right || 0,
+        bottom: tg.safeAreaInset.bottom || 0,
+        left: tg.safeAreaInset.left || 0,
+      };
+    }
+    
+    // Fallback to CSS env variables
+    const root = document.documentElement;
+    const top = parseInt(getComputedStyle(root).getPropertyValue('--sat') || '0');
+    const right = parseInt(getComputedStyle(root).getPropertyValue('--sar') || '0');
+    const bottom = parseInt(getComputedStyle(root).getPropertyValue('--sab') || '0');
+    const left = parseInt(getComputedStyle(root).getPropertyValue('--sal') || '0');
+    
     return {
-      bottom: bottomInset ? 20 : 0, // Add padding if in Telegram
+      top: top || 0,
+      right: right || 0,
+      bottom: bottom || 0,
+      left: left || 0,
     };
   }, []);
 

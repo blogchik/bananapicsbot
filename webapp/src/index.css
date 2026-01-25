@@ -4,6 +4,14 @@
 
 /* Custom styles for BananaPics WebApp */
 
+/* CSS Variables for safe areas */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
 /* Base styles */
 @layer base {
   * {
@@ -13,21 +21,59 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Enable fullscreen on mobile */
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
     @apply bg-dark-500 text-white;
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overscroll-behavior: none;
+    /* Fullscreen support */
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    /* Prevent iOS bounce scroll */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
-  /* Safe area padding for iOS */
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Safe area padding utilities */
   .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 16px);
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
   }
 
   .pt-safe {
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+
+  .pl-safe {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+
+  .pr-safe {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+
+  /* Combined safe area padding */
+  .p-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+    padding-left: max(env(safe-area-inset-left), 0px);
   }
 }
 

@@ -13,6 +13,62 @@ BananaPics Telegram Mini App - React + TypeScript asosidagi SPA, Telegram WebApp
 - **Framer Motion** - animatsiyalar
 - **TailwindCSS** - styling
 
+## Mobile/Tablet Fullscreen Support
+
+Webapp mobil va tablet qurilmalarda to'liq ekran rejimida ochiladi:
+
+### Fullscreen Features
+
+- **viewport-fit=cover** - Safe area qo'llab-quvvatlash
+- **requestFullscreen()** - Telegram WebApp API 6.1+ fullscreen rejimi
+- **lockOrientation()** - Telegram WebApp API 7.7+ portrait orientatsiya
+- **Safe area insets** - iOS notch, Android statusbar/navbar uchun paddinglar
+
+### Safe Area Implementation
+
+CSS variables orqali safe area insets:
+```css
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+```
+
+Utility klasslar:
+- `.pt-safe` - top padding
+- `.pb-safe` - bottom padding  
+- `.pl-safe` - left padding
+- `.pr-safe` - right padding
+- `.p-safe` - barcha tomonlar
+
+Telegram API safe area (6.2+):
+```tsx
+tg.safeAreaInset.top
+tg.safeAreaInset.bottom
+tg.safeAreaInset.left
+tg.safeAreaInset.right
+```
+
+### Fullscreen Initialization
+
+`useTelegram` hook:
+```tsx
+// Expand to full viewport
+tg.expand();
+
+// Request fullscreen (API 6.1+)
+if (tg.isVersionAtLeast?.('6.1')) {
+  tg.requestFullscreen?.();
+}
+
+// Lock orientation (API 7.7+)
+if (tg.isVersionAtLeast?.('7.7')) {
+  tg.lockOrientation?.();
+}
+```
+
 ## Loyiha strukturasi
 
 ```
