@@ -89,7 +89,7 @@ webapp/
 Agar webapp Telegram'dan ochilmagan bo'lsa, `TelegramGate` komponenti ko'rsatiladi:
 
 - Shield + lock ikonka
-- "Use @BananPicsBot to launch app." xabari
+- "Use @BananaPicsBot to launch app." xabari
 - Bot linkiga o'tish imkoniyati
 
 ```tsx

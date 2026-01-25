@@ -93,7 +93,7 @@ function Sparkle({
  * Shows a security screen with shield/lock illustration and redirect link
  */
 export const TelegramGate = memo(function TelegramGate() {
-  const botUsername = 'BananPicsBot';
+  const botUsername = 'BananaPicsBot';
   const botLink = `https://t.me/${botUsername}`;
 
   return (
