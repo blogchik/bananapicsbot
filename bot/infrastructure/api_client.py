@@ -1,6 +1,8 @@
 """HTTP API client with connection pooling and retry logic."""
 
 import asyncio
+import hashlib
+import hmac
 from dataclasses import dataclass
 from typing import Any
 
@@ -10,6 +12,16 @@ from core.exceptions import APIConnectionError, APIError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def generate_internal_api_key(bot_token: str) -> str:
+    """
+    Generate internal API key from bot token.
+    This key is used for bot-to-API authentication.
+    Must match the algorithm in api/app/deps/telegram_auth.py.
+    """
+    secret = hmac.new(b"InternalApiKey", bot_token.encode(), hashlib.sha256).hexdigest()
+    return secret
 
 
 @dataclass
@@ -40,6 +52,7 @@ class ApiClient:
     - Automatic retry on transient failures
     - Proper resource cleanup
     - Structured logging
+    - Internal API key authentication for bot-to-API calls
     """
 
     def __init__(
@@ -48,6 +61,7 @@ class ApiClient:
         timeout_seconds: int = 180,
         max_connections: int = 100,
         retry_attempts: int = 3,
+        bot_token: str | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = ClientTimeout(total=timeout_seconds)
@@ -55,6 +69,9 @@ class ApiClient:
         self.retry_attempts = retry_attempts
         self._session: ClientSession | None = None
         self._connector: TCPConnector | None = None
+        self._internal_api_key: str | None = None
+        if bot_token:
+            self._internal_api_key = generate_internal_api_key(bot_token)
 
     async def _get_session(self) -> ClientSession:
         """Get or create HTTP session with connection pooling."""
@@ -80,22 +97,32 @@ class ApiClient:
             await self._connector.close()
             self._connector = None
 
+    def _get_auth_headers(self, telegram_user_id: int | None = None) -> dict[str, str]:
+        """Get authentication headers for internal API calls."""
+        headers: dict[str, str] = {}
+        if self._internal_api_key and telegram_user_id is not None:
+            headers["X-Internal-Api-Key"] = self._internal_api_key
+            headers["X-Telegram-User-Id"] = str(telegram_user_id)
+        return headers
+
     async def _request(
         self,
         method: str,
         path: str,
         json: dict | None = None,
         retry: bool = True,
+        telegram_user_id: int | None = None,
     ) -> Any:
-        """Make HTTP request with retry logic."""
+        """Make HTTP request with retry logic and optional authentication."""
         url = f"{self.base_url}{path}"
         attempts = self.retry_attempts if retry else 1
         last_error: Exception | None = None
+        headers = self._get_auth_headers(telegram_user_id)
 
         for attempt in range(attempts):
             try:
                 session = await self._get_session()
-                async with session.request(method, url, json=json) as resp:
+                async with session.request(method, url, json=json, headers=headers or None) as resp:
                     if resp.status >= 400:
                         if resp.content_type == "application/json":
                             data = await resp.json()
@@ -168,16 +195,16 @@ class ApiClient:
         payload = {"telegram_id": telegram_id}
         if referral_code:
             payload["referral_code"] = referral_code
-        return await self._request("POST", "/api/v1/users/sync", json=payload)
+        return await self._request("POST", "/api/v1/users/sync", json=payload, telegram_user_id=telegram_id)
 
     async def get_balance(self, telegram_id: int) -> int:
         """Get user balance."""
-        data = await self._request("GET", f"/api/v1/users/{telegram_id}/balance")
+        data = await self._request("GET", f"/api/v1/users/{telegram_id}/balance", telegram_user_id=telegram_id)
         return int(data["balance"])
 
     async def get_trial(self, telegram_id: int) -> TrialStatus:
         """Get user trial status."""
-        data = await self._request("GET", f"/api/v1/users/{telegram_id}/trial")
+        data = await self._request("GET", f"/api/v1/users/{telegram_id}/trial", telegram_user_id=telegram_id)
         return TrialStatus(
             trial_available=bool(data["trial_available"]),
             used_count=int(data["used_count"]),
@@ -235,6 +262,7 @@ class ApiClient:
             "POST",
             "/api/v1/generations/submit",
             json=payload,
+            telegram_user_id=telegram_id,
         )
 
     async def get_generation_price(
@@ -262,6 +290,7 @@ class ApiClient:
                 "input_fidelity": input_fidelity,
                 "is_image_to_image": is_image_to_image,
             },
+            telegram_user_id=telegram_id,
         )
 
     async def refresh_generation(
@@ -274,6 +303,7 @@ class ApiClient:
             "POST",
             f"/api/v1/generations/{request_id}/refresh",
             json={"telegram_id": telegram_id},
+            telegram_user_id=telegram_id,
         )
 
     async def get_generation_results(
@@ -285,6 +315,7 @@ class ApiClient:
         return await self._request(
             "GET",
             f"/api/v1/generations/{request_id}/results?telegram_id={telegram_id}",
+            telegram_user_id=telegram_id,
         )
 
     async def get_active_generation(self, telegram_id: int) -> dict:
@@ -292,6 +323,7 @@ class ApiClient:
         return await self._request(
             "GET",
             f"/api/v1/generations/active?telegram_id={telegram_id}",
+            telegram_user_id=telegram_id,
         )
 
     # Media endpoints
@@ -306,6 +338,7 @@ class ApiClient:
             "POST",
             "/api/v1/tools/watermark-remove",
             json={"telegram_id": telegram_id, "image_url": image_url},
+            telegram_user_id=telegram_id,
         )
 
     async def upscale_image(self, telegram_id: int, image_url: str, target_resolution: str = "4k") -> dict:
@@ -318,6 +351,7 @@ class ApiClient:
                 "image_url": image_url,
                 "target_resolution": target_resolution,
             },
+            telegram_user_id=telegram_id,
         )
 
     async def denoise_image(self, telegram_id: int, image_url: str, model: str = "Normal") -> dict:
@@ -330,6 +364,7 @@ class ApiClient:
                 "image_url": image_url,
                 "model": model,
             },
+            telegram_user_id=telegram_id,
         )
 
     async def restore_image(self, telegram_id: int, image_url: str, model: str = "Dust-Scratch") -> dict:
@@ -342,6 +377,7 @@ class ApiClient:
                 "image_url": image_url,
                 "model": model,
             },
+            telegram_user_id=telegram_id,
         )
 
     async def enhance_image(
@@ -361,6 +397,7 @@ class ApiClient:
                 "size": size,
                 "model": model,
             },
+            telegram_user_id=telegram_id,
         )
 
     # Payment endpoints

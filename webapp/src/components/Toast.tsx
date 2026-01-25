@@ -10,7 +10,13 @@ export const ToastContainer = memo(function ToastContainer() {
   const toasts = useAppStore((s) => s.toasts);
 
   return (
-    <div className="fixed top-20 left-4 right-4 z-[200] flex flex-col items-center gap-2 pointer-events-none">
+    <div
+      className="fixed left-4 right-4 z-[200] flex flex-col items-center gap-2 pointer-events-none"
+      style={{
+        // Position below header: safe area + header content height + gap
+        top: 'calc(var(--tg-safe-area-top, 72px) + var(--header-content-height, 56px) + 8px)',
+      }}
+    >
       <AnimatePresence mode="sync">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} />

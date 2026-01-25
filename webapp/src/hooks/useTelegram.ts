@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { logger } from '../services/logger';
 
 // Store initData globally for API calls
 let globalInitData: string | null = null;
@@ -10,49 +11,64 @@ export function getInitData(): string | null {
   return globalInitData;
 }
 
+// Minimum safe area values for different modes (mobile only)
+const MIN_SAFE_AREA_NORMAL = 56; // Normal mode: Telegram header ~56px
+const MIN_SAFE_AREA_FULLSCREEN = 72; // Fullscreen mode: status bar + close button ~72px
+
 /**
  * Update CSS variables for safe areas from Telegram WebApp API
  * Combines device safe area + Telegram content safe area (for Telegram UI elements)
  */
-function updateSafeAreaCSSVariables(tg: NonNullable<typeof window.Telegram>['WebApp']): void {
+function updateSafeAreaCSSVariables(
+  tg: NonNullable<typeof window.Telegram>['WebApp'],
+  isFullscreen: boolean = false,
+  isMobile: boolean = false
+): void {
   if (!tg) return;
-  
+
   const root = document.documentElement;
-  
+
   // Device safe area (notch, status bar, home indicator)
   const deviceTop = tg.safeAreaInset?.top || 0;
   const deviceRight = tg.safeAreaInset?.right || 0;
   const deviceBottom = tg.safeAreaInset?.bottom || 0;
   const deviceLeft = tg.safeAreaInset?.left || 0;
-  
+
   // Telegram content safe area (Telegram header, bottom bar)
   const contentTop = tg.contentSafeAreaInset?.top || 0;
   const contentRight = tg.contentSafeAreaInset?.right || 0;
   const contentBottom = tg.contentSafeAreaInset?.bottom || 0;
   const contentLeft = tg.contentSafeAreaInset?.left || 0;
-  
-  // Combined safe area (max of device + content, with minimum values for Telegram header)
-  const totalTop = Math.max(deviceTop, contentTop, 56); // Minimum 56px for Telegram header
+
+  // Determine minimum top safe area based on platform and fullscreen state
+  // On desktop: no minimum needed (Telegram header is outside webapp)
+  // On mobile fullscreen: need space for status bar + close button
+  // On mobile normal: need space for Telegram header
+  let minTop = 0;
+  if (isMobile) {
+    minTop = isFullscreen ? MIN_SAFE_AREA_FULLSCREEN : MIN_SAFE_AREA_NORMAL;
+  }
+
+  // Combined safe area
+  // For top: use the larger of device safe area, content safe area, or platform-specific minimum
+  const totalTop = Math.max(deviceTop + contentTop, deviceTop, contentTop, minTop);
   const totalRight = Math.max(deviceRight, contentRight);
   const totalBottom = Math.max(deviceBottom, contentBottom);
   const totalLeft = Math.max(deviceLeft, contentLeft);
-  
+
   // Set CSS variables
   root.style.setProperty('--tg-safe-area-top', `${totalTop}px`);
   root.style.setProperty('--tg-safe-area-right', `${totalRight}px`);
   root.style.setProperty('--tg-safe-area-bottom', `${totalBottom}px`);
   root.style.setProperty('--tg-safe-area-left', `${totalLeft}px`);
-  
+
   // Also set content-only safe area for elements that need it
-  root.style.setProperty('--tg-content-safe-top', `${contentTop}px`);
+  root.style.setProperty('--tg-content-safe-top', `${Math.max(contentTop, minTop)}px`);
   root.style.setProperty('--tg-content-safe-bottom', `${contentBottom}px`);
-  
-  // Debug log
-  console.log('Safe areas updated:', {
-    device: { top: deviceTop, right: deviceRight, bottom: deviceBottom, left: deviceLeft },
-    content: { top: contentTop, bottom: contentBottom },
-    total: { top: totalTop, right: totalRight, bottom: totalBottom, left: totalLeft }
-  });
+
+  // Set platform and fullscreen flags for CSS
+  root.style.setProperty('--tg-is-fullscreen', isFullscreen ? '1' : '0');
+  root.style.setProperty('--tg-is-mobile', isMobile ? '1' : '0');
 }
 
 /**
@@ -62,6 +78,7 @@ function updateSafeAreaCSSVariables(tg: NonNullable<typeof window.Telegram>['Web
 export function useTelegram() {
   const [isReady, setIsReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [user, setUser] = useState<{
     id: number;
     firstName: string;
@@ -73,44 +90,134 @@ export function useTelegram() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
 
+    logger.telegram.info('Initializing Telegram WebApp', {
+      hasTelegram: !!window.Telegram,
+      hasWebApp: !!tg,
+      hasInitData: !!(tg?.initData && tg.initData.length > 0),
+    });
+
     // Check if running inside Telegram WebApp
     if (tg && tg.initData && tg.initData.length > 0) {
       // Store initData globally for API calls
       globalInitData = tg.initData;
 
+      // Log WebApp initialization data
+      logger.telegram.info('WebApp connected', {
+        platform: tg.platform,
+        version: tg.version,
+        colorScheme: tg.colorScheme,
+        viewportHeight: tg.viewportHeight,
+        viewportStableHeight: tg.viewportStableHeight,
+        isExpanded: tg.isExpanded,
+        isFullscreen: tg.isFullscreen,
+        safeAreaInset: tg.safeAreaInset,
+        contentSafeAreaInset: tg.contentSafeAreaInset,
+      });
+
+      // Log user data (excluding sensitive info)
+      if (tg.initDataUnsafe?.user) {
+        logger.user.info('User data loaded', {
+          id: tg.initDataUnsafe.user.id,
+          username: tg.initDataUnsafe.user.username,
+          languageCode: tg.initDataUnsafe.user.language_code,
+          isPremium: tg.initDataUnsafe.user.is_premium,
+        });
+      }
+
       // Signal that the app is ready
       tg.ready();
+      logger.telegram.debug('WebApp.ready() called');
 
       // Expand to full viewport height
       tg.expand();
+      logger.telegram.debug('WebApp.expand() called');
 
       // Request fullscreen and lock orientation ONLY on mobile/tablet (not desktop)
       const isMobile = ['android', 'android_x', 'ios'].includes(tg.platform);
-      
+      let currentIsFullscreen = false;
+
       if (isMobile) {
+        logger.telegram.info('Mobile platform detected, requesting fullscreen', { platform: tg.platform });
+
         // Request fullscreen mode on mobile/tablet
         if (tg.isVersionAtLeast?.('6.1')) {
           tg.requestFullscreen?.();
+          // Check if fullscreen was granted (isFullscreen property exists in newer versions)
+          // Default to false until confirmed by the fullscreenChanged event
+          currentIsFullscreen = tg.isFullscreen ?? false;
+          setIsFullscreen(currentIsFullscreen);
+          logger.telegram.debug('Fullscreen requested', { isFullscreen: currentIsFullscreen });
         }
 
         // Lock orientation to portrait on mobile (if supported)
         if (tg.isVersionAtLeast?.('7.7')) {
           tg.lockOrientation?.();
+          logger.telegram.debug('Orientation locked to portrait');
         }
       }
 
       // Set dark theme colors
       tg.setHeaderColor('#121212');
       tg.setBackgroundColor('#121212');
+      logger.telegram.debug('Theme colors set', { header: '#121212', background: '#121212' });
 
       // Enable closing confirmation to prevent accidental exits
       tg.enableClosingConfirmation();
+      logger.telegram.debug('Closing confirmation enabled');
 
       // Set CSS variables for safe areas (device + Telegram UI)
-      updateSafeAreaCSSVariables(tg);
+      updateSafeAreaCSSVariables(tg, currentIsFullscreen, isMobile);
+
+      // Event handler for viewport changes
+      const handleViewportChange = () => {
+        const tgInstance = window.Telegram?.WebApp;
+        if (tgInstance) {
+          const fs = tgInstance.isFullscreen ?? currentIsFullscreen;
+          logger.event.debug('Viewport changed', {
+            viewportHeight: tgInstance.viewportHeight,
+            viewportStableHeight: tgInstance.viewportStableHeight,
+            isExpanded: tgInstance.isExpanded,
+          });
+          updateSafeAreaCSSVariables(tgInstance, fs);
+        }
+      };
+
+      // Event handler for fullscreen changes
+      const handleFullscreenChange = () => {
+        const tgInstance = window.Telegram?.WebApp;
+        if (tgInstance) {
+          const fs = tgInstance.isFullscreen ?? false;
+          currentIsFullscreen = fs;
+          setIsFullscreen(fs);
+          logger.event.info('Fullscreen changed', { isFullscreen: fs });
+          updateSafeAreaCSSVariables(tgInstance, fs);
+        }
+      };
+
+      // Event handler for safe area changes (Telegram 7.0+)
+      const handleSafeAreaChange = () => {
+        const tgInstance = window.Telegram?.WebApp;
+        if (tgInstance) {
+          logger.event.debug('Safe area changed', {
+            safeAreaInset: tgInstance.safeAreaInset,
+            contentSafeAreaInset: tgInstance.contentSafeAreaInset,
+          });
+          updateSafeAreaCSSVariables(tgInstance, currentIsFullscreen);
+        }
+      };
 
       // Listen to viewport changes to update safe areas
-      tg.onEvent?.('viewportChanged', () => updateSafeAreaCSSVariables(tg));
+      tg.onEvent?.('viewportChanged', handleViewportChange);
+      logger.telegram.debug('Event listener registered: viewportChanged');
+
+      // Listen to fullscreen changes (Telegram 7.0+)
+      tg.onEvent?.('fullscreenChanged', handleFullscreenChange);
+      logger.telegram.debug('Event listener registered: fullscreenChanged');
+
+      // Listen to safe area changes (Telegram 7.0+)
+      tg.onEvent?.('safeAreaChanged', handleSafeAreaChange);
+      tg.onEvent?.('contentSafeAreaChanged', handleSafeAreaChange);
+      logger.telegram.debug('Event listeners registered: safeAreaChanged, contentSafeAreaChanged');
 
       // Extract user info from initDataUnsafe (display only, validated on backend)
       if (tg.initDataUnsafe?.user) {
@@ -125,8 +232,23 @@ export function useTelegram() {
 
       setIsAuthorized(true);
       setIsReady(true);
+      logger.telegram.info('WebApp initialization complete', { isAuthorized: true });
+
+      // Cleanup event listeners on unmount
+      return () => {
+        logger.telegram.debug('Cleaning up event listeners');
+        tg.offEvent?.('viewportChanged', handleViewportChange);
+        tg.offEvent?.('fullscreenChanged', handleFullscreenChange);
+        tg.offEvent?.('safeAreaChanged', handleSafeAreaChange);
+        tg.offEvent?.('contentSafeAreaChanged', handleSafeAreaChange);
+      };
     } else {
       // Not in Telegram or no initData - block access
+      logger.telegram.warn('Not running inside Telegram WebApp or missing initData', {
+        hasTelegram: !!window.Telegram,
+        hasWebApp: !!tg,
+        initDataLength: tg?.initData?.length ?? 0,
+      });
       globalInitData = null;
       setIsAuthorized(false);
       setIsReady(true);
@@ -188,6 +310,7 @@ export function useTelegram() {
   return {
     isReady,
     isAuthorized,
+    isFullscreen,
     user,
     initData: globalInitData,
     hapticImpact,

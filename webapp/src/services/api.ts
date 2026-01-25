@@ -4,6 +4,7 @@
  */
 
 import { getInitData } from '../hooks/useTelegram';
+import { logger } from './logger';
 
 // API base URL - will be configured via environment variable
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
@@ -31,6 +32,8 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const initData = getInitData();
+  const method = options.method || 'GET';
+  const startTime = performance.now();
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -42,33 +45,74 @@ async function request<T>(
     (headers as Record<string, string>)['X-Telegram-Init-Data'] = initData;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
+  // Log request start
+  logger.api.info(`${method} ${endpoint}`, {
+    hasInitData: !!initData,
+    body: options.body ? JSON.parse(options.body as string) : undefined,
   });
 
-  if (!response.ok) {
-    let detail = 'An error occurred';
-    let data: unknown;
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-    try {
-      const errorData = await response.json();
-      detail = errorData.detail || errorData.message || detail;
-      data = errorData;
-    } catch {
-      // Response is not JSON
+    const duration = Math.round(performance.now() - startTime);
+
+    if (!response.ok) {
+      let detail = 'An error occurred';
+      let data: unknown;
+
+      try {
+        const errorData = await response.json();
+        detail = errorData.detail || errorData.message || detail;
+        data = errorData;
+      } catch {
+        // Response is not JSON
+      }
+
+      logger.api.error(`${method} ${endpoint} failed`, {
+        status: response.status,
+        detail,
+        data,
+        duration: `${duration}ms`,
+      });
+
+      throw new ApiError(response.status, detail, data);
     }
 
-    throw new ApiError(response.status, detail, data);
-  }
+    // Handle empty responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      logger.api.debug(`${method} ${endpoint} completed (empty response)`, {
+        status: response.status,
+        duration: `${duration}ms`,
+      });
+      return {} as T;
+    }
 
-  // Handle empty responses
-  const contentType = response.headers.get('content-type');
-  if (!contentType || !contentType.includes('application/json')) {
-    return {} as T;
-  }
+    const responseData = await response.json();
 
-  return response.json();
+    logger.api.debug(`${method} ${endpoint} completed`, {
+      status: response.status,
+      duration: `${duration}ms`,
+      response: responseData,
+    });
+
+    return responseData;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    const duration = Math.round(performance.now() - startTime);
+    logger.api.error(`${method} ${endpoint} network error`, {
+      error: error instanceof Error ? error.message : String(error),
+      duration: `${duration}ms`,
+    });
+
+    throw error;
+  }
 }
 
 /**
