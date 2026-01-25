@@ -51,14 +51,17 @@ export const FullscreenViewer = memo(function FullscreenViewer() {
             onClick={handleClose}
           />
 
-          {/* Close button */}
+          {/* Close button - positioned below safe area */}
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ delay: 0.1 }}
             onClick={handleClose}
-            className="absolute top-4 right-4 pt-tg-safe pr-tg-safe z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
+            className="absolute right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
+            style={{
+              top: 'calc(var(--tg-safe-area-top, 72px) + 8px)',
+            }}
             aria-label="Close viewer"
           >
             <CloseIcon size={20} className="text-white" />
@@ -100,12 +103,15 @@ export const FullscreenViewer = memo(function FullscreenViewer() {
             )}
           </motion.div>
 
-          {/* Swipe hint */}
+          {/* Swipe hint - positioned above bottom safe area */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             transition={{ delay: 0.5 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs text-white/40"
+            className="absolute left-1/2 -translate-x-1/2 text-xs text-white/40"
+            style={{
+              bottom: 'calc(var(--tg-safe-area-bottom, 16px) + 8px)',
+            }}
           >
             Swipe down to close
           </motion.div>

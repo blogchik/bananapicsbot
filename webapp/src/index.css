@@ -11,14 +11,21 @@
   --sar: env(safe-area-inset-right);
   --sab: env(safe-area-inset-bottom);
   --sal: env(safe-area-inset-left);
-  
+
   /* Telegram safe areas (set dynamically by useTelegram hook) */
-  --tg-safe-area-top: 0px;
+  /* Initial values are set high enough to prevent content overlap before JS loads */
+  --tg-safe-area-top: 72px;
   --tg-safe-area-right: 0px;
   --tg-safe-area-bottom: 0px;
   --tg-safe-area-left: 0px;
-  --tg-content-safe-top: 0px;
+  --tg-content-safe-top: 56px;
   --tg-content-safe-bottom: 0px;
+
+  /* Fullscreen mode flag (0 = not fullscreen, 1 = fullscreen) */
+  --tg-is-fullscreen: 0;
+
+  /* App layout dimensions */
+  --header-content-height: 56px;
 }
 
 /* Base styles */
@@ -86,8 +93,9 @@
   }
 
   /* Telegram-aware safe area utilities (includes Telegram UI space) */
+  /* In fullscreen mode, we need extra space for status bar + Telegram close button */
   .pt-tg-safe {
-    padding-top: max(var(--tg-safe-area-top, 56px), 56px);
+    padding-top: var(--tg-safe-area-top, 72px);
   }
 
   .pb-tg-safe {
@@ -101,10 +109,15 @@
   .pr-tg-safe {
     padding-right: var(--tg-safe-area-right, 0px);
   }
-  
+
   /* Margin utilities for Telegram safe areas */
   .mt-tg-safe {
-    margin-top: max(var(--tg-safe-area-top, 56px), 56px);
+    margin-top: var(--tg-safe-area-top, 72px);
+  }
+
+  /* Top position utility for absolutely positioned elements */
+  .top-tg-safe {
+    top: var(--tg-safe-area-top, 72px);
   }
 }
 
