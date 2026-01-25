@@ -1,6 +1,7 @@
 """
 Telegram Mini App authentication dependency.
 Validates initData signature and extracts user information.
+Supports dual authentication: WebApp initData OR internal bot API key.
 """
 
 import hashlib
@@ -14,6 +15,9 @@ from urllib.parse import parse_qs
 from fastapi import Depends, Header, HTTPException, status
 
 from app.core.config import get_settings
+from app.infrastructure.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -130,12 +134,34 @@ def validate_init_data(init_data: str, bot_token: str, max_age_seconds: int = 86
     )
 
 
+def generate_internal_api_key(bot_token: str) -> str:
+    """
+    Generate internal API key from bot token.
+    This key is used for bot-to-API authentication.
+    """
+    secret = hmac.new(b"InternalApiKey", bot_token.encode(), hashlib.sha256).hexdigest()
+    return secret
+
+
+def validate_internal_api_key(api_key: str, bot_token: str) -> bool:
+    """
+    Validate internal API key.
+    Returns True if the key matches the expected key derived from bot token.
+    """
+    expected_key = generate_internal_api_key(bot_token)
+    return hmac.compare_digest(api_key, expected_key)
+
+
 async def get_telegram_user(
     x_telegram_init_data: Annotated[str | None, Header(alias="X-Telegram-Init-Data")] = None,
+    x_internal_api_key: Annotated[str | None, Header(alias="X-Internal-Api-Key")] = None,
+    x_telegram_user_id: Annotated[str | None, Header(alias="X-Telegram-User-Id")] = None,
 ) -> TelegramUser:
     """
     FastAPI dependency for Telegram authentication.
-    Extracts and validates initData from request header.
+    Supports two authentication methods:
+    1. WebApp: X-Telegram-Init-Data header with Telegram initData
+    2. Internal Bot: X-Internal-Api-Key + X-Telegram-User-Id headers
 
     Usage:
         @router.get("/protected")
@@ -144,30 +170,58 @@ async def get_telegram_user(
     """
     settings = get_settings()
 
-    if not x_telegram_init_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing X-Telegram-Init-Data header",
-        )
-
     if not settings.bot_token:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Bot token not configured",
         )
 
-    try:
-        init_data = validate_init_data(
-            init_data=x_telegram_init_data,
-            bot_token=settings.bot_token,
-            max_age_seconds=86400,  # 24 hours
+    # Method 1: WebApp authentication via initData
+    if x_telegram_init_data:
+        try:
+            init_data = validate_init_data(
+                init_data=x_telegram_init_data,
+                bot_token=settings.bot_token,
+                max_age_seconds=86400,  # 24 hours
+            )
+            logger.debug("WebApp auth successful", user_id=init_data.user.id)
+            return init_data.user
+        except ValueError as e:
+            logger.warning("WebApp auth failed", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(e),
+            )
+
+    # Method 2: Internal bot authentication via API key
+    if x_internal_api_key and x_telegram_user_id:
+        if not validate_internal_api_key(x_internal_api_key, settings.bot_token):
+            logger.warning("Internal API key validation failed")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid internal API key",
+            )
+
+        try:
+            user_id = int(x_telegram_user_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid telegram user ID format",
+            )
+
+        logger.debug("Internal bot auth successful", user_id=user_id)
+        # Return a minimal TelegramUser for internal bot requests
+        return TelegramUser(
+            id=user_id,
+            first_name="Bot User",  # Placeholder, not used for authorization
         )
-        return init_data.user
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-        )
+
+    # No valid authentication provided
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Missing authentication: provide X-Telegram-Init-Data or X-Internal-Api-Key with X-Telegram-User-Id",
+    )
 
 
 async def get_optional_telegram_user(
