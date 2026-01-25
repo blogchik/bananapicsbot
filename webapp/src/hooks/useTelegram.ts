@@ -11,6 +11,44 @@ export function getInitData(): string | null {
 }
 
 /**
+ * Update CSS variables for safe areas from Telegram WebApp API
+ * Combines device safe area + Telegram content safe area (for Telegram UI elements)
+ */
+function updateSafeAreaCSSVariables(tg: NonNullable<typeof window.Telegram>['WebApp']): void {
+  if (!tg) return;
+  
+  const root = document.documentElement;
+  
+  // Device safe area (notch, status bar, home indicator)
+  const deviceTop = tg.safeAreaInset?.top || 0;
+  const deviceRight = tg.safeAreaInset?.right || 0;
+  const deviceBottom = tg.safeAreaInset?.bottom || 0;
+  const deviceLeft = tg.safeAreaInset?.left || 0;
+  
+  // Telegram content safe area (Telegram header, bottom bar)
+  const contentTop = tg.contentSafeAreaInset?.top || 0;
+  const contentRight = tg.contentSafeAreaInset?.right || 0;
+  const contentBottom = tg.contentSafeAreaInset?.bottom || 0;
+  const contentLeft = tg.contentSafeAreaInset?.left || 0;
+  
+  // Combined safe area (max of device + content)
+  const totalTop = Math.max(deviceTop, contentTop);
+  const totalRight = Math.max(deviceRight, contentRight);
+  const totalBottom = Math.max(deviceBottom, contentBottom);
+  const totalLeft = Math.max(deviceLeft, contentLeft);
+  
+  // Set CSS variables
+  root.style.setProperty('--tg-safe-area-top', `${totalTop}px`);
+  root.style.setProperty('--tg-safe-area-right', `${totalRight}px`);
+  root.style.setProperty('--tg-safe-area-bottom', `${totalBottom}px`);
+  root.style.setProperty('--tg-safe-area-left', `${totalLeft}px`);
+  
+  // Also set content-only safe area for elements that need it
+  root.style.setProperty('--tg-content-safe-top', `${contentTop}px`);
+  root.style.setProperty('--tg-content-safe-bottom', `${contentBottom}px`);
+}
+
+/**
  * Hook for Telegram WebApp SDK integration
  * Provides theme params, haptic feedback, initData validation, and other Telegram-specific features
  */
@@ -55,6 +93,12 @@ export function useTelegram() {
 
       // Enable closing confirmation to prevent accidental exits
       tg.enableClosingConfirmation();
+
+      // Set CSS variables for safe areas (device + Telegram UI)
+      updateSafeAreaCSSVariables(tg);
+
+      // Listen to viewport changes to update safe areas
+      tg.onEvent?.('viewportChanged', () => updateSafeAreaCSSVariables(tg));
 
       // Extract user info from initDataUnsafe (display only, validated on backend)
       if (tg.initDataUnsafe?.user) {

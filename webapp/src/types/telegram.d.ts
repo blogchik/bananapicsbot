@@ -82,6 +82,7 @@ interface TelegramWebApp {
   headerColor: string;
   backgroundColor: string;
   isClosingConfirmationEnabled: boolean;
+  isFullscreen?: boolean;
   safeAreaInset?: TelegramWebAppSafeAreaInset;
   contentSafeAreaInset?: TelegramWebAppContentSafeAreaInset;
   HapticFeedback?: TelegramWebAppHapticFeedback;

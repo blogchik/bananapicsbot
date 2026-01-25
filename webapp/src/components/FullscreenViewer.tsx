@@ -58,7 +58,7 @@ export const FullscreenViewer = memo(function FullscreenViewer() {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ delay: 0.1 }}
             onClick={handleClose}
-            className="absolute top-4 right-4 pt-safe pr-safe z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
+            className="absolute top-4 right-4 pt-tg-safe pr-tg-safe z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
             aria-label="Close viewer"
           >
             <CloseIcon size={20} className="text-white" />
