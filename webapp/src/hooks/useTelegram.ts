@@ -31,8 +31,8 @@ function updateSafeAreaCSSVariables(tg: NonNullable<typeof window.Telegram>['Web
   const contentBottom = tg.contentSafeAreaInset?.bottom || 0;
   const contentLeft = tg.contentSafeAreaInset?.left || 0;
   
-  // Combined safe area (max of device + content)
-  const totalTop = Math.max(deviceTop, contentTop);
+  // Combined safe area (max of device + content, with minimum values for Telegram header)
+  const totalTop = Math.max(deviceTop, contentTop, 56); // Minimum 56px for Telegram header
   const totalRight = Math.max(deviceRight, contentRight);
   const totalBottom = Math.max(deviceBottom, contentBottom);
   const totalLeft = Math.max(deviceLeft, contentLeft);
@@ -46,6 +46,13 @@ function updateSafeAreaCSSVariables(tg: NonNullable<typeof window.Telegram>['Web
   // Also set content-only safe area for elements that need it
   root.style.setProperty('--tg-content-safe-top', `${contentTop}px`);
   root.style.setProperty('--tg-content-safe-bottom', `${contentBottom}px`);
+  
+  // Debug log
+  console.log('Safe areas updated:', {
+    device: { top: deviceTop, right: deviceRight, bottom: deviceBottom, left: deviceLeft },
+    content: { top: contentTop, bottom: contentBottom },
+    total: { top: totalTop, right: totalRight, bottom: totalBottom, left: totalLeft }
+  });
 }
 
 /**
@@ -74,17 +81,22 @@ export function useTelegram() {
       // Signal that the app is ready
       tg.ready();
 
-      // Expand to full viewport height (critical for fullscreen)
+      // Expand to full viewport height
       tg.expand();
 
-      // Request fullscreen mode on mobile/tablet
-      if (tg.isVersionAtLeast?.('6.1')) {
-        tg.requestFullscreen?.();
-      }
+      // Request fullscreen and lock orientation ONLY on mobile/tablet (not desktop)
+      const isMobile = ['android', 'android_x', 'ios'].includes(tg.platform);
+      
+      if (isMobile) {
+        // Request fullscreen mode on mobile/tablet
+        if (tg.isVersionAtLeast?.('6.1')) {
+          tg.requestFullscreen?.();
+        }
 
-      // Lock orientation to portrait on mobile (if supported)
-      if (tg.isVersionAtLeast?.('7.7')) {
-        tg.lockOrientation?.();
+        // Lock orientation to portrait on mobile (if supported)
+        if (tg.isVersionAtLeast?.('7.7')) {
+          tg.lockOrientation?.();
+        }
       }
 
       // Set dark theme colors
