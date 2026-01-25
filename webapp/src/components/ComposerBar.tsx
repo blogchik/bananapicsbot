@@ -5,6 +5,51 @@ import { AttachmentChips } from './AttachmentChips';
 import { useAppStore } from '../store';
 import { useTelegram } from '../hooks/useTelegram';
 
+// File validation constants
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/bmp',
+  'image/tiff',
+];
+
+const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff,.tif';
+
+const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // 20MB in bytes
+
+// Validate file type and size
+function validateImageFile(file: File): { valid: boolean; error?: string } {
+  // Check file type
+  const fileType = file.type.toLowerCase();
+  const fileName = file.name.toLowerCase();
+  const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+  const isValidType = ALLOWED_IMAGE_TYPES.includes(fileType) ||
+    ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'].includes(extension);
+
+  if (!isValidType) {
+    return {
+      valid: false,
+      error: `Fayl turi qo'llab-quvvatlanmaydi. Ruxsat etilgan: JPG, PNG, WebP, GIF, BMP, TIFF`,
+    };
+  }
+
+  // Check file size
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    return {
+      valid: false,
+      error: `Fayl hajmi juda katta (${fileSizeMB}MB). Maksimal: ${MAX_FILE_SIZE_MB}MB`,
+    };
+  }
+
+  return { valid: true };
+}
+
 /**
  * ComposerBar component - bottom input bar for creating generations
  * Features prompt input, attachment handling, and send button
@@ -18,9 +63,10 @@ export const ComposerBar = memo(function ComposerBar() {
     isSending,
     submitGeneration,
     settings,
+    addToast,
   } = useAppStore();
 
-  const { hapticImpact } = useTelegram();
+  const { hapticImpact, hapticNotification } = useTelegram();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -28,21 +74,38 @@ export const ComposerBar = memo(function ComposerBar() {
   // Check if send is enabled (has prompt text or attachments)
   const canSend = prompt.trim().length > 0 || attachments.length > 0;
 
-  // Handle file selection
+  // Handle file selection with validation
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files) return;
 
+      let currentCount = attachments.length;
+
       Array.from(files).forEach((file) => {
-        if (file.type.startsWith('image/') && attachments.length < 3) {
-          const url = URL.createObjectURL(file);
-          addAttachment({
-            id: Math.random().toString(36).substring(2),
-            url,
-            file,
-          });
+        // Check attachment limit
+        if (currentCount >= 3) {
+          addToast({ message: "Maksimal 3 ta rasm qo'shish mumkin", type: 'error' });
+          hapticNotification('warning');
+          return;
         }
+
+        // Validate file
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+          addToast({ message: validation.error!, type: 'error' });
+          hapticNotification('error');
+          return;
+        }
+
+        // Create Object URL and add attachment
+        const url = URL.createObjectURL(file);
+        addAttachment({
+          id: crypto.randomUUID(),
+          url,
+          file,
+        });
+        currentCount++;
       });
 
       // Reset input
@@ -51,7 +114,7 @@ export const ComposerBar = memo(function ComposerBar() {
       }
       setShowAttachmentMenu(false);
     },
-    [addAttachment, attachments.length]
+    [addAttachment, attachments.length, addToast, hapticNotification]
   );
 
   // Handle send
@@ -151,7 +214,7 @@ export const ComposerBar = memo(function ComposerBar() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={ALLOWED_EXTENSIONS}
               multiple
               onChange={handleFileSelect}
               className="hidden"

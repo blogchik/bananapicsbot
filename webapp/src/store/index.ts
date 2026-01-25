@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type { AppState, GenerationItem, Toast } from '../types';
 
-// Generate unique ID
-const generateId = () => Math.random().toString(36).substring(2, 15);
+// Generate unique ID using crypto API
+const generateId = () => crypto.randomUUID();
 
 // Mock delay to simulate API calls
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -81,10 +81,24 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   removeAttachment: (id) => {
     const { attachments } = get();
+    // Revoke Object URL to prevent memory leak
+    const attachment = attachments.find((a) => a.id === id);
+    if (attachment?.url.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.url);
+    }
     set({ attachments: attachments.filter((a) => a.id !== id) });
   },
 
-  clearAttachments: () => set({ attachments: [] }),
+  clearAttachments: () => {
+    const { attachments } = get();
+    // Revoke all Object URLs to prevent memory leaks
+    attachments.forEach((a) => {
+      if (a.url.startsWith('blob:')) {
+        URL.revokeObjectURL(a.url);
+      }
+    });
+    set({ attachments: [] });
+  },
 
   // Generation submission
   submitGeneration: async () => {
@@ -178,6 +192,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Delete generation
   deleteGeneration: (id) => {
     const { generations } = get();
+    // Revoke Object URLs from attachments to prevent memory leaks
+    const generation = generations.find((g) => g.id === id);
+    if (generation) {
+      generation.attachments.forEach((a) => {
+        if (a.url.startsWith('blob:')) {
+          URL.revokeObjectURL(a.url);
+        }
+      });
+    }
     set({ generations: generations.filter((g) => g.id !== id), menuGeneration: null });
     get().addToast({ message: 'Generation deleted', type: 'info' });
   },
