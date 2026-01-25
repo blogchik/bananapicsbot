@@ -91,6 +91,7 @@ class Container:
             self._api_client = ApiClient(
                 base_url=self.settings.api_base_url,
                 timeout_seconds=self.settings.api_timeout_seconds,
+                bot_token=self.settings.bot_token.get_secret_value(),
             )
         return self._api_client
 
