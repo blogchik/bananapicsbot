@@ -1,6 +1,6 @@
-import { memo, useRef, useCallback, useState } from 'react';
+import { memo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusIcon, SendIcon, SpinnerIcon, CreditIcon, ImageIcon, CameraIcon } from './Icons';
+import { PlusIcon, SendIcon, SpinnerIcon, CreditIcon } from './Icons';
 import { AttachmentChips } from './AttachmentChips';
 import { useAppStore } from '../store';
 import { useTelegram } from '../hooks/useTelegram';
@@ -69,7 +69,6 @@ export const ComposerBar = memo(function ComposerBar() {
   const { hapticImpact, hapticNotification } = useTelegram();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
 
   // Check if send is enabled (has prompt text or attachments)
   const canSend = prompt.trim().length > 0 || attachments.length > 0;
@@ -112,7 +111,6 @@ export const ComposerBar = memo(function ComposerBar() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      setShowAttachmentMenu(false);
     },
     [addAttachment, attachments.length, addToast, hapticNotification]
   );
@@ -172,43 +170,12 @@ export const ComposerBar = memo(function ComposerBar() {
           <div className="relative">
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+              onClick={() => fileInputRef.current?.click()}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-surface border border-white/5 hover:bg-surface-light transition-colors"
               aria-label="Add attachment"
             >
               <PlusIcon size={22} className="text-white/60" />
             </motion.button>
-
-            {/* Attachment menu popup */}
-            <AnimatePresence>
-              {showAttachmentMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute bottom-14 left-0 w-48 bg-surface rounded-xl border border-white/10 shadow-soft overflow-hidden"
-                >
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                  >
-                    <ImageIcon size={18} className="text-white/50" />
-                    <span>Choose from device</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      // Camera API (if available)
-                      fileInputRef.current?.click();
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                  >
-                    <CameraIcon size={18} className="text-white/50" />
-                    <span>Take a photo</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Hidden file input */}
             <input
@@ -258,19 +225,6 @@ export const ComposerBar = memo(function ComposerBar() {
           </motion.button>
         </div>
       </div>
-
-      {/* Backdrop to close attachment menu */}
-      <AnimatePresence>
-        {showAttachmentMenu && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowAttachmentMenu(false)}
-            className="fixed inset-0 z-[-1]"
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 });
