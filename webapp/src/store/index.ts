@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AppState, GenerationItem, Toast } from '../types';
+import { logger } from '../services/logger';
 
 // Generate unique ID using crypto API
 const generateId = () => crypto.randomUUID();
@@ -104,7 +105,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   submitGeneration: async () => {
     const { prompt, attachments, settings, generations } = get();
 
-    if (!prompt.trim() && attachments.length === 0) return;
+    if (!prompt.trim() && attachments.length === 0) {
+      logger.generation.warn('Submit cancelled: empty prompt and no attachments');
+      return;
+    }
+
+    logger.generation.info('Submitting generation', {
+      promptLength: prompt.length,
+      attachmentCount: attachments.length,
+      mode: attachments.length > 0 ? 'i2i' : 't2i',
+      model: settings.model,
+      ratio: settings.ratio,
+      quality: settings.quality,
+    });
 
     set({ isSending: true });
 
@@ -121,6 +134,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       liked: false,
       status: 'generating',
     };
+
+    logger.generation.debug('Generation created', { generationId: newGeneration.id });
 
     // Add to top of feed
     set({
@@ -149,7 +164,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     });
 
-    if (!success) {
+    if (success) {
+      logger.generation.info('Generation completed', { generationId: newGeneration.id });
+    } else {
+      logger.generation.error('Generation failed', { generationId: newGeneration.id });
       get().addToast({ message: 'Generation failed', type: 'error' });
     }
   },
@@ -157,6 +175,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Retry failed generation
   retryGeneration: async (id) => {
     const { generations } = get();
+    logger.generation.info('Retrying generation', { generationId: id });
 
     set({
       generations: generations.map((g) =>
@@ -183,8 +202,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     if (success) {
+      logger.generation.info('Retry successful', { generationId: id });
       get().addToast({ message: 'Generation complete!', type: 'success' });
     } else {
+      logger.generation.error('Retry failed', { generationId: id });
       get().addToast({ message: 'Retry failed', type: 'error' });
     }
   },
@@ -192,6 +213,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Delete generation
   deleteGeneration: (id) => {
     const { generations } = get();
+    logger.generation.info('Deleting generation', { generationId: id });
     // Revoke Object URLs from attachments to prevent memory leaks
     const generation = generations.find((g) => g.id === id);
     if (generation) {
@@ -208,6 +230,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Toggle like
   toggleLike: (id) => {
     const { generations } = get();
+    const generation = generations.find((g) => g.id === id);
+    const newLikedState = generation ? !generation.liked : true;
+    logger.ui.debug('Toggle like', { generationId: id, liked: newLikedState });
     set({
       generations: generations.map((g) => (g.id === id ? { ...g, liked: !g.liked } : g)),
     });
@@ -239,21 +264,26 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Load generations (initial load)
   loadGenerations: async () => {
+    logger.generation.info('Loading generations...');
     set({ isLoading: true });
     await delay(1500); // Simulate API call
     set({ generations: INITIAL_GENERATIONS, isLoading: false });
+    logger.generation.info('Generations loaded', { count: INITIAL_GENERATIONS.length });
   },
 
   // Refresh generations (pull-to-refresh)
   refreshGenerations: async () => {
+    logger.generation.info('Refreshing generations...');
     set({ isRefreshing: true });
     await delay(1000);
     set({ isRefreshing: false });
+    logger.generation.debug('Generations refreshed');
     get().addToast({ message: 'Feed updated', type: 'info' });
   },
 
   // Update settings
   updateSettings: (newSettings) => {
+    logger.ui.debug('Settings updated', { newSettings });
     set({ settings: { ...get().settings, ...newSettings } });
   },
 }));

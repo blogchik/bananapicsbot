@@ -10,6 +10,7 @@ import {
 } from '../components';
 import { useAppStore } from '../store';
 import { useTelegram } from '../hooks/useTelegram';
+import { logger } from '../services/logger';
 
 /**
  * GenerationsPage - Main page component for the AI image generation webapp
@@ -17,14 +18,23 @@ import { useTelegram } from '../hooks/useTelegram';
  */
 export function GenerationsPage() {
   const { loadGenerations, isLoading } = useAppStore();
-  const { isReady } = useTelegram();
+  const { isReady, user } = useTelegram();
+
+  // Log page mount
+  useEffect(() => {
+    logger.ui.info('GenerationsPage mounted');
+    return () => {
+      logger.ui.debug('GenerationsPage unmounted');
+    };
+  }, []);
 
   // Load generations on mount
   useEffect(() => {
     if (isReady) {
+      logger.generation.info('Loading generations', { userId: user?.id });
       loadGenerations();
     }
-  }, [isReady, loadGenerations]);
+  }, [isReady, loadGenerations, user?.id]);
 
   return (
     <motion.div
