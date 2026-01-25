@@ -225,6 +225,36 @@ jobs:
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
         run: |
+          # Retry function for SSH commands
+          retry_ssh() {
+            local max_attempts=3
+            local timeout=30
+            local attempt=1
+            local exitCode=0
+
+            while [ $attempt -le $max_attempts ]; do
+              echo "Attempt $attempt of $max_attempts: $@"
+
+              if eval "$@"; then
+                echo "Command succeeded on attempt $attempt"
+                return 0
+              else
+                exitCode=$?
+                echo "Command failed with exit code $exitCode on attempt $attempt"
+
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "Waiting $timeout seconds before retry..."
+                  sleep $timeout
+                fi
+              fi
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Command failed after $max_attempts attempts"
+            return $exitCode
+          }
+
           # Create short SHA for image tag (matches docker/metadata-action format)
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE_TAG="sha-${SHORT_SHA}"
@@ -232,17 +262,17 @@ jobs:
           # Create .env file from secret
           echo "$PROD_ENV_FILE" > .env.prod
 
-          # Copy files to server
-          scp .env.prod $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/.env
-          scp docker-compose.yml $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/docker-compose.yml
+          # Copy files to server with retry
+          retry_ssh "scp .env.prod $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/.env"
+          retry_ssh "scp docker-compose.yml $SSH_USERNAME@$SSH_HOST:~/bananapicsbot/docker-compose.yml"
 
-          # Deploy with specific image tag
-          ssh $SSH_USERNAME@$SSH_HOST "cd ~/bananapicsbot && \
+          # Deploy with specific image tag with retry
+          retry_ssh "ssh $SSH_USERNAME@$SSH_HOST 'cd ~/bananapicsbot && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
             export IMAGE_TAG=${IMAGE_TAG} && \
             docker compose pull api bot webapp && \
             docker compose up -d --remove-orphans && \
-            docker image prune -f"
+            docker image prune -f'"
 
       - name: Verify deployment
         env:
