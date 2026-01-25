@@ -68,6 +68,25 @@ services:
       - celery-worker
     restart: unless-stopped
 
+  webapp:
+    build:
+      context: ./webapp
+    image: ghcr.io/blogchik/bananapicsbot/webapp:${IMAGE_TAG:-latest}
+    ports:
+      - "3033:3033"
+    networks:
+      - app_net
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3033/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:

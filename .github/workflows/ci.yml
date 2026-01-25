@@ -11,10 +11,11 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
 
 jobs:
   lint:
-    name: Lint
+    name: Lint Python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,10 +34,35 @@ jobs:
       - name: Run ruff format check
         run: ruff format --check bot/ api/
 
+  lint-webapp:
+    name: Lint & Build Webapp
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: webapp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: webapp
+        run: npm ci
+
+      - name: TypeScript check
+        working-directory: webapp
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: webapp
+        run: npm run build
+
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, lint-webapp]
     services:
       redis:
         image: redis:7-alpine
@@ -99,7 +125,7 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, lint-webapp]
     permissions:
       actions: read
       contents: read
@@ -134,7 +160,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [api, bot]
+        service: [api, bot, webapp]
 
     steps:
       - uses: actions/checkout@v4
@@ -214,7 +240,7 @@ jobs:
           ssh $SSH_USERNAME@$SSH_HOST "cd ~/bananapicsbot && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
             export IMAGE_TAG=${IMAGE_TAG} && \
-            docker compose pull api bot && \
+            docker compose pull api bot webapp && \
             docker compose up -d --remove-orphans && \
             docker image prune -f"
 

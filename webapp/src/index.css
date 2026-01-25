@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for BananaPics WebApp */
+
+/* Base styles */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-dark-500 text-white;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overscroll-behavior: none;
+  }
+
+  /* Safe area padding for iOS */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Line clamp */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Shimmer animation background */
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    background-size: 200% 100%;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Telegram WebApp specific styles */
+  .telegram-webapp {
+    --tg-theme-bg-color: #121212;
+    --tg-theme-text-color: #ffffff;
+    --tg-theme-hint-color: #999999;
+    --tg-theme-link-color: #E6B800;
+    --tg-theme-button-color: #E6B800;
+    --tg-theme-button-text-color: #121212;
+    --tg-theme-secondary-bg-color: #1E1E1E;
+  }
+
+  /* Focus ring for accessibility */
+  .focus-ring {
+    @apply outline-none focus:ring-2 focus:ring-banana-500/50 focus:ring-offset-2 focus:ring-offset-dark-500;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-200 hover:scale-[1.02] hover:shadow-lg;
+  }
+}
+
+/* Framer Motion layout animations */
+[data-framer-portal-id] {
+  z-index: 9999;
+}
+
+/* Prevent text selection on UI elements */
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom selection color */
+::selection {
+  background-color: rgba(230, 184, 0, 0.3);
+  color: white;
+}
+
+/* Input placeholder styles */
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Prevent iOS zoom on input focus */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse animation for skeleton loading */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Border width utilities */
+.border-3 {
+  border-width: 3px;
+}
