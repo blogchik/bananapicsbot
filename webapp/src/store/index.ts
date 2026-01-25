@@ -103,7 +103,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Generation submission
   submitGeneration: async () => {
-    const { prompt, attachments, settings, generations } = get();
+    const { prompt, attachments, settings } = get();
 
     if (!prompt.trim() && attachments.length === 0) {
       logger.generation.warn('Submit cancelled: empty prompt and no attachments');
@@ -137,13 +137,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     logger.generation.debug('Generation created', { generationId: newGeneration.id });
 
-    // Add to top of feed
-    set({
-      generations: [newGeneration, ...generations],
+    // Add to top of feed using functional updater to avoid race conditions
+    set((state) => ({
+      generations: [newGeneration, ...state.generations],
       prompt: '',
       attachments: [],
       isSending: false,
-    });
+    }));
 
     // Simulate generation delay (2-4 seconds)
     await delay(2000 + Math.random() * 2000);
@@ -174,14 +174,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Retry failed generation
   retryGeneration: async (id) => {
-    const { generations } = get();
     logger.generation.info('Retrying generation', { generationId: id });
 
-    set({
-      generations: generations.map((g) =>
+    // Use functional updater to avoid race conditions with stale state
+    set((state) => ({
+      generations: state.generations.map((g) =>
         g.id === id ? { ...g, status: 'generating', errorMessage: undefined } : g
       ),
-    });
+    }));
 
     await delay(2000 + Math.random() * 2000);
 

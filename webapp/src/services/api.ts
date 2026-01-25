@@ -59,17 +59,25 @@ async function request<T>(
 
     const duration = Math.round(performance.now() - startTime);
 
-    if (!response.ok) {
-      let detail = 'An error occurred';
-      let data: unknown;
+    // Check content type before attempting to parse
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType && contentType.includes('application/json');
 
+    // Parse response body once to avoid "body already consumed" error
+    let data: unknown;
+    if (isJson) {
       try {
-        const errorData = await response.json();
-        detail = errorData.detail || errorData.message || detail;
-        data = errorData;
+        data = await response.json();
       } catch {
-        // Response is not JSON
+        // JSON parsing failed - data remains undefined
       }
+    }
+
+    if (!response.ok) {
+      const detail =
+        (data as Record<string, unknown>)?.detail as string ||
+        (data as Record<string, unknown>)?.message as string ||
+        'An error occurred';
 
       logger.api.error(`${method} ${endpoint} failed`, {
         status: response.status,
@@ -81,9 +89,8 @@ async function request<T>(
       throw new ApiError(response.status, detail, data);
     }
 
-    // Handle empty responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
+    // Handle empty/non-JSON responses
+    if (!isJson) {
       logger.api.debug(`${method} ${endpoint} completed (empty response)`, {
         status: response.status,
         duration: `${duration}ms`,
@@ -91,15 +98,13 @@ async function request<T>(
       return {} as T;
     }
 
-    const responseData = await response.json();
-
     logger.api.debug(`${method} ${endpoint} completed`, {
       status: response.status,
       duration: `${duration}ms`,
-      response: responseData,
+      response: data,
     });
 
-    return responseData;
+    return data as T;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
