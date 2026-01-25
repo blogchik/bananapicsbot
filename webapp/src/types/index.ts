@@ -68,6 +68,22 @@ export interface TelegramThemeParams {
   secondary_bg_color?: string;
 }
 
+// Model info type
+export interface ModelInfo {
+  id: number;
+  key: string;
+  name: string;
+  options: {
+    supports_aspect_ratio: boolean;
+    supports_resolution: boolean;
+    supports_quality: boolean;
+    aspect_ratio_options: string[] | null;
+    resolution_options: string[] | null;
+    quality_options: string[] | null;
+  };
+  basePrice: number;
+}
+
 // Store state
 export interface AppState {
   // Generations
