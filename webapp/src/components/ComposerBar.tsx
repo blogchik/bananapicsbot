@@ -166,27 +166,38 @@ export const ComposerBar = memo(function ComposerBar() {
 
         {/* Main composer row */}
         <div className="flex items-end gap-2">
-          {/* Add attachment button */}
-          <div className="relative">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center w-11 h-11 rounded-full bg-surface border border-white/5 hover:bg-surface-light transition-colors"
-              aria-label="Add attachment"
-            >
-              <PlusIcon size={22} className="text-white/60" />
-            </motion.button>
+          {/* Add attachment button - hide when 3 attachments */}
+          <AnimatePresence mode="wait">
+            {attachments.length < 3 && (
+              <motion.div
+                key="add-button"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className="relative"
+              >
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center justify-center w-11 h-11 rounded-full bg-surface border border-white/5 hover:bg-surface-light transition-colors"
+                  aria-label="Add attachment"
+                >
+                  <PlusIcon size={22} className="text-white/60" />
+                </motion.button>
 
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ALLOWED_EXTENSIONS}
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </div>
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ALLOWED_EXTENSIONS}
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Text input container */}
           <div className="flex-1 relative">
