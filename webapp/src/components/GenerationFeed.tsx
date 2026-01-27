@@ -51,7 +51,7 @@ export const GenerationFeed = memo(function GenerationFeed() {
   // Loading state - show skeleton cards
   if (isLoading) {
     return (
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-4 pb-40 px-safe">
+      <div ref={scrollContainerRef} className="h-full overflow-y-auto pt-4 pb-40">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonCard key={i} index={i} />
         ))}
@@ -62,7 +62,7 @@ export const GenerationFeed = memo(function GenerationFeed() {
   // Empty state - no generations yet
   if (generations.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center pb-40">
+      <div className="h-full flex items-center justify-center pb-40">
         <EmptyState />
       </div>
     );
@@ -72,7 +72,7 @@ export const GenerationFeed = memo(function GenerationFeed() {
   const reversedGenerations = [...generations].reverse();
 
   return (
-    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-4 pb-40 scroll-smooth px-safe">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto pt-4 pb-40 scroll-smooth">
       <AnimatePresence mode="popLayout">
         {reversedGenerations.map((generation, index) => (
           <GenerationCard
