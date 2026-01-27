@@ -159,7 +159,7 @@ export const GenerationCard = memo(function GenerationCard({
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
             onClick={onImageClick}
-            className={`w-full object-contain cursor-pointer transition-opacity duration-300 ${
+            className={`w-full max-h-[600px] object-contain cursor-pointer transition-opacity duration-300 ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
           />
@@ -185,10 +185,18 @@ export const GenerationCard = memo(function GenerationCard({
         <div className="flex items-center gap-2 text-xs text-white/50">
           <BananaIcon size={14} className="text-white/40" />
           <span>{generation.model}</span>
-          <span className="text-white/25">•</span>
-          <span>{generation.ratio}</span>
-          <span className="text-white/25">•</span>
-          <span>{generation.quality}</span>
+          {generation.ratio && (
+            <>
+              <span className="text-white/25">•</span>
+              <span>{generation.ratio}</span>
+            </>
+          )}
+          {generation.quality && (
+            <>
+              <span className="text-white/25">•</span>
+              <span>{generation.quality}</span>
+            </>
+          )}
         </div>
 
         {/* Action buttons */}
