@@ -4,6 +4,8 @@ import { PlusIcon, SendIcon, SpinnerIcon, CreditIcon } from './Icons';
 import { AttachmentChips } from './AttachmentChips';
 import { useAppStore } from '../store';
 import { useTelegram } from '../hooks/useTelegram';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslationKey } from '../locales';
 
 // File validation constants
 const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff,.tif';
@@ -62,13 +64,19 @@ async function validateFileSignature(file: File): Promise<{ valid: boolean; form
 }
 
 // Validate file type (via magic bytes) and size
-async function validateImageFile(file: File): Promise<{ valid: boolean; error?: string }> {
+async function validateImageFile(
+  file: File,
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string
+): Promise<{ valid: boolean; error?: string }> {
   // Check file size first (quick check)
   if (file.size > MAX_FILE_SIZE_BYTES) {
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
     return {
       valid: false,
-      error: `Fayl hajmi juda katta (${fileSizeMB}MB). Maksimal: ${MAX_FILE_SIZE_MB}MB`,
+      error: t(TranslationKey.FILE_SIZE_TOO_LARGE, {
+        fileSizeMB,
+        maxSizeMB: MAX_FILE_SIZE_MB,
+      }),
     };
   }
 
@@ -77,7 +85,7 @@ async function validateImageFile(file: File): Promise<{ valid: boolean; error?: 
   if (!signatureCheck.valid) {
     return {
       valid: false,
-      error: `Fayl turi qo'llab-quvvatlanmaydi. Ruxsat etilgan: JPG, PNG, WebP, GIF, BMP, TIFF`,
+      error: t(TranslationKey.FILE_TYPE_NOT_SUPPORTED),
     };
   }
 
@@ -101,6 +109,7 @@ export const ComposerBar = memo(function ComposerBar() {
   } = useAppStore();
 
   const { hapticImpact, hapticNotification } = useTelegram();
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -118,13 +127,16 @@ export const ComposerBar = memo(function ComposerBar() {
       for (const file of Array.from(files)) {
         // Check attachment limit
         if (currentCount >= 3) {
-          addToast({ message: "Maksimal 3 ta rasm qo'shish mumkin", type: 'error' });
+          addToast({
+            message: t(TranslationKey.MAX_ATTACHMENTS_REACHED),
+            type: 'error',
+          });
           hapticNotification('warning');
           break;
         }
 
         // Validate file (includes magic bytes check to prevent MIME spoofing)
-        const validation = await validateImageFile(file);
+        const validation = await validateImageFile(file, t);
         if (!validation.valid) {
           addToast({ message: validation.error!, type: 'error' });
           hapticNotification('error');
@@ -146,7 +158,7 @@ export const ComposerBar = memo(function ComposerBar() {
         fileInputRef.current.value = '';
       }
     },
-    [addAttachment, attachments.length, addToast, hapticNotification]
+    [addAttachment, attachments.length, addToast, hapticNotification, t]
   );
 
   // Handle send

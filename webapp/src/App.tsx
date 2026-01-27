@@ -1,10 +1,11 @@
 import { GenerationsPage } from './pages/GenerationsPage';
 import { TelegramGate } from './components';
 import { useTelegram } from './hooks/useTelegram';
+import { I18nProvider } from './contexts/I18nContext';
 
 /**
  * Main App component
- * Wraps the app with TelegramGate to ensure it's only accessible via Telegram
+ * Wraps the app with I18nProvider and TelegramGate
  */
 function App() {
   const { isReady, isAuthorized } = useTelegram();
@@ -23,8 +24,12 @@ function App() {
     return <TelegramGate />;
   }
 
-  // Authorized - show the main app
-  return <GenerationsPage />;
+  // Authorized - wrap main app with I18nProvider
+  return (
+    <I18nProvider>
+      <GenerationsPage />
+    </I18nProvider>
+  );
 }
 
 export default App;
