@@ -2,6 +2,8 @@
  * Core types for BananaPics WebApp
  */
 
+import type { ReactNode } from 'react';
+
 // Generation mode type
 export type GenerationMode = 't2i' | 'i2i';
 
@@ -53,7 +55,7 @@ export interface Toast {
 export interface MenuAction {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   onClick: () => void;
   destructive?: boolean;
 }
