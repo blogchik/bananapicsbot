@@ -6,44 +6,78 @@ import { useAppStore } from '../store';
 import { useTelegram } from '../hooks/useTelegram';
 
 // File validation constants
-const ALLOWED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/bmp',
-  'image/tiff',
-];
-
 const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff,.tif';
 
 const MAX_FILE_SIZE_MB = 20;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // 20MB in bytes
 
-// Validate file type and size
-function validateImageFile(file: File): { valid: boolean; error?: string } {
-  // Check file type
-  const fileType = file.type.toLowerCase();
-  const fileName = file.name.toLowerCase();
-  const extension = fileName.substring(fileName.lastIndexOf('.'));
+// Magic bytes signatures for image formats
+// Used to validate actual file content, preventing MIME type spoofing
+const IMAGE_SIGNATURES: { format: string; signatures: number[][] }[] = [
+  { format: 'jpeg', signatures: [[0xFF, 0xD8, 0xFF]] },
+  { format: 'png', signatures: [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]] },
+  { format: 'gif', signatures: [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]] }, // GIF87a and GIF89a
+  { format: 'bmp', signatures: [[0x42, 0x4D]] }, // "BM"
+  { format: 'tiff', signatures: [[0x49, 0x49, 0x2A, 0x00], [0x4D, 0x4D, 0x00, 0x2A]] }, // Little-endian and big-endian
+];
 
-  const isValidType = ALLOWED_IMAGE_TYPES.includes(fileType) ||
-    ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'].includes(extension);
+// WebP has a special structure: RIFF....WEBP
+const WEBP_RIFF = [0x52, 0x49, 0x46, 0x46]; // "RIFF"
+const WEBP_MARKER = [0x57, 0x45, 0x42, 0x50]; // "WEBP" at offset 8
 
-  if (!isValidType) {
-    return {
-      valid: false,
-      error: `Fayl turi qo'llab-quvvatlanmaydi. Ruxsat etilgan: JPG, PNG, WebP, GIF, BMP, TIFF`,
-    };
+// Check if bytes match a signature
+function matchesSignature(bytes: Uint8Array, signature: number[]): boolean {
+  if (bytes.length < signature.length) return false;
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
+// Validate file signature using magic bytes
+async function validateFileSignature(file: File): Promise<{ valid: boolean; format?: string }> {
+  try {
+    // Read the first 12 bytes (enough for all signatures including WebP)
+    const buffer = await file.slice(0, 12).arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    // Check WebP separately (RIFF + WEBP at offset 8)
+    if (matchesSignature(bytes, WEBP_RIFF) && bytes.length >= 12) {
+      const webpMarkerBytes = bytes.slice(8, 12);
+      if (matchesSignature(webpMarkerBytes, WEBP_MARKER)) {
+        return { valid: true, format: 'webp' };
+      }
+    }
+
+    // Check other image signatures
+    for (const { format, signatures } of IMAGE_SIGNATURES) {
+      for (const signature of signatures) {
+        if (matchesSignature(bytes, signature)) {
+          return { valid: true, format };
+        }
+      }
+    }
+
+    return { valid: false };
+  } catch {
+    return { valid: false };
   }
+}
 
-  // Check file size
+// Validate file type (via magic bytes) and size
+async function validateImageFile(file: File): Promise<{ valid: boolean; error?: string }> {
+  // Check file size first (quick check)
   if (file.size > MAX_FILE_SIZE_BYTES) {
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
     return {
       valid: false,
       error: `Fayl hajmi juda katta (${fileSizeMB}MB). Maksimal: ${MAX_FILE_SIZE_MB}MB`,
+    };
+  }
+
+  // Validate file signature using magic bytes (prevents MIME type spoofing)
+  const signatureCheck = await validateFileSignature(file);
+  if (!signatureCheck.valid) {
+    return {
+      valid: false,
+      error: `Fayl turi qo'llab-quvvatlanmaydi. Ruxsat etilgan: JPG, PNG, WebP, GIF, BMP, TIFF`,
     };
   }
 
@@ -75,26 +109,26 @@ export const ComposerBar = memo(function ComposerBar() {
 
   // Handle file selection with validation
   const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files) return;
 
       let currentCount = attachments.length;
 
-      Array.from(files).forEach((file) => {
+      for (const file of Array.from(files)) {
         // Check attachment limit
         if (currentCount >= 3) {
           addToast({ message: "Maksimal 3 ta rasm qo'shish mumkin", type: 'error' });
           hapticNotification('warning');
-          return;
+          break;
         }
 
-        // Validate file
-        const validation = validateImageFile(file);
+        // Validate file (includes magic bytes check to prevent MIME spoofing)
+        const validation = await validateImageFile(file);
         if (!validation.valid) {
           addToast({ message: validation.error!, type: 'error' });
           hapticNotification('error');
-          return;
+          continue;
         }
 
         // Create Object URL and add attachment
@@ -105,7 +139,7 @@ export const ComposerBar = memo(function ComposerBar() {
           file,
         });
         currentCount++;
-      });
+      }
 
       // Reset input
       if (fileInputRef.current) {
