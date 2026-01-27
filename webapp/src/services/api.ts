@@ -90,12 +90,17 @@ async function request<T>(
     }
 
     // Handle empty/non-JSON responses
-    if (!isJson) {
-      logger.api.debug(`${method} ${endpoint} completed (empty response)`, {
+    if (!isJson || data === undefined) {
+      logger.api.error(`${method} ${endpoint} returned no data`, {
         status: response.status,
+        contentType,
         duration: `${duration}ms`,
       });
-      return {} as T;
+      throw new ApiError(
+        response.status,
+        'API returned no data when data was expected',
+        { contentType }
+      );
     }
 
     logger.api.debug(`${method} ${endpoint} completed`, {
