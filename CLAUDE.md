@@ -174,6 +174,18 @@ Copy `.env.example` to `.env` before running.
 ## CI/CD
 GitHub Actions workflow in `.github/workflows/ci.yml`. Deploys via SSH with `docker compose up`.
 
+## Dependency Management
+
+### Webapp Dependencies
+- Uses caret (`^`) versioning in `package.json` for flexibility
+- `package-lock.json` is committed to lock exact versions
+- CI/CD and Docker use `npm ci` (not `npm install`) for reproducible builds
+- This ensures consistent builds across environments while allowing controlled updates
+
+### Python Dependencies
+- `requirements.txt` uses pinned versions (==)
+- Update with `pip freeze > requirements.txt` after testing changes
+
 ## Documentation
 Keep `docs/` in sync with code changes:
 - `docs/api.md` - API architecture and endpoints
