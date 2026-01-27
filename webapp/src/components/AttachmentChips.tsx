@@ -21,7 +21,7 @@ export const AttachmentChips = memo(function AttachmentChips() {
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide"
+      className="flex gap-2.5 overflow-x-auto scrollbar-hide"
     >
       <AnimatePresence mode="popLayout">
         {attachments.map((attachment) => (
@@ -58,10 +58,10 @@ const AttachmentChip = memo(function AttachmentChip({
       className="relative flex-shrink-0"
     >
       {/* Thumbnail image */}
-      <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface border border-white/10">
+      <div className="w-20 h-20 rounded-2xl overflow-hidden bg-surface/80 backdrop-blur-sm border border-white/10 shadow-md">
         {/* Loading skeleton */}
         {!isLoaded && (
-          <div className="w-full h-full animate-pulse bg-surface-secondary" />
+          <div className="w-full h-full animate-pulse bg-surface-light" />
         )}
         {/* Image */}
         <img
@@ -76,10 +76,10 @@ const AttachmentChip = memo(function AttachmentChip({
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={onRemove}
-        className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-dark-300 border border-white/10 shadow-lg"
+        className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full bg-dark-400/95 backdrop-blur-sm border border-white/20 shadow-xl"
         aria-label={t(TranslationKey.ARIA_REMOVE_ATTACHMENT)}
       >
-        <CloseIcon size={12} className="text-white/70" />
+        <CloseIcon size={14} className="text-white/80" />
       </motion.button>
     </motion.div>
   );

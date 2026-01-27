@@ -197,89 +197,95 @@ export const ComposerBar = memo(function ComposerBar() {
   }, [setPrompt]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-dark-500 via-dark-500/95 to-transparent pt-8 pb-safe">
-      <div className="max-w-[520px] mx-auto px-4 pb-4">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-dark-500 via-dark-500/98 to-transparent pt-6 pb-safe">
+      <div className="max-w-[520px] mx-auto px-4 pb-3">
         {/* Attachment chips row */}
         <AnimatePresence>
-          {attachments.length > 0 && <AttachmentChips />}
+          {attachments.length > 0 && (
+            <div className="mb-3">
+              <AttachmentChips />
+            </div>
+          )}
         </AnimatePresence>
 
-        {/* Credits indicator */}
-        <div className="flex items-center justify-end gap-1.5 mb-2 text-xs text-white/40">
-          <CreditIcon size={14} className="text-white/30" />
-          <span>{settings.creditsPerImage} / image</span>
-        </div>
-
-        {/* Main composer row */}
-        <div className="flex items-end gap-2">
-          {/* Add attachment button - hide when 3 attachments */}
-          <AnimatePresence mode="wait">
-            {attachments.length < 3 && (
-              <motion.div
-                key="add-button"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="relative"
-              >
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center w-11 h-11 rounded-full bg-surface border border-white/5 hover:bg-surface-light transition-colors"
-                  aria-label={t(TranslationKey.ARIA_ADD_ATTACHMENT)}
-                >
-                  <PlusIcon size={22} className="text-white/60" />
-                </motion.button>
-
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ALLOWED_EXTENSIONS}
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Text input container */}
-          <div className="flex-1 relative">
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={handleInput}
-              onKeyDown={handleKeyDown}
-              placeholder="Describe the image you're imagining"
-              rows={1}
-              className="w-full px-4 py-3 pr-12 text-sm text-white/90 placeholder-white/30 bg-surface border border-white/5 rounded-2xl resize-none outline-none focus:border-white/10 transition-colors"
-              style={{ minHeight: '48px', maxHeight: '120px' }}
-            />
+        {/* Main composer row with input */}
+        <div className="relative">
+          {/* Credits indicator - absolute positioned in top right */}
+          <div className="absolute -top-7 right-0 flex items-center gap-1.5 text-xs text-white/40">
+            <CreditIcon size={12} className="text-white/30" />
+            <span>{settings.creditsPerImage} / image</span>
           </div>
 
-          {/* Send button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleSend}
-            disabled={!canSend || isSending}
-            className={`flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 ${
-              canSend
-                ? 'bg-banana-500 hover:bg-banana-400 shadow-glow'
-                : 'bg-surface border border-white/5'
-            }`}
-            aria-label={t(TranslationKey.ARIA_SEND)}
-          >
-            {isSending ? (
-              <SpinnerIcon size={20} className={canSend ? 'text-dark-500' : 'text-white/30'} />
-            ) : (
-              <SendIcon
-                size={20}
-                className={canSend ? 'text-dark-500' : 'text-white/30'}
+          {/* Composer input row */}
+          <div className="flex items-center gap-2.5 bg-surface/60 backdrop-blur-sm rounded-full border border-white/5 px-1.5 py-1.5">
+            {/* Add attachment button - hide when 3 attachments */}
+            <AnimatePresence mode="wait">
+              {attachments.length < 3 && (
+                <motion.div
+                  key="add-button"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                    aria-label={t(TranslationKey.ARIA_ADD_ATTACHMENT)}
+                  >
+                    <PlusIcon size={20} className="text-white/60" />
+                  </motion.button>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ALLOWED_EXTENSIONS}
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Text input container */}
+            <div className="flex-1 relative">
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={handleInput}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe the image you're imagining"
+                rows={1}
+                className="w-full px-3 py-2.5 text-sm text-white/90 placeholder-white/40 bg-transparent resize-none outline-none"
+                style={{ minHeight: '40px', maxHeight: '120px' }}
               />
-            )}
-          </motion.button>
+            </div>
+
+            {/* Send button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleSend}
+              disabled={!canSend || isSending}
+              className={`flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
+                canSend
+                  ? 'bg-white/95 hover:bg-white shadow-lg'
+                  : 'bg-white/5'
+              }`}
+              aria-label={t(TranslationKey.ARIA_SEND)}
+            >
+              {isSending ? (
+                <SpinnerIcon size={18} className={canSend ? 'text-dark-500' : 'text-white/30'} />
+              ) : (
+                <SendIcon
+                  size={18}
+                  className={canSend ? 'text-dark-500' : 'text-white/30'}
+                />
+              )}
+            </motion.button>
+          </div>
         </div>
       </div>
     </div>
