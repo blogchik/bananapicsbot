@@ -2,6 +2,8 @@ import { memo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BananaIcon, HeartIcon, HeartFilledIcon, MoreIcon, RefreshIcon } from './Icons';
 import { useAppStore } from '../store';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslationKey } from '../locales';
 import type { GenerationItem } from '../types';
 
 interface GenerationCardProps {
@@ -22,6 +24,7 @@ export const GenerationCard = memo(function GenerationCard({
   onMenuClick,
 }: GenerationCardProps) {
   const { toggleLike, retryGeneration } = useAppStore();
+  const { t } = useTranslation();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
 
@@ -140,7 +143,11 @@ export const GenerationCard = memo(function GenerationCard({
             whileTap={{ scale: 0.85 }}
             onClick={handleLike}
             className="p-2 rounded-full hover:bg-white/5 transition-colors"
-            aria-label={generation.liked ? 'Unlike' : 'Like'}
+            aria-label={
+              generation.liked
+                ? t(TranslationKey.ARIA_UNLIKE)
+                : t(TranslationKey.ARIA_LIKE)
+            }
           >
             <motion.div animate={isLikeAnimating ? { scale: [1, 1.3, 1] } : {}}>
               {generation.liked ? (
@@ -156,7 +163,7 @@ export const GenerationCard = memo(function GenerationCard({
             whileTap={{ scale: 0.9 }}
             onClick={onMenuClick}
             className="p-2 rounded-full hover:bg-white/5 transition-colors"
-            aria-label="More options"
+            aria-label={t(TranslationKey.ARIA_MORE_OPTIONS)}
           >
             <MoreIcon size={20} className="text-white/40" />
           </motion.button>

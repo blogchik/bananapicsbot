@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './Icons';
 import { useAppStore } from '../store';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslationKey } from '../locales';
 import type { Attachment } from '../types';
 
 /**
@@ -43,6 +45,8 @@ const AttachmentChip = memo(function AttachmentChip({
   attachment,
   onRemove,
 }: AttachmentChipProps) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       layout
@@ -66,7 +70,7 @@ const AttachmentChip = memo(function AttachmentChip({
         whileTap={{ scale: 0.9 }}
         onClick={onRemove}
         className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-dark-300 border border-white/10 shadow-lg"
-        aria-label="Remove attachment"
+        aria-label={t(TranslationKey.ARIA_REMOVE_ATTACHMENT)}
       >
         <CloseIcon size={12} className="text-white/70" />
       </motion.button>

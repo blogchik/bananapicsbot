@@ -11,4 +11,14 @@ export const en: Translations = {
       `File type not supported. Allowed: JPG, PNG, WebP, GIF, BMP, TIFF`,
     maxAttachmentsReached: () => `Maximum 3 images`,
   },
+  aria: {
+    removeAttachment: () => `Remove attachment`,
+    addAttachment: () => `Add attachment`,
+    send: () => `Send`,
+    closeViewer: () => `Close viewer`,
+    like: () => `Like`,
+    unlike: () => `Unlike`,
+    moreOptions: () => `More options`,
+    profileSettings: () => `Profile settings`,
+  },
 };

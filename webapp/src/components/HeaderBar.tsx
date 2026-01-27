@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { BananaIcon, UserIcon } from './Icons';
 import { useAppStore } from '../store';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslationKey } from '../locales';
 
 /**
  * HeaderBar component with mode pill and profile button
@@ -13,6 +15,7 @@ import { useAppStore } from '../store';
  */
 export const HeaderBar = memo(function HeaderBar() {
   const settings = useAppStore((s) => s.settings);
+  const { t } = useTranslation();
 
   return (
     <motion.header
@@ -50,7 +53,7 @@ export const HeaderBar = memo(function HeaderBar() {
         <motion.button
           whileTap={{ scale: 0.95 }}
           className="flex items-center justify-center w-11 h-11 rounded-full bg-surface border border-white/5 transition-colors hover:bg-surface-light active:bg-surface-lighter"
-          aria-label="Profile settings"
+          aria-label={t(TranslationKey.ARIA_PROFILE_SETTINGS)}
         >
           <UserIcon size={20} className="text-white/60" />
         </motion.button>

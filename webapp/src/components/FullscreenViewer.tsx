@@ -2,6 +2,8 @@ import { memo, useCallback, useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { CloseIcon } from './Icons';
 import { useAppStore } from '../store';
+import { useTranslation } from '../hooks/useTranslation';
+import { TranslationKey } from '../locales';
 
 /**
  * FullscreenViewer component for viewing images in full screen
@@ -9,6 +11,7 @@ import { useAppStore } from '../store';
  */
 export const FullscreenViewer = memo(function FullscreenViewer() {
   const { selectedGeneration, setSelectedGeneration } = useAppStore();
+  const { t } = useTranslation();
   const [dragY, setDragY] = useState(0);
 
   const handleClose = useCallback(() => {
@@ -61,7 +64,7 @@ export const FullscreenViewer = memo(function FullscreenViewer() {
             style={{
               top: 'calc(var(--tg-safe-area-top, 72px) + 8px)',
             }}
-            aria-label="Close viewer"
+            aria-label={t(TranslationKey.ARIA_CLOSE_VIEWER)}
           >
             <CloseIcon size={20} className="text-white" />
           </motion.button>

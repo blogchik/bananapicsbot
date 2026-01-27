@@ -227,7 +227,7 @@ export const ComposerBar = memo(function ComposerBar() {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => fileInputRef.current?.click()}
                   className="flex items-center justify-center w-11 h-11 rounded-full bg-surface border border-white/5 hover:bg-surface-light transition-colors"
-                  aria-label="Add attachment"
+                  aria-label={t(TranslationKey.ARIA_ADD_ATTACHMENT)}
                 >
                   <PlusIcon size={22} className="text-white/60" />
                 </motion.button>
@@ -269,7 +269,7 @@ export const ComposerBar = memo(function ComposerBar() {
                 ? 'bg-banana-500 hover:bg-banana-400 shadow-glow'
                 : 'bg-surface border border-white/5'
             }`}
-            aria-label="Send"
+            aria-label={t(TranslationKey.ARIA_SEND)}
           >
             {isSending ? (
               <SpinnerIcon size={20} className={canSend ? 'text-dark-500' : 'text-white/30'} />

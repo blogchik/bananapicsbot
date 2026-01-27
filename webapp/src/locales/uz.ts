@@ -11,4 +11,14 @@ export const uz: Translations = {
       `Fayl turi qo'llab-quvvatlanmaydi. Ruxsat etilgan: JPG, PNG, WebP, GIF, BMP, TIFF`,
     maxAttachmentsReached: () => `Maksimal 3 ta rasm qo'shish mumkin`,
   },
+  aria: {
+    removeAttachment: () => `Ilovani olib tashlash`,
+    addAttachment: () => `Ilova qo'shish`,
+    send: () => `Yuborish`,
+    closeViewer: () => `Ko'ruvchini yopish`,
+    like: () => `Yoqtirish`,
+    unlike: () => `Yoqtirishni bekor qilish`,
+    moreOptions: () => `Qo'shimcha parametrlar`,
+    profileSettings: () => `Profil sozlamalari`,
+  },
 };
