@@ -217,7 +217,7 @@ export const ComposerBar = memo(function ComposerBar() {
           </div>
 
           {/* Composer input row */}
-          <div className="flex items-center gap-2.5 bg-surface/60 backdrop-blur-sm rounded-full border border-white/5 px-1.5 py-1.5">
+          <div className="flex items-end gap-2.5 bg-surface/60 backdrop-blur-sm rounded-3xl border border-white/5 px-1.5 py-1.5">
             {/* Add attachment button - hide when 3 attachments */}
             <AnimatePresence mode="wait">
               {attachments.length < 3 && (
@@ -231,7 +231,7 @@ export const ComposerBar = memo(function ComposerBar() {
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex-shrink-0"
                     aria-label={t(TranslationKey.ARIA_ADD_ATTACHMENT)}
                   >
                     <PlusIcon size={20} className="text-white/60" />
@@ -251,7 +251,7 @@ export const ComposerBar = memo(function ComposerBar() {
             </AnimatePresence>
 
             {/* Text input container */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-w-0">
               <textarea
                 ref={textareaRef}
                 value={prompt}
@@ -259,7 +259,7 @@ export const ComposerBar = memo(function ComposerBar() {
                 onKeyDown={handleKeyDown}
                 placeholder="Describe the image you're imagining"
                 rows={1}
-                className="w-full px-3 py-2.5 text-sm text-white/90 placeholder-white/40 bg-transparent resize-none outline-none"
+                className="w-full px-3 py-2.5 text-sm text-white/90 placeholder-white/40 placeholder:truncate bg-transparent resize-none outline-none overflow-hidden"
                 style={{ minHeight: '40px', maxHeight: '120px' }}
               />
             </div>

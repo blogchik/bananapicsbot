@@ -21,7 +21,7 @@ export const AttachmentChips = memo(function AttachmentChips() {
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex gap-2.5 overflow-x-auto scrollbar-hide"
+      className="flex gap-2.5 overflow-x-auto scrollbar-hide py-2 px-1"
     >
       <AnimatePresence mode="popLayout">
         {attachments.map((attachment) => (
