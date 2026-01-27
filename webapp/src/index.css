@@ -234,31 +234,7 @@ textarea::placeholder {
   }
 }
 
-/* Loading spinner */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Pulse animation for skeleton loading */
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s ease-in-out infinite;
-}
+/* Note: Using Tailwind's built-in animate-spin and animate-pulse utilities */
 
 /* Border width utilities */
 .border-3 {
