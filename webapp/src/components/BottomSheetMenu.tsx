@@ -32,11 +32,17 @@ export const BottomSheetMenu = memo(function BottomSheetMenu() {
   const handleDownload = useCallback(async () => {
     if (!menuGeneration?.resultUrl) return;
 
-    try {
-      hapticImpact('light');
+    hapticImpact('light');
 
-      // Create a temporary link to download the image
+    try {
+      // Try to fetch and download the image
       const response = await fetch(menuGeneration.resultUrl);
+
+      // Check if CORS blocked the request
+      if (!response.ok) {
+        throw new Error('CORS or network error');
+      }
+
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
 
@@ -50,7 +56,9 @@ export const BottomSheetMenu = memo(function BottomSheetMenu() {
 
       addToast({ message: 'Image downloaded', type: 'success' });
     } catch {
-      addToast({ message: 'Failed to download image', type: 'error' });
+      // Fallback: Open image in new tab if CORS blocks download
+      window.open(menuGeneration.resultUrl, '_blank');
+      addToast({ message: 'Opening image in new tab', type: 'info' });
     }
     handleClose();
   }, [menuGeneration, hapticImpact, addToast, handleClose]);
