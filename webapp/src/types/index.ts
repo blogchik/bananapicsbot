@@ -46,6 +46,7 @@ export interface Toast {
   message: string;
   type: 'success' | 'error' | 'info';
   duration?: number;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 // Bottom sheet menu action

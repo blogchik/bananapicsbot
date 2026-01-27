@@ -476,14 +476,20 @@ export const useAppStore = create<ExtendedState>((set, get) => ({
   // Toast management
   addToast: (toast) => {
     const id = generateId();
-    const newToast: Toast = { ...toast, id, duration: toast.duration ?? 3000 };
+    const timeoutId = toast.duration
+      ? setTimeout(() => {
+          get().removeToast(id);
+        }, toast.duration)
+      : undefined;
+    const newToast: Toast = { ...toast, id, duration: toast.duration ?? 3000, timeoutId };
     set({ toasts: [...get().toasts, newToast] });
-    setTimeout(() => {
-      get().removeToast(id);
-    }, newToast.duration);
   },
 
   removeToast: (id) => {
+    const toast = get().toasts.find((t) => t.id === id);
+    if (toast?.timeoutId) {
+      clearTimeout(toast.timeoutId);
+    }
     set({ toasts: get().toasts.filter((t) => t.id !== id) });
   },
 
