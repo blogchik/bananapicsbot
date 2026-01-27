@@ -53,7 +53,7 @@ export function GenerationsPage() {
       <HeaderBar />
 
       {/* Main content area - feed */}
-      <main className="flex-1 relative z-10 overflow-hidden">
+      <main className="flex-1 relative z-10 min-h-0">
         <GenerationFeed />
       </main>
 

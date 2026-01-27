@@ -85,37 +85,30 @@ export const FullscreenViewer = memo(function FullscreenViewer() {
             <img
               src={selectedGeneration.resultUrl}
               alt={selectedGeneration.prompt || 'Generated image'}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
+              className="max-w-full max-h-[70vh] object-contain rounded-lg select-none"
               draggable={false}
             />
+          </motion.div>
 
-            {/* Prompt overlay at bottom */}
-            {selectedGeneration.prompt && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="absolute bottom-8 left-8 right-8 p-4 bg-black/60 backdrop-blur-md rounded-xl"
-              >
-                <p className="text-sm text-white/80 line-clamp-3">
+          {/* Prompt bar - fixed at bottom of viewport */}
+          {selectedGeneration.prompt && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ delay: 0.2 }}
+              className="fixed bottom-0 left-0 right-0 z-20 px-4 pb-safe"
+              style={{
+                paddingBottom: 'calc(var(--tg-safe-area-bottom, 16px) + 16px)',
+              }}
+            >
+              <div className="max-w-[520px] mx-auto p-4 bg-black/70 backdrop-blur-xl rounded-2xl border border-white/10">
+                <p className="text-sm text-white/90 leading-relaxed line-clamp-3">
                   {selectedGeneration.prompt}
                 </p>
-              </motion.div>
-            )}
-          </motion.div>
-
-          {/* Swipe hint - positioned above bottom safe area */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            transition={{ delay: 0.5 }}
-            className="absolute left-1/2 -translate-x-1/2 text-xs text-white/40"
-            style={{
-              bottom: 'calc(var(--tg-safe-area-bottom, 16px) + 8px)',
-            }}
-          >
-            Swipe down to close
-          </motion.div>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
