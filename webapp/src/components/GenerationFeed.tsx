@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useRef, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { GenerationCard, SkeletonCard } from './GenerationCard';
 import { EmptyState } from './EmptyState';
@@ -7,6 +7,7 @@ import { useAppStore } from '../store';
 /**
  * GenerationFeed component - Instagram-like vertical scroll feed
  * Handles loading, empty, and populated states
+ * Feed shows oldest at top, newest at bottom (reversed chronological)
  */
 export const GenerationFeed = memo(function GenerationFeed() {
   const {
@@ -15,6 +16,8 @@ export const GenerationFeed = memo(function GenerationFeed() {
     setSelectedGeneration,
     setMenuGeneration,
   } = useAppStore();
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleImageClick = useCallback(
     (generation: typeof generations[0]) => {
@@ -32,10 +35,23 @@ export const GenerationFeed = memo(function GenerationFeed() {
     [setMenuGeneration]
   );
 
+  // Auto-scroll to bottom (latest generation) when generations load or update
+  useEffect(() => {
+    if (!isLoading && generations.length > 0 && scrollContainerRef.current) {
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 100);
+    }
+  }, [generations.length, isLoading]);
+
   // Loading state - show skeleton cards
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto pt-2 pb-40">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-4 pb-40 px-safe">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonCard key={i} index={i} />
         ))}
@@ -52,11 +68,13 @@ export const GenerationFeed = memo(function GenerationFeed() {
     );
   }
 
-  // Populated feed
+  // Populated feed - reverse chronological (oldest at top, newest at bottom)
+  const reversedGenerations = [...generations].reverse();
+
   return (
-    <div className="flex-1 overflow-y-auto pt-2 pb-40 scroll-smooth">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-4 pb-40 scroll-smooth px-safe">
       <AnimatePresence mode="popLayout">
-        {generations.map((generation, index) => (
+        {reversedGenerations.map((generation, index) => (
           <GenerationCard
             key={generation.id}
             generation={generation}
