@@ -28,9 +28,8 @@ export function GenerationsPage() {
       // Stop polling on unmount
       stopPolling();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     // stopPolling is a stable Zustand store action
-  }, []);
+  }, [stopPolling]);
 
   // Initialize store with user's telegram ID
   useEffect(() => {
@@ -38,9 +37,8 @@ export function GenerationsPage() {
       logger.generation.info('Initializing store', { userId: user.id });
       initialize(user.id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     // initialize is a stable Zustand store action
-  }, [isReady, user?.id]);
+  }, [isReady, user?.id, initialize]);
 
   return (
     <motion.div
