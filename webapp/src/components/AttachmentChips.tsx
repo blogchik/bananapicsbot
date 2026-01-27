@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './Icons';
 import { useAppStore } from '../store';
@@ -46,6 +46,7 @@ const AttachmentChip = memo(function AttachmentChip({
   onRemove,
 }: AttachmentChipProps) {
   const { t } = useTranslation();
+  const [isLoaded, setIsLoaded] = useState(false);
 
   return (
     <motion.div
@@ -58,10 +59,16 @@ const AttachmentChip = memo(function AttachmentChip({
     >
       {/* Thumbnail image */}
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface border border-white/10">
+        {/* Loading skeleton */}
+        {!isLoaded && (
+          <div className="w-full h-full animate-pulse bg-surface-secondary" />
+        )}
+        {/* Image */}
         <img
           src={attachment.url}
           alt="Attachment"
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${!isLoaded ? 'hidden' : ''}`}
+          onLoad={() => setIsLoaded(true)}
         />
       </div>
 
