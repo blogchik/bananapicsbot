@@ -22,13 +22,16 @@ export const HeaderBar = memo(function HeaderBar() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="sticky top-0 z-40 bg-dark-500/80 backdrop-blur-xl"
+      className="sticky top-0 z-40"
     >
+      {/* Gradient overlay for smooth feed scroll under header */}
+      <div className="absolute inset-0 bg-gradient-to-b from-dark-500 via-dark-500/95 to-transparent pointer-events-none h-24" />
+
       {/* Safe area spacer - accounts for Telegram UI and device notches */}
       <div className="pt-tg-safe" />
 
       {/* Header content - separated from safe area for cleaner layout */}
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="relative flex items-center justify-between px-4 py-3">
         {/* Mode Pill - shows model, ratio, quality */}
         <motion.div
           initial={{ scale: 0.95 }}

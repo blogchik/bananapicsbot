@@ -49,13 +49,13 @@ export function GenerationsPage() {
       {/* Subtle background gradient */}
       <div className="fixed inset-0 bg-gradient-to-b from-dark-400/50 via-dark-500 to-dark-600 pointer-events-none" />
 
-      {/* Header */}
-      <HeaderBar />
-
-      {/* Main content area - feed */}
-      <main className="flex-1 relative z-10 min-h-0">
+      {/* Main content area - feed (extends behind header) */}
+      <main className="absolute inset-0 z-10">
         <GenerationFeed />
       </main>
+
+      {/* Header (overlays on top of feed) */}
+      <HeaderBar />
 
       {/* Bottom composer */}
       <ComposerBar />
