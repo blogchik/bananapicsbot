@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { AppState, GenerationItem, Toast } from '../types';
 import { logger } from '../services/logger';
 import { api, ApiError } from '../services/api';
+import { haptic } from '../services/haptic';
 
 // Generate unique ID using crypto API
 const generateId = () => crypto.randomUUID();
@@ -464,9 +465,7 @@ export const useAppStore = create<ExtendedState>((set, get) => ({
     set({
       generations: generations.map((g) => (g.id === id ? { ...g, liked: !g.liked } : g)),
     });
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-    }
+    haptic.impact('light');
   },
 
   // UI state
