@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from 'react';
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { CloseIcon } from './Icons';
 import { useAppStore } from '../store';
 
@@ -9,7 +9,6 @@ import { useAppStore } from '../store';
  */
 export const FullscreenViewer = memo(function FullscreenViewer() {
   const { selectedGeneration, setSelectedGeneration } = useAppStore();
-  const dragControls = useDragControls();
   const [dragY, setDragY] = useState(0);
 
   const handleClose = useCallback(() => {
@@ -70,7 +69,6 @@ export const FullscreenViewer = memo(function FullscreenViewer() {
           {/* Image container - draggable */}
           <motion.div
             drag="y"
-            dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.8}
             onDrag={handleDrag}
