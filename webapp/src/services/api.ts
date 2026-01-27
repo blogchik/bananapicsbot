@@ -141,17 +141,22 @@ export const api = {
 
   getBalance: (telegramId: number) =>
     request<{ user_id: number; balance: number }>(
-      `/users/${telegramId}/balance`
+      `/users/${encodeURIComponent(telegramId)}/balance`
     ),
 
   getTrialStatus: (telegramId: number) =>
     request<{ user_id: number; trial_available: boolean; used_count: number }>(
-      `/users/${telegramId}/trial`
+      `/users/${encodeURIComponent(telegramId)}/trial`
     ),
 
   // Generations
-  listGenerations: (telegramId: number, limit = 50, offset = 0) =>
-    request<{
+  listGenerations: (telegramId: number, limit = 50, offset = 0) => {
+    const params = new URLSearchParams({
+      telegram_id: String(telegramId),
+      limit: String(limit),
+      offset: String(offset),
+    });
+    return request<{
       items: Array<{
         id: number;
         public_id: string;
@@ -174,7 +179,8 @@ export const api = {
       total: number;
       limit: number;
       offset: number;
-    }>(`/generations?telegram_id=${telegramId}&limit=${limit}&offset=${offset}`),
+    }>(`/generations?${params}`);
+  },
 
   getGenerationPrice: (data: {
     telegram_id: number;
@@ -226,21 +232,25 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  getActiveGeneration: (telegramId: number) =>
-    request<{
+  getActiveGeneration: (telegramId: number) => {
+    const params = new URLSearchParams({ telegram_id: String(telegramId) });
+    return request<{
       has_active: boolean;
       request_id?: number;
       public_id?: string;
       status?: string;
-    }>(`/generations/active?telegram_id=${telegramId}`),
+    }>(`/generations/active?${params}`);
+  },
 
-  getGeneration: (requestId: number, telegramId: number) =>
-    request<{
+  getGeneration: (requestId: number, telegramId: number) => {
+    const params = new URLSearchParams({ telegram_id: String(telegramId) });
+    return request<{
       id: number;
       status: string;
       prompt: string;
       results?: Array<{ image_url: string }>;
-    }>(`/generations/${requestId}?telegram_id=${telegramId}`),
+    }>(`/generations/${encodeURIComponent(requestId)}?${params}`);
+  },
 
   refreshGeneration: (requestId: number, telegramId: number) =>
     request<{
@@ -252,10 +262,12 @@ export const api = {
       body: JSON.stringify({ telegram_id: telegramId }),
     }),
 
-  getGenerationResults: (requestId: number, telegramId: number) =>
-    request<string[]>(
-      `/generations/${requestId}/results?telegram_id=${telegramId}`
-    ),
+  getGenerationResults: (requestId: number, telegramId: number) => {
+    const params = new URLSearchParams({ telegram_id: String(telegramId) });
+    return request<string[]>(
+      `/generations/${encodeURIComponent(requestId)}/results?${params}`
+    );
+  },
 
   // Models
   getModels: () =>
