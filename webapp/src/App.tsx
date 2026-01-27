@@ -2,10 +2,11 @@ import { GenerationsPage } from './pages/GenerationsPage';
 import { TelegramGate } from './components';
 import { useTelegram } from './hooks/useTelegram';
 import { I18nProvider } from './contexts/I18nContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 /**
  * Main App component
- * Wraps the app with I18nProvider and TelegramGate
+ * Wraps the app with ErrorBoundary, I18nProvider and TelegramGate
  */
 function App() {
   const { isReady, isAuthorized } = useTelegram();
@@ -24,11 +25,13 @@ function App() {
     return <TelegramGate />;
   }
 
-  // Authorized - wrap main app with I18nProvider
+  // Authorized - wrap main app with ErrorBoundary and I18nProvider
   return (
-    <I18nProvider>
-      <GenerationsPage />
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <GenerationsPage />
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
 
