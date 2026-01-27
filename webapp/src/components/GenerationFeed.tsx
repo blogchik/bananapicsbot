@@ -51,7 +51,7 @@ export const GenerationFeed = memo(function GenerationFeed() {
   // Loading state - show skeleton cards
   if (isLoading) {
     return (
-      <div ref={scrollContainerRef} className="h-full overflow-y-auto pt-4 pb-24">
+      <div ref={scrollContainerRef} className="h-full overflow-y-auto pb-24">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonCard key={i} index={i} />
         ))}
@@ -72,7 +72,7 @@ export const GenerationFeed = memo(function GenerationFeed() {
   const reversedGenerations = [...generations].reverse();
 
   return (
-    <div ref={scrollContainerRef} className="h-full overflow-y-auto pt-4 pb-24 scroll-smooth">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto pb-24 scroll-smooth">
       <AnimatePresence mode="popLayout">
         {reversedGenerations.map((generation, index) => (
           <GenerationCard

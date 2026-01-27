@@ -259,7 +259,7 @@ export const ComposerBar = memo(function ComposerBar() {
                 onKeyDown={handleKeyDown}
                 placeholder="Describe the image you're imagining"
                 rows={1}
-                className="w-full px-3 py-2.5 text-sm text-white/90 placeholder-white/40 placeholder:truncate bg-transparent resize-none outline-none overflow-hidden"
+                className="w-full px-3 py-[11px] text-sm text-white/90 placeholder-white/40 placeholder:truncate bg-transparent resize-none outline-none overflow-y-auto leading-[18px]"
                 style={{ minHeight: '40px', maxHeight: '120px' }}
               />
             </div>
