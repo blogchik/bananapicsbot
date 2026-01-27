@@ -79,6 +79,7 @@
 
 - `WEBAPP_URL`: Webapp tashqi URL (CORS uchun). Masalan: `https://webapp.bananapics.com`
 - `VITE_API_URL`: API bazaviy URL (webapp build uchun, default: `/api/v1`)
+- `VITE_BOT_USERNAME`: Telegram bot username (@ belgisisiz, default: `BananaPicsBot`)
 
 ### initData Validatsiya
 
@@ -183,6 +184,7 @@ POSTGRES_PORT=5432
 # ===================
 WEBAPP_URL=https://webapp.bananapics.com
 # VITE_API_URL=/api/v1  # Build time env (webapp)
+# VITE_BOT_USERNAME=BananaPicsBot  # Build time env (webapp)
 ```
 
 ## Tayyorlash
