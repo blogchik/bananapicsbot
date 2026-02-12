@@ -221,6 +221,10 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           platforms: linux/amd64
+          build-args: |
+            VITE_BOT_USERNAME=BananaPicsBot
+            VITE_API_URL=/api/v1
+            VITE_API_BASE_URL=/api/v1
 
   deploy:
     name: Deploy to Production

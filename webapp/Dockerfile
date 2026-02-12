@@ -12,6 +12,14 @@ RUN npm ci
 # Copy source files
 COPY . .
 
+# Accept build arguments for Vite environment variables
+ARG VITE_BOT_USERNAME
+ARG VITE_API_BASE_URL
+
+# Set environment variables for build
+ENV VITE_BOT_USERNAME=$VITE_BOT_USERNAME
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Build the application
 RUN npm run build
 
