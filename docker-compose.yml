@@ -90,6 +90,9 @@ services:
   admin-panel:
     build:
       context: ./admin-panel
+      args:
+        VITE_BOT_USERNAME: ${VITE_BOT_USERNAME}
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
     image: ghcr.io/blogchik/bananapicsbot/admin-panel:${IMAGE_TAG:-latest}
     env_file:
       - .env
