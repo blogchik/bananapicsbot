@@ -31,7 +31,7 @@ Vaqt o'tishi bilan `sha-` tagli eski versiyalar to'planib qoladi va storage ishl
    https://github.com/blogchik/bananapicsbot/packages
    ```
 
-2. Package'ni tanlang (`bananapicsbot/api` yoki `bananapicsbot/bot`)
+2. Package'ni tanlang (`bananapicsbot/api`, `bananapicsbot/bot`, `bananapicsbot/webapp` yoki `bananapicsbot/admin-panel`)
 
 3. Package versiyalarni ko'ring va keraklilarini tanlang:
    - Har bir versiyaga o'ting
@@ -71,7 +71,7 @@ Repository'da tayyorlangan script mavjud: [scripts/cleanup_old_packages.sh](../s
 ```
 
 Script quyidagilarni qiladi:
-1. Har ikkala package (`api` va `bot`) uchun barcha versiyalarni oladi
+1. Barcha packagelar (`api`, `bot`, `webapp`, `admin-panel`) uchun barcha versiyalarni oladi
 2. Semantic version va main taglarni saqlab qoladi
 3. Eng oxirgi 5 ta `sha-` versiyani saqlab qoladi
 4. Qolgan eski `sha-` versiyalarni o'chiradi
@@ -85,7 +85,7 @@ Script quyidagilarni qiladi:
 KEEP_SHA_VERSIONS=5
 
 # Package nomlari
-PACKAGES=("bananapicsbot-api" "bananapicsbot-bot")
+PACKAGES=("bananapicsbot-api" "bananapicsbot-bot" "bananapicsbot-webapp" "bananapicsbot-admin-panel")
 
 # Owner
 OWNER="blogchik"
@@ -125,14 +125,14 @@ jobs:
 
 ### Hozirgi holat
 
-CI/CD workflow har bir push uchun 2 ta service × 4 ta tag = **8 ta image** yaratadi.
+CI/CD workflow har bir push uchun 4 ta service × 4 ta tag = **16 ta image** yaratadi.
 
 Masalan, 50 ta commit bo'lsa:
 - Semantic versions: ~6 ta (0.1.0, 0.1.1, 0.1.2, 0.1, 0.2, va h.k.)
 - main tag: 1 ta (eng oxirgi)
 - SHA tags: 50 ta
 
-**Jami**: 57 ta image version × 2 service = **114 ta image**
+**Jami**: 57 ta image version × 4 service = **228 ta image**
 
 ### Optimizatsiya qilgandan keyin
 
@@ -140,7 +140,7 @@ Masalan, 50 ta commit bo'lsa:
 - main tag: 1 ta (saqlaymiz)
 - SHA tags: 5 ta (eng oxirgilari)
 
-**Jami**: 12 ta image version × 2 service = **24 ta image**
+**Jami**: 12 ta image version × 4 service = **48 ta image**
 
 **Tejamkorlik**: ~79% storage kamayadi
 

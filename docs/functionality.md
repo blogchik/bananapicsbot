@@ -57,9 +57,33 @@ BananaPics Telegram Mini App - mobil-first interfeys:
 
 Batafsil: [webapp.md](webapp.md)
 
-## Reja
+## Web Admin Panel
 
-- Qo'shimcha modellar va narxlar boshqaruvi.
-- Queue/worker integratsiyasi va batch ishga tushirish.
-- Admin balans boshqaruvi va to'lov integratsiyasi.
-- Generatsiya tarixini ko'rish va qayta yuborish.
+React + TypeScript asosidagi web admin panel (`http://localhost:3034`). Telegram Login Widget orqali autentifikatsiya, JWT session.
+
+### Texnologiyalar
+
+React 18, TypeScript, Vite, TailwindCSS, shadcn/ui, Recharts, TanStack Query, Zustand, React Router v6.
+
+### Sahifalar
+
+- **Dashboard** — KPI kartochkalar (users, generations, revenue, payments), kunlik/haftalik grafiklar (user growth, generation volume, revenue trend, models breakdown), auto-refresh 60s
+- **Users** — qidiruv (telegram_id, referral_code), jadval (balance, generations, created, status), ban/unban, credit adjustment, user detail (generatsiyalar, to'lovlar, referral info), CSV eksport
+- **Broadcasts** — yaratish (content type, filter, inline button), ro'yxat, progress monitoring (sent/failed/blocked), start/cancel
+- **Models** — barcha modellar (active + inactive), narx o'zgartirish, yoqish/o'chirish toggle, generation count
+- **Payments** — barcha to'lovlar ro'yxati, kunlik statistika grafik, KPI cards
+- **Generations** — barcha generatsiyalar (status filter), queue monitoring (pending/queued/running), auto-refresh 10s
+- **Settings** — tizim sozlamalari (trial limit, exchange rate, referral bonus, parallel limit, price markup)
+
+### Xavfsizlik
+
+- Telegram Login Widget (HMAC-SHA256) + JWT (24 soat)
+- Faqat `ADMIN_TELEGRAM_IDS` ro'yxatidagi userlar
+- Nginx: X-Frame-Options DENY, X-Content-Type-Options nosniff
+- API proxy: `/api/` → `api:9000`
+
+### Docker
+
+- Port: 3034
+- Multi-stage build: node:20-alpine → nginx:alpine
+- Healthcheck: `wget http://localhost:3034/health`

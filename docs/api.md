@@ -102,28 +102,71 @@ app/
 
 ## Admin Endpointlar
 
+Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <jwt>` header talab qiladi.
+
+### Auth
+
+- `POST /api/v1/admin/auth/login` - Telegram Login Widget orqali JWT token olish
+- `GET /api/v1/admin/auth/me` - JWT tekshirish, admin info qaytarish
+
 ### Dashboard
 
-- `GET /api/v1/admin/stats` - umumiy statistika (users, generations, revenue)
+- `GET /api/v1/admin/stats?days=30` - umumiy statistika (users, generations, revenue, payments)
 - `GET /api/v1/admin/health` - admin API health check
+
+### Chart Data
+
+- `GET /api/v1/admin/charts/users-daily?days=30` - kunlik yangi foydalanuvchilar
+- `GET /api/v1/admin/charts/generations-daily?days=30` - kunlik generatsiyalar (total/completed/failed)
+- `GET /api/v1/admin/charts/revenue-daily?days=30` - kunlik daromad (stars)
+- `GET /api/v1/admin/charts/models-breakdown?days=30` - model bo'yicha generatsiya/kredit
 
 ### User Management
 
-- `GET /api/v1/admin/users` - userlarni qidirish (query, pagination)
+- `GET /api/v1/admin/users?query=&offset=0&limit=50` - userlarni qidirish (telegram_id yoki referral_code)
 - `GET /api/v1/admin/users/{telegram_id}` - user tafsilotlari
 - `GET /api/v1/admin/users/count?filter_type=...` - filter bo'yicha user soni
+- `POST /api/v1/admin/users/{telegram_id}/ban` - userni ban qilish
+- `POST /api/v1/admin/users/{telegram_id}/unban` - userni unban qilish
+- `GET /api/v1/admin/users/{telegram_id}/generations?limit=10` - user generatsiyalari
+- `GET /api/v1/admin/users/{telegram_id}/payments?limit=10` - user to'lovlari
 
 ### Credits
 
 - `POST /api/v1/admin/credits` - balansni o'zgartirish
 
+### Refund
+
+- `POST /api/v1/admin/generations/{id}/refund` - generatsiya uchun kredit qaytarish
+
 ### Broadcast
 
 - `POST /api/v1/admin/broadcasts` - yangi broadcast yaratish
-- `GET /api/v1/admin/broadcasts` - broadcast tarixini ko'rish
+- `GET /api/v1/admin/broadcasts?limit=20&offset=0` - broadcast tarixini ko'rish
 - `GET /api/v1/admin/broadcasts/{public_id}` - broadcast holati
 - `POST /api/v1/admin/broadcasts/{public_id}/start` - broadcastni boshlash
 - `POST /api/v1/admin/broadcasts/{public_id}/cancel` - broadcastni bekor qilish
+
+### Model Management
+
+- `GET /api/v1/admin/models` - barcha modellar (active + inactive) + narxlar + generation count
+- `PATCH /api/v1/admin/models/{model_id}` - model yangilash (is_active, name)
+- `PUT /api/v1/admin/models/{model_id}/price` - model narx yangilash
+
+### Global Payments
+
+- `GET /api/v1/admin/payments?offset=0&limit=50` - barcha to'lovlar ro'yxati
+- `GET /api/v1/admin/payments/daily?days=30` - kunlik to'lov statistikasi
+
+### Global Generations
+
+- `GET /api/v1/admin/generations?offset=0&limit=50&status=failed` - barcha generatsiyalar (filter bilan)
+- `GET /api/v1/admin/generations/queue` - active/queued/running/pending counts
+
+### System Settings
+
+- `GET /api/v1/admin/settings` - barcha tizim sozlamalari
+- `PATCH /api/v1/admin/settings` - sozlamalarni yangilash `{key: value, ...}`
 
 ## Asosiy Endpointlar
 
@@ -228,9 +271,10 @@ Tasks:
 - `generation_jobs` - Wavespeed job holatlari
 - `generation_results` - natija URLlar
 - `trial_uses` - trial ishlatilganligi
-- `payments` - to'lovlar
+- `payment_ledger` - to'lovlar (Stars, provider, refund holati)
 - `broadcasts` - broadcast xabarlari (content, filter, status, counters)
 - `broadcast_recipients` - har bir user uchun yuborish holati
+- `system_settings` - tizim sozlamalari (key/value, admin panel orqali boshqariladi)
 
 ## Model katalogi
 
@@ -262,12 +306,14 @@ Structured logging (structlog):
 
 ```yaml
 services:
-  api: # FastAPI application
+  api: # FastAPI application (port 9000)
+  bot: # Telegram bot
   celery-worker: # Background task worker
   celery-beat: # Scheduled tasks
-  redis: # Cache, Celery broker
-  db: # PostgreSQL
-  bot: # Telegram bot
+  webapp: # Telegram Mini App (port 3033)
+  admin-panel: # Web admin panel (port 3034)
+  redis: # Cache, Celery broker (port 6479)
+  db: # PostgreSQL (port 5433)
 ```
 
 Barcha servislar `app_net` nomli bitta Docker networkda ishlaydi.

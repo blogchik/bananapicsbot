@@ -91,6 +91,8 @@ services:
     build:
       context: ./admin-panel
     image: ghcr.io/blogchik/bananapicsbot/admin-panel:${IMAGE_TAG:-latest}
+    env_file:
+      - .env
     ports:
       - "3034:3034"
     networks:

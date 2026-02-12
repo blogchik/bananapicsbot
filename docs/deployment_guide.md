@@ -46,12 +46,27 @@ git push origin main
 
 1.  GitHub Actions da **CI/CD** workflow ishga tushadi.
 2.  **Test**: Kod testdan o'tkaziladi.
-3.  **Build**: Docker imajlar yasaladi va GitHub Container Registry (GHCR) ga yuklanadi.
+3.  **Build**: Docker imajlar yasaladi va GitHub Container Registry (GHCR) ga yuklanadi (api, bot, webapp, admin-panel).
 4.  **Deploy**:
     - GitHub Actions serverga ulanadi.
     - `PROD_ENV_FILE` dan `.env` faylni yaratadi.
     - Yangi `docker-compose.yml` ni yuklaydi.
-    - Eski konteynerlarni o'chirib, yangilarini (`docker compose up -d`) ishga tushiradi.
+    - `docker compose pull api bot webapp admin-panel` bilan imajlarni yangilaydi.
+    - `docker compose up -d --remove-orphans` bilan barcha servislarni ishga tushiradi.
+
+---
+
+## 4. Admin Panel Sozlamalari
+
+Admin panel deploy qilingandan keyin `PROD_ENV_FILE` ga quyidagilar qo'shilishi kerak:
+
+```env
+ADMIN_JWT_SECRET=<kuchli-random-string>
+ADMIN_PANEL_URL=https://admin.your-domain.com
+VITE_BOT_USERNAME=YourBotUsername
+```
+
+Admin panel `http://server-ip:3034` portida ochiladi. Production uchun reverse proxy (nginx/caddy) orqali HTTPS sozlash tavsiya etiladi.
 
 ---
 

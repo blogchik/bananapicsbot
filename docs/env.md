@@ -86,6 +86,19 @@
 - `BOT_TOKEN`: Bot tokeni - initData imzosini tekshirish uchun (API uchun majburiy)
 - initData freshness: 24 soat (hardcoded)
 
+## Admin Panel
+
+- `ADMIN_JWT_SECRET`: Admin panel JWT token uchun maxfiy kalit (majburiy, production'da kuchli random string ishlatish kerak).
+- `ADMIN_PANEL_URL`: Admin panel tashqi URL (CORS uchun). Masalan: `https://admin.bananapics.com`
+- `VITE_BOT_USERNAME`: Telegram bot username — Telegram Login Widget uchun (@ belgisisiz). Admin panel build paytida ishlatiladi.
+- `VITE_API_URL`: API bazaviy URL (admin-panel build uchun, default: `/api/v1`, nginx orqali proxy qilinadi).
+
+### Admin Auth
+
+- Telegram Login Widget orqali HMAC-SHA256 tekshiruvi
+- JWT token 24 soat amal qiladi
+- Faqat `ADMIN_TELEGRAM_IDS` ro'yxatidagi userlar kirishi mumkin
+
 ## Namuna
 
 ```env
@@ -185,6 +198,13 @@ POSTGRES_PORT=5432
 WEBAPP_URL=https://webapp.bananapics.com
 # VITE_API_URL=/api/v1  # Build time env (webapp)
 # VITE_BOT_USERNAME=BananaPicsBot  # Build time env (webapp)
+
+# ===================
+# Admin Panel
+# ===================
+ADMIN_JWT_SECRET=change-this-to-a-secure-random-string
+ADMIN_PANEL_URL=http://localhost:3034
+VITE_BOT_USERNAME=BananaPicsBot
 ```
 
 ## Tayyorlash

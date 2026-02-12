@@ -35,7 +35,7 @@ bot/
 - **Rate limiting**: Redis-based sliding window throttling
 - **DI Container**: Singleton pattern for shared resources
 - **Professional error handling**: Centralized error middleware with user-friendly messages
-- **Admin panel**: Full-featured admin with stats, user management, credits, broadcast, refund
+- **Admin panel**: Full-featured inline admin with stats, user management, credits, broadcast, refund (Web admin panel ham mavjud — [functionality.md](functionality.md) ga qarang)
 - **Generation timeout**: 5-minute timeout protection with automatic cleanup
 - **Translation system**: All user-facing text uses translation keys for full localization
 
@@ -107,9 +107,11 @@ WEBHOOK_PATH=/webhook
 - `/topup` - Topup
 - `/referral` - Referral
 
-## Admin Panel
+## Admin Panel (Bot Inline)
 
-Admin panel inline buttons orqali ishlaydi:
+Bot ichidagi admin panel inline buttons orqali ishlaydi. Bundan tashqari, to'liq funksional **Web Admin Panel** ham mavjud (port 3034) — batafsil: [functionality.md](functionality.md).
+
+Bot inline admin panel:
 
 - **📊 Statistics**: Overview, users, generations, revenue stats
 - **👥 Users**: Search, list, view profile, ban/unban
