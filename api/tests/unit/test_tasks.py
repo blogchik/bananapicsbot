@@ -15,7 +15,6 @@ from app.worker.tasks import (
     _normalize_outputs,
     _refund_generation_cost,
     _resolve_language,
-    _rollback_trial_use,
 )
 
 

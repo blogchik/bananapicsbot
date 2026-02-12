@@ -868,12 +868,6 @@ def rollback_generation_cost(db: Session, request: GenerationRequest) -> None:
     )
 
 
-def rollback_trial_use(db: Session, request_id: int) -> None:
-    trial = db.execute(select(TrialUse).where(TrialUse.request_id == request_id)).scalar_one_or_none()
-    if trial:
-        db.delete(trial)
-
-
 def add_generation_results(db: Session, request_id: int, outputs: list[str] | str | None) -> None:
     normalized = normalize_outputs(outputs)
     if not normalized:
@@ -1118,13 +1112,11 @@ async def submit_generation(
     except HTTPException:
         request.status = GenerationStatus.failed
         rollback_generation_cost(db, request)
-        rollback_trial_use(db, request.id)
         db.commit()
         raise
     except Exception:
         request.status = GenerationStatus.failed
         rollback_generation_cost(db, request)
-        rollback_trial_use(db, request.id)
         db.commit()
         raise HTTPException(status_code=502, detail="Wavespeed request failed")
 
@@ -1265,7 +1257,6 @@ async def refresh_generation(
         job.completed_at = datetime.utcnow()
         job.error_message = error_message or response.message
         rollback_generation_cost(db, request)
-        rollback_trial_use(db, request.id)
     else:
         if status_value in {"created", "queued"}:
             request.status = GenerationStatus.queued

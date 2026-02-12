@@ -302,15 +302,6 @@ def _refund_generation_cost(session, request) -> None:
     )
 
 
-def _rollback_trial_use(session, request_id: int) -> None:
-    """Rollback trial usage for failed generation."""
-    from app.db.models import TrialUse
-
-    trial = session.query(TrialUse).filter(TrialUse.request_id == request_id).first()
-    if trial:
-        session.delete(trial)
-
-
 def _mark_generation_failed(request_id: int, error_message: str) -> None:
     """Mark generation as failed in DB."""
     from app.db.models import (
@@ -328,7 +319,6 @@ def _mark_generation_failed(request_id: int, error_message: str) -> None:
                 request.status = GenerationStatus.failed
                 request.completed_at = datetime.utcnow()
                 _refund_generation_cost(session, request)
-                _rollback_trial_use(session, request.id)
 
             job = session.query(GenerationJob).filter(GenerationJob.request_id == request_id).first()
             if job:
