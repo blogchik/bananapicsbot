@@ -225,7 +225,6 @@ class BroadcastFilterType(str):
 class BroadcastCreateRequest(BaseModel):
     """Broadcast create request."""
 
-    admin_id: int
     content_type: str = Field(..., pattern="^(text|photo|video|audio|sticker)$")
     text: Optional[str] = None
     media_file_id: Optional[str] = None
@@ -279,6 +278,8 @@ class BroadcastListOut(BaseModel):
 
     broadcasts: List[BroadcastOut]
     total: int
+    offset: int = 0
+    limit: int = 20
 
 
 # ============ Revenue ============

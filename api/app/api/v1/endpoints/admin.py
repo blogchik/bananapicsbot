@@ -527,6 +527,25 @@ async def get_user_payments(
 # ============ Broadcast Management ============
 
 
+@router.get("/broadcasts/users-count")
+async def get_broadcast_users_count(
+    filter_type: str = Query(default="all"),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get users count by filter for broadcast preview."""
+    try:
+        service = BroadcastService(session)
+        count = await service.get_filtered_users_count(filter_type)
+        return {"count": count, "filter_type": filter_type}
+    except Exception as e:
+        logger.exception("Failed to get broadcast users count", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
 @router.post("/broadcasts", response_model=BroadcastOut)
 async def create_broadcast(
     data: BroadcastCreateRequest,
@@ -537,7 +556,7 @@ async def create_broadcast(
     try:
         service = BroadcastService(session)
         broadcast = await service.create_broadcast(
-            admin_id=data.admin_id,
+            admin_id=admin["telegram_id"],
             content_type=data.content_type,
             text=data.text,
             media_file_id=data.media_file_id,
@@ -565,8 +584,8 @@ async def list_broadcasts(
     """List all broadcasts (newest first)."""
     try:
         service = BroadcastService(session)
-        broadcasts = await service.list_broadcasts(limit=limit, offset=offset)
-        return BroadcastListOut(broadcasts=broadcasts, total=len(broadcasts))
+        broadcasts, total = await service.list_broadcasts(limit=limit, offset=offset)
+        return BroadcastListOut(broadcasts=broadcasts, total=total, offset=offset, limit=limit)
     except Exception as e:
         logger.exception("Failed to list broadcasts", error=str(e))
         raise HTTPException(

@@ -63,7 +63,7 @@ export const broadcastsApi = {
     ),
 
   getBroadcastStatus: (publicId: string) =>
-    api.get<BroadcastStatus>(`/admin/broadcasts/${publicId}/status`),
+    api.get<BroadcastStatus>(`/admin/broadcasts/${publicId}`),
 
   createBroadcast: (data: CreateBroadcastInput) =>
     api.post<Broadcast>('/admin/broadcasts', data),

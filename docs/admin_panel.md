@@ -235,22 +235,35 @@ admin-panel/
 - 401 handling with redirect to login
 
 **Endpoints:**
-- `POST /auth/login` - Telegram login
-- `GET /auth/me` - Get current admin
-- `GET /stats` - Dashboard statistics
-- `GET /users` - List users
-- `GET /users/{id}` - Get user details
-- `POST /users/{id}/ban` - Ban user
-- `POST /credits` - Adjust credits
-- `POST /broadcasts` - Create broadcast
-- `GET /broadcasts` - List broadcasts
-- `POST /broadcasts/{id}/start` - Start broadcast
-- `GET /payments` - List payments
-- `GET /generations` - List generations
-- `GET /models` - List models
-- `PATCH /models/{id}` - Update model
-- `GET /settings` - Get settings
-- `PATCH /settings` - Update settings
+- `POST /admin/auth/login` - Telegram login
+- `GET /admin/auth/me` - Get current admin
+- `GET /admin/stats` - Dashboard statistics
+- `GET /admin/charts/users-daily` - Daily user registrations
+- `GET /admin/charts/generations-daily` - Daily generations
+- `GET /admin/charts/revenue-daily` - Daily revenue
+- `GET /admin/charts/models-breakdown` - Generations by model
+- `GET /admin/users` - List users
+- `GET /admin/users/{telegram_id}` - Get user details
+- `POST /admin/users/{telegram_id}/ban` - Ban user
+- `POST /admin/users/{telegram_id}/unban` - Unban user
+- `POST /admin/credits` - Adjust user credits
+- `GET /admin/users/{telegram_id}/generations` - User generations
+- `GET /admin/users/{telegram_id}/payments` - User payments
+- `GET /admin/broadcasts/users-count` - Get recipient count
+- `POST /admin/broadcasts` - Create broadcast
+- `GET /admin/broadcasts` - List broadcasts
+- `GET /admin/broadcasts/{public_id}` - Get broadcast status
+- `POST /admin/broadcasts/{public_id}/start` - Start broadcast
+- `POST /admin/broadcasts/{public_id}/cancel` - Cancel broadcast
+- `GET /admin/payments` - List payments
+- `GET /admin/payments/daily` - Daily payment stats
+- `GET /admin/generations` - List generations
+- `GET /admin/generations/queue` - Queue status
+- `GET /admin/models` - List models
+- `PATCH /admin/models/{model_id}` - Update model
+- `PUT /admin/models/{model_id}/price` - Update model price
+- `GET /admin/settings` - Get settings
+- `PATCH /admin/settings` - Update settings
 
 ### State Management
 

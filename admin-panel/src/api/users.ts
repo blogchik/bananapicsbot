@@ -45,8 +45,11 @@ export interface UserPayment {
 }
 
 export interface CreditAdjustmentResponse {
+  telegram_id: number;
+  amount: number;
+  old_balance: number;
   new_balance: number;
-  entry_id: number;
+  reason: string | null;
 }
 
 // --- API functions ---
@@ -70,7 +73,8 @@ export const usersApi = {
     api.post<void>(`/admin/users/${telegramId}/unban`),
 
   adjustCredits: (telegramId: number, amount: number, reason: string) =>
-    api.post<CreditAdjustmentResponse>(`/admin/users/${telegramId}/adjust-credits`, {
+    api.post<CreditAdjustmentResponse>(`/admin/credits`, {
+      telegram_id: telegramId,
       amount,
       reason,
     }),

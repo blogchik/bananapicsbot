@@ -88,12 +88,17 @@ class BroadcastService:
         self,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[Broadcast]:
-        """List broadcasts, newest first."""
+    ) -> tuple[List[Broadcast], int]:
+        """List broadcasts, newest first. Returns (broadcasts, total_count)."""
+        # Get total count
+        count_result = await self.session.execute(select(func.count(Broadcast.id)))
+        total = count_result.scalar() or 0
+
+        # Get paginated list
         result = await self.session.execute(
             select(Broadcast).order_by(Broadcast.created_at.desc()).offset(offset).limit(limit)
         )
-        return list(result.scalars().all())
+        return list(result.scalars().all()), total
 
     async def get_filtered_users_count(
         self,
