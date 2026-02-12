@@ -33,7 +33,8 @@ class AdminInfo(BaseModel):
 class AdminLoginResponse(BaseModel):
     """Admin login response with JWT token."""
 
-    token: str
+    access_token: str
+    token_type: str = "bearer"
     admin: AdminInfo
     expires_at: datetime
 

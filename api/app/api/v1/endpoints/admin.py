@@ -64,7 +64,8 @@ async def admin_login(data: TelegramLoginData):
     )
 
     return AdminLoginResponse(
-        token=token,
+        access_token=token,
+        token_type="bearer",
         admin=AdminInfo(
             telegram_id=data.id,
             username=data.username,
