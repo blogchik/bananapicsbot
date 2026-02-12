@@ -1049,6 +1049,13 @@ async def submit_generation(
     if len(reference_urls) > 10:
         raise HTTPException(status_code=400, detail="Too many reference images")
 
+    # Check balance BEFORE creating generation request
+    use_trial = trial_available(db, user.id)
+    if not use_trial:
+        balance = get_user_balance(db, user.id)
+        if balance < price:
+            raise HTTPException(status_code=402, detail="Insufficient balance")
+
     request = GenerationRequest(
         user_id=user.id,
         model_id=model.id,
@@ -1079,16 +1086,10 @@ async def submit_generation(
         file_id = reference_file_ids[idx] if idx < len(reference_file_ids) else None
         db.add(GenerationReference(request_id=request.id, url=url, telegram_file_id=file_id))
 
-    use_trial = trial_available(db, user.id)
     if use_trial:
         db.add(TrialUse(user_id=user.id, request_id=request.id))
         request.cost = 0
     else:
-        balance = get_user_balance(db, user.id)
-        if balance < price:
-            request.status = GenerationStatus.failed
-            db.commit()
-            raise HTTPException(status_code=402, detail="Insufficient balance")
         db.add(
             LedgerEntry(
                 user_id=user.id,

@@ -15,7 +15,7 @@ from core.logging import get_logger
 from keyboards import GenerationKeyboard, ProfileKeyboard
 from keyboards.builders import GenerationCallback
 from locales import TranslationKey
-from services import GenerationService
+from services import GenerationService, UserService
 from services.generation import GenerationConfig, NormalizedModel
 
 logger = get_logger(__name__)
@@ -792,6 +792,20 @@ async def submit_generation(
         await call.message.answer(_(TranslationKey.GEN_PROMPT_REQUIRED, None))
         return
 
+    # Pre-check balance before submitting generation
+    try:
+        trial_status = await UserService.get_trial(call.from_user.id)
+        if not trial_status.trial_available and price > 0:
+            balance = await UserService.get_balance(call.from_user.id)
+            if balance < price:
+                await call.message.edit_text(
+                    _(TranslationKey.INSUFFICIENT_BALANCE, None),
+                    reply_markup=ProfileKeyboard.main(_),
+                )
+                return
+    except Exception as e:
+        logger.warning("Balance pre-check failed, proceeding to API", error=str(e))
+
     # Show processing status
     try:
         await call.message.edit_text(_(TranslationKey.GEN_IN_QUEUE, None))
@@ -887,6 +901,20 @@ async def retry_generation(
     model_name = last.get("model_name") or "-"
     model_key = last.get("model_key") or ""
     price = int(last.get("price") or 0)
+
+    # Pre-check balance before retrying generation
+    try:
+        trial_status = await UserService.get_trial(call.from_user.id)
+        if not trial_status.trial_available and price > 0:
+            balance = await UserService.get_balance(call.from_user.id)
+            if balance < price:
+                await call.message.edit_text(
+                    _(TranslationKey.INSUFFICIENT_BALANCE, None),
+                    reply_markup=ProfileKeyboard.main(_),
+                )
+                return
+    except Exception as e:
+        logger.warning("Balance pre-check failed, proceeding to API", error=str(e))
 
     config = GenerationConfig(
         prompt=str(prompt),
