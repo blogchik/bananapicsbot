@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-02-12
+
+### Added
+- **Web Admin Panel** - Full-featured React-based admin dashboard
+  - 🔐 Telegram Login Widget authentication with JWT
+  - 📊 Dashboard with real-time statistics and charts
+  - 👥 User management (search, view, ban/unban)
+  - 💰 Credit adjustment system
+  - 📢 Broadcast management
+  - 💳 Payment history
+  - 🖼️ Generation history
+  - ⚙️ System settings management
+  - 🎨 Model configuration
+- Admin panel service added to docker-compose.yml (port 3034)
+- Vite build arguments for environment variables (VITE_BOT_USERNAME, VITE_API_URL)
+- CI/CD workflow support for building admin panel and webapp with Vite env vars
+
+### Fixed
+- **Critical**: Admin login authentication flow - aligned response schema with frontend expectations
+  - Changed `token` field to `access_token` (OAuth2 standard)
+  - Added `token_type` field to login response
+  - Fixed infinite login redirect loop after successful authentication
+- **Critical**: Vite environment variables not available at build time in CI/CD
+  - Added build arguments to Dockerfiles (admin-panel, webapp)
+  - Updated docker-compose.yml to pass build args
+  - Updated GitHub Actions workflow to provide build args during image build
+  - Fixed "Bot username not configured" error in admin panel
+
+### Technical
+- **Admin Panel Tech Stack**: React 18, TypeScript, Vite, Zustand, TanStack Query, Recharts, TailwindCSS
+- **Build**: Multi-stage Docker build with Nginx for production
+- **Security**: Telegram Login Widget HMAC verification, JWT authentication, admin-only access
+- **API**: New admin endpoints for auth, stats, users, broadcasts, payments, generations, settings
+
 ## [0.1.4] - 2026-01-25
 
 ### Added
@@ -120,7 +154,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/CD pipeline with GitHub Actions
 - Comprehensive documentation
 
-[Unreleased]: https://github.com/blogchik/bananapicsbot/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/blogchik/bananapicsbot/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/blogchik/bananapicsbot/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/blogchik/bananapicsbot/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/blogchik/bananapicsbot/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/blogchik/bananapicsbot/compare/v0.1.1...v0.1.2

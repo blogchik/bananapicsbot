@@ -35,17 +35,18 @@ Bananapics Bot is a production-ready Telegram bot that provides AI image generat
 The project is built with a microservices architecture:
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Telegram Bot   │────▶│   FastAPI API   │◀────│  Mini App       │
-│   (aiogram)     │◀────│ (Clean Arch.)   │     │ (React + Vite)  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                               │
-         ┌─────────────────────┼─────────────────────┐
-         │                     │                     │
-    ┌────▼────┐         ┌──────▼──────┐      ┌──────▼──────┐
-    │  Redis  │         │  PostgreSQL │      │   Celery    │
-    │ (Cache) │         │   (Data)    │      │  (Workers)  │
-    └─────────┘         └─────────────┘      └─────────────┘
+┌─────────────┐   ┌─────────────┐   ┌──────────────┐   ┌──────────────┐
+│ Telegram    │──▶│  FastAPI    │◀──│  Mini App    │   │ Admin Panel  │
+│ Bot         │◀──│  API        │   │ (React)      │   │ (React)      │
+│ (aiogram)   │   │ (Clean)     │   │              │   │              │
+└─────────────┘   └─────────────┘   └──────────────┘   └──────────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+   ┌────▼────┐    ┌──────▼──────┐   ┌────▼────┐
+   │  Redis  │    │  PostgreSQL │   │ Celery  │
+   │ (Cache) │    │   (Data)    │   │ Workers │
+   └─────────┘    └─────────────┘   └─────────┘
 ```
 
 ### Services
@@ -53,6 +54,7 @@ The project is built with a microservices architecture:
 - **bot** - Telegram bot interface (aiogram 3.x)
 - **api** - FastAPI backend with Clean Architecture
 - **webapp** - Telegram Mini App (React 18 + TypeScript + Vite)
+- **admin-panel** - Web Admin Dashboard (React 18 + TypeScript + Vite)
 - **celery-worker** - Background task processor for generations and broadcasts
 - **celery-beat** - Scheduled tasks (cleanup, monitoring)
 - **redis** - Caching, FSM storage, rate limiting, Celery broker
@@ -95,10 +97,21 @@ bananapicsbot/
 │   ├── Dockerfile        # Production build
 │   └── vite.config.ts    # Vite configuration
 │
+├── admin-panel/           # Web Admin Dashboard
+│   ├── src/
+│   │   ├── components/   # React UI components
+│   │   ├── pages/        # Page components
+│   │   ├── api/          # API client
+│   │   ├── stores/       # Zustand state management
+│   │   └── lib/          # Utilities
+│   ├── Dockerfile        # Production build
+│   └── vite.config.ts    # Vite configuration
+│
 ├── docs/                  # Project documentation
 │   ├── api.md            # API architecture details
 │   ├── bot.md            # Bot architecture details
 │   ├── webapp.md         # Mini App documentation
+│   ├── admin_panel.md    # Admin Panel documentation
 │   ├── functionality.md  # Feature documentation
 │   └── env.md            # Environment variables guide
 │
@@ -175,6 +188,8 @@ Open Telegram and send `/start` to your bot.
 ### Accessing Services
 
 - **Bot**: Your Telegram bot
+- **Mini App (Webapp)**: http://localhost:3033 (Telegram required)
+- **Admin Panel**: http://localhost:3034 (Telegram Login Widget)
 - **API**: http://localhost:9000/api/v1/health
 - **API docs**: http://localhost:9000/docs
 - **Redis**: localhost:6479
@@ -274,47 +289,97 @@ See [docs/env.md](docs/env.md) for complete configuration reference.
 
 ### Admin Panel
 
-Access via `/admin` command (admin users only):
+Two ways to access admin features:
 
-**📊 Statistics**
+#### 1. Telegram Bot `/admin` Command
+Quick access via bot for admin users:
+- View statistics overview
+- User management shortcuts
+- Broadcast creation
+- Quick actions
 
-- Overview: Users, generations, revenue
-- User analytics: Active users (7d/30d), growth trends
-- Generation analytics: Success rate, model usage
-- Revenue tracking: Total revenue, average per user
+#### 2. Web Admin Dashboard
+Full-featured web interface at http://localhost:3034 (or your domain):
+
+**🔐 Authentication**
+- Telegram Login Widget integration
+- JWT-based authentication
+- Admin-only access (based on ADMIN_IDS)
+- Secure session management
+
+**📊 Dashboard & Analytics**
+- Real-time statistics with interactive charts
+- User growth trends (daily, weekly, monthly)
+- Generation analytics by model
+- Revenue tracking and breakdowns
+- Success rate monitoring
+- Active users metrics (7d/30d)
 
 **👥 User Management**
-
-- Search users by ID or username
-- View detailed user profiles
+- Advanced search (by ID, username, name)
+- Detailed user profiles
+- Balance and transaction history
+- Generation history
+- Payment history
 - Ban/unban users
-- Adjust user credits
-- View user history
+- Credit adjustment with reason tracking
+- Referral information
 
 **💰 Credit Management**
-
 - Add/remove credits from user balance
-- View credit transaction history
-- Bulk credit operations
+- View complete credit transaction ledger
+- Track admin adjustments with reasons
+- Generation refunds
 
 **📢 Broadcast System**
-
-- Create targeted broadcasts
-- Filter recipients: All users, Active (7d/30d), With balance, Paid users, New users
-- Support for text, photo, video, audio, stickers
-- Add custom inline buttons
+- Create rich broadcasts (text, photo, video, audio, sticker)
+- Advanced recipient filtering:
+  - All users
+  - Active users (7d/30d)
+  - Users with balance
+  - Paid users only
+  - New users (last 7d)
+- Custom inline buttons (text + URL)
 - Real-time progress tracking
-- Cancel running broadcasts
-- View broadcast history and statistics
+- Start, pause, cancel broadcasts
+- Broadcast history and statistics
+- Delivery metrics (sent, failed, blocked)
 
-**💸 Refund System**
+**💳 Payment Management**
+- Global payment history
+- Filter by status and date
+- Payment analytics
+- Stars refund system (via Telegram API)
 
-- **Credit Refunds** - Refund credits for failed generations
-- **Stars Refunds** - Refund Telegram Stars payments via API
-  - View user's unrefunded payments
-  - Select payment to refund
-  - Automatic credit deduction
-  - Handles Telegram API errors gracefully
+**🖼️ Generation Management**
+- Global generation history
+- Filter by status (completed, failed, processing)
+- View generation details
+- Refund failed generations
+- Queue status monitoring
+
+**🎨 Model Management**
+- View all available models
+- Toggle model availability
+- Update model names
+- Adjust pricing
+- Generation count by model
+
+**⚙️ System Settings**
+- Configure system parameters
+- Update pricing markup
+- Adjust referral bonuses
+- Payment presets
+- Real-time updates without restart
+
+**📈 Charts & Visualizations**
+- Daily user registration trends
+- Generation volume over time
+- Revenue trends
+- Model usage breakdown
+- Interactive Recharts visualizations
+
+See [docs/admin_panel.md](docs/admin_panel.md) for detailed documentation.
 
 ### Internationalization
 
@@ -625,7 +690,7 @@ For questions or issues:
 
 ## 📋 Project Status
 
-**Current Version:** 0.1.4
+**Current Version:** 0.1.5
 
 **Status:** Production Ready ✅
 
