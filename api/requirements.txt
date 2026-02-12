@@ -26,5 +26,8 @@ dependency-injector==4.41.0
 structlog==24.1.0
 sentry-sdk[fastapi]==2.19.2
 
+# Auth
+PyJWT==2.8.0
+
 # Background Tasks
 celery[redis]==5.3.6

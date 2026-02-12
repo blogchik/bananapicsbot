@@ -6,29 +6,91 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
+from app.deps.admin_auth import require_admin
 from app.deps.db import get_async_session
 from app.infrastructure.logging import get_logger
 from app.schemas.admin import (
-    # Credits
     AdminCreditIn,
     AdminCreditOut,
-    # Users
+    AdminInfo,
+    AdminLoginResponse,
     AdminUserOut,
-    # Broadcast
     BroadcastCreateRequest,
     BroadcastListOut,
     BroadcastOut,
     BroadcastStatusOut,
-    # Stats
     DashboardStatsOut,
+    TelegramLoginData,
     UserListOut,
 )
+from app.services.admin_auth import create_admin_token, verify_telegram_login
 from app.services.admin_service import AdminService
 from app.services.broadcast_service import BroadcastService
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/admin")
+
+
+# ============ Auth (no auth required) ============
+
+
+@router.post("/auth/login", response_model=AdminLoginResponse)
+async def admin_login(data: TelegramLoginData):
+    """Authenticate admin via Telegram Login Widget."""
+    settings = get_settings()
+
+    if not settings.bot_token:
+        raise HTTPException(status_code=500, detail="Bot token not configured")
+
+    if not settings.admin_jwt_secret:
+        raise HTTPException(status_code=500, detail="Admin JWT secret not configured")
+
+    # Verify Telegram Login Widget hash
+    login_data = data.model_dump()
+    if not verify_telegram_login(login_data, settings.bot_token):
+        raise HTTPException(status_code=401, detail="Invalid Telegram login data")
+
+    # Check if user is admin
+    if data.id not in settings.admin_ids_list:
+        raise HTTPException(status_code=403, detail="You are not an admin")
+
+    # Create JWT token
+    token, expires_at = create_admin_token(
+        telegram_id=data.id,
+        username=data.username,
+        first_name=data.first_name,
+    )
+
+    return AdminLoginResponse(
+        token=token,
+        admin=AdminInfo(
+            telegram_id=data.id,
+            username=data.username,
+            first_name=data.first_name,
+        ),
+        expires_at=expires_at,
+    )
+
+
+@router.get("/auth/me", response_model=AdminInfo)
+async def admin_me(admin: dict = Depends(require_admin)):
+    """Get current admin info from JWT."""
+    return AdminInfo(
+        telegram_id=admin["telegram_id"],
+        username=admin.get("username"),
+        first_name=admin.get("first_name", "Admin"),
+    )
+
+
+# ============ Health Check (no auth required) ============
+
+
+@router.get("/health")
+async def health_check():
+    """Admin API health check."""
+    return {"status": "ok"}
 
 
 # ============ Dashboard Stats ============
@@ -38,6 +100,7 @@ router = APIRouter(prefix="/admin")
 async def get_dashboard_stats(
     days: int = Query(default=30, ge=1, le=365),
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Get admin dashboard statistics."""
     try:
@@ -80,6 +143,73 @@ async def get_dashboard_stats(
         )
 
 
+# ============ Chart Data ============
+
+
+@router.get("/charts/users-daily")
+async def get_users_daily(
+    days: int = Query(default=30, ge=1, le=365),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get daily new user registrations for chart."""
+    try:
+        service = AdminService(session)
+        data = await service.get_daily_users(days)
+        return data
+    except Exception as e:
+        logger.exception("Failed to get daily users", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/charts/generations-daily")
+async def get_generations_daily(
+    days: int = Query(default=30, ge=1, le=365),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get daily generation stats for chart."""
+    try:
+        service = AdminService(session)
+        data = await service.get_daily_generations(days)
+        return data
+    except Exception as e:
+        logger.exception("Failed to get daily generations", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/charts/revenue-daily")
+async def get_revenue_daily(
+    days: int = Query(default=30, ge=1, le=365),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get daily revenue stats for chart."""
+    try:
+        service = AdminService(session)
+        data = await service.get_daily_revenue(days)
+        return data
+    except Exception as e:
+        logger.exception("Failed to get daily revenue", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/charts/models-breakdown")
+async def get_models_breakdown(
+    days: int = Query(default=30, ge=1, le=365),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get generation count and credits by model for chart."""
+    try:
+        service = AdminService(session)
+        data = await service.get_models_breakdown(days)
+        return data
+    except Exception as e:
+        logger.exception("Failed to get models breakdown", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============ User Management ============
 
 
@@ -89,6 +219,7 @@ async def search_users(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Search users with filters."""
     try:
@@ -114,7 +245,7 @@ async def search_users(
                     last_name=None,
                     language_code="uz",
                     is_active=True,
-                    is_banned=False,
+                    is_banned=user.is_banned if hasattr(user, "is_banned") else False,
                     ban_reason=None,
                     trial_remaining=3,
                     balance=Decimal(balance),
@@ -122,7 +253,7 @@ async def search_users(
                     referral_count=referral_count,
                     generation_count=gen_count,
                     created_at=user.created_at,
-                    last_active_at=None,
+                    last_active_at=user.last_active_at if hasattr(user, "last_active_at") else None,
                 )
             )
 
@@ -144,6 +275,7 @@ async def search_users(
 async def get_users_count(
     filter_type: str = Query(default="all"),
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Get users count by filter for preview."""
     try:
@@ -162,6 +294,7 @@ async def get_users_count(
 async def get_user(
     telegram_id: int,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Get user details."""
     try:
@@ -182,7 +315,7 @@ async def get_user(
             last_name=None,
             language_code="uz",
             is_active=True,
-            is_banned=False,
+            is_banned=user.is_banned if hasattr(user, "is_banned") else False,
             ban_reason=None,
             trial_remaining=3,
             balance=Decimal(balance),
@@ -190,7 +323,7 @@ async def get_user(
             referral_count=referral_count,
             generation_count=gen_count,
             created_at=user.created_at,
-            last_active_at=None,
+            last_active_at=user.last_active_at if hasattr(user, "last_active_at") else None,
         )
     except HTTPException:
         raise
@@ -202,6 +335,52 @@ async def get_user(
         )
 
 
+@router.post("/users/{telegram_id}/ban")
+async def ban_user(
+    telegram_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Ban a user."""
+    try:
+        service = AdminService(session)
+        user = await service.get_user_by_telegram_id(telegram_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.is_banned = True
+        await session.commit()
+        return {"success": True, "telegram_id": telegram_id, "is_banned": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to ban user", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/users/{telegram_id}/unban")
+async def unban_user(
+    telegram_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Unban a user."""
+    try:
+        service = AdminService(session)
+        user = await service.get_user_by_telegram_id(telegram_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.is_banned = False
+        await session.commit()
+        return {"success": True, "telegram_id": telegram_id, "is_banned": False}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to unban user", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============ Credits Management ============
 
 
@@ -209,6 +388,7 @@ async def get_user(
 async def adjust_credits(
     data: AdminCreditIn,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Add or remove credits from user."""
     try:
@@ -245,15 +425,6 @@ async def adjust_credits(
         )
 
 
-# ============ Health Check ============
-
-
-@router.get("/health")
-async def health_check():
-    """Admin API health check."""
-    return {"status": "ok"}
-
-
 # ============ User Generations ============
 
 
@@ -262,6 +433,7 @@ async def get_user_generations(
     telegram_id: int,
     limit: int = Query(default=10, ge=1, le=50),
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Get user's recent generations."""
     try:
@@ -291,6 +463,7 @@ async def refund_generation(
     generation_id: int,
     data: dict,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Refund a specific generation."""
     try:
@@ -328,6 +501,7 @@ async def get_user_payments(
     telegram_id: int,
     limit: int = Query(default=10, ge=1, le=50),
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Get user's payment history."""
     try:
@@ -356,6 +530,7 @@ async def get_user_payments(
 async def create_broadcast(
     data: BroadcastCreateRequest,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Create a new broadcast (not started yet)."""
     try:
@@ -384,6 +559,7 @@ async def list_broadcasts(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """List all broadcasts (newest first)."""
     try:
@@ -402,6 +578,7 @@ async def list_broadcasts(
 async def get_broadcast_status(
     public_id: str,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Get broadcast status and progress."""
     try:
@@ -440,6 +617,7 @@ async def get_broadcast_status(
 async def start_broadcast(
     public_id: str,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Start sending a broadcast."""
     try:
@@ -472,6 +650,7 @@ async def start_broadcast(
 async def cancel_broadcast(
     public_id: str,
     session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
 ):
     """Cancel a running broadcast."""
     try:
@@ -495,3 +674,202 @@ async def cancel_broadcast(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
+
+
+# ============ Model Management ============
+
+
+@router.get("/models")
+async def get_all_models(
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get all models with prices and generation counts."""
+    try:
+        service = AdminService(session)
+        models = await service.get_all_models()
+        return models
+    except Exception as e:
+        logger.exception("Failed to get models", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/models/{model_id}")
+async def update_model(
+    model_id: int,
+    data: dict,
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Update model fields (is_active, name)."""
+    try:
+        service = AdminService(session)
+        result = await service.update_model(model_id, data)
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to update model", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/models/{model_id}/price")
+async def update_model_price(
+    model_id: int,
+    data: dict,
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Update model price."""
+    try:
+        unit_price = data.get("unit_price")
+        if unit_price is None:
+            raise HTTPException(status_code=400, detail="unit_price required")
+
+        service = AdminService(session)
+        result = await service.update_model_price(model_id, int(unit_price))
+        if not result:
+            raise HTTPException(status_code=404, detail="Model not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to update model price", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ Global Payments ============
+
+
+@router.get("/payments")
+async def get_global_payments(
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get all payments with pagination."""
+    try:
+        service = AdminService(session)
+        items, total = await service.get_global_payments(offset=offset, limit=limit)
+        return {"items": items, "total": total}
+    except Exception as e:
+        logger.exception("Failed to get payments", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/payments/daily")
+async def get_payment_daily_stats(
+    days: int = Query(default=30, ge=1, le=365),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get daily payment statistics."""
+    try:
+        service = AdminService(session)
+        data = await service.get_payment_daily_stats(days)
+        return data
+    except Exception as e:
+        logger.exception("Failed to get payment daily stats", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ Global Generations ============
+
+
+@router.get("/generations")
+async def get_global_generations(
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    status_filter: Optional[str] = Query(default=None, alias="status"),
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get all generations with pagination and optional status filter."""
+    try:
+        service = AdminService(session)
+        items, total = await service.get_global_generations(offset=offset, limit=limit, status_filter=status_filter)
+        return {"items": items, "total": total}
+    except Exception as e:
+        logger.exception("Failed to get generations", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/generations/queue")
+async def get_generation_queue(
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get current generation queue status."""
+    try:
+        service = AdminService(session)
+        queue = await service.get_generation_queue_status()
+        return queue
+    except Exception as e:
+        logger.exception("Failed to get queue status", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ System Settings ============
+
+
+@router.get("/settings")
+async def get_system_settings(
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get all system settings."""
+    try:
+        from sqlalchemy import select as sa_select
+
+        from app.db.models import SystemSetting
+
+        result = await session.execute(sa_select(SystemSetting).order_by(SystemSetting.key))
+        settings = result.scalars().all()
+        return [
+            {
+                "key": s.key,
+                "value": s.value,
+                "value_type": s.value_type,
+                "description": s.description,
+                "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+            }
+            for s in settings
+        ]
+    except Exception as e:
+        logger.exception("Failed to get settings", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/settings")
+async def update_system_settings(
+    data: dict,
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Update system settings. Body: {key: value, key2: value2, ...}."""
+    try:
+        from datetime import datetime
+
+        from sqlalchemy import select as sa_select
+
+        from app.db.models import SystemSetting
+
+        updated = []
+        for key, value in data.items():
+            result = await session.execute(sa_select(SystemSetting).where(SystemSetting.key == key))
+            setting = result.scalar_one_or_none()
+
+            if setting:
+                setting.value = str(value)
+                setting.updated_by = admin["telegram_id"]
+                setting.updated_at = datetime.utcnow()
+                updated.append(key)
+
+        await session.commit()
+        return {"updated": updated, "count": len(updated)}
+    except Exception as e:
+        logger.exception("Failed to update settings", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

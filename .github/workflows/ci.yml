@@ -59,10 +59,35 @@ jobs:
         working-directory: webapp
         run: npm run build
 
+  lint-admin-panel:
+    name: Lint & Build Admin Panel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: admin-panel/package-lock.json
+
+      - name: Install dependencies
+        working-directory: admin-panel
+        run: npm ci
+
+      - name: TypeScript check
+        working-directory: admin-panel
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: admin-panel
+        run: npm run build
+
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: [lint, lint-webapp]
+    needs: [lint, lint-webapp, lint-admin-panel]
     services:
       redis:
         image: redis:7-alpine
@@ -125,7 +150,7 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: [lint, lint-webapp]
+    needs: [lint, lint-webapp, lint-admin-panel]
     permissions:
       actions: read
       contents: read
@@ -160,7 +185,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [api, bot, webapp]
+        service: [api, bot, webapp, admin-panel]
 
     steps:
       - uses: actions/checkout@v4
@@ -270,7 +295,7 @@ jobs:
           retry_ssh "ssh $SSH_USERNAME@$SSH_HOST 'cd ~/bananapicsbot && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
             export IMAGE_TAG=${IMAGE_TAG} && \
-            docker compose pull api bot webapp && \
+            docker compose pull api bot webapp admin-panel && \
             docker compose up -d --remove-orphans && \
             docker image prune -f'"
 

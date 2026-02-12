@@ -7,6 +7,37 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+# ============ Auth ============
+
+
+class TelegramLoginData(BaseModel):
+    """Telegram Login Widget callback data."""
+
+    id: int
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    auth_date: int
+    hash: str
+
+
+class AdminInfo(BaseModel):
+    """Admin user info."""
+
+    telegram_id: int
+    username: Optional[str]
+    first_name: str
+
+
+class AdminLoginResponse(BaseModel):
+    """Admin login response with JWT token."""
+
+    token: str
+    admin: AdminInfo
+    expires_at: datetime
+
+
 # ============ Credits ============
 
 

@@ -90,6 +90,10 @@ class Settings(BaseSettings):
     # WebApp
     webapp_url: str = ""
 
+    # Admin Panel
+    admin_jwt_secret: str = ""
+    admin_panel_url: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
@@ -112,6 +116,10 @@ class Settings(BaseSettings):
         # Add webapp URL if configured
         if self.webapp_url:
             origins.append(self.webapp_url)
+
+        # Add admin panel URL if configured
+        if self.admin_panel_url:
+            origins.append(self.admin_panel_url)
 
         # Add Telegram domain for WebApp iframe
         if "https://t.me" not in origins:

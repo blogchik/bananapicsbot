@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BananaPics Admin Panel Styles */
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    @apply bg-dark-500 text-white;
+    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Custom scrollbar for admin panel */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .focus-ring {
+    @apply outline-none focus:ring-2 focus:ring-banana-500/50 focus:ring-offset-2 focus:ring-offset-dark-500;
+  }
+
+  .card-admin {
+    @apply bg-surface border border-surface-lighter/50 rounded-xl;
+  }
+
+  .btn-primary {
+    @apply bg-banana-500 text-dark-500 font-semibold px-4 py-2 rounded-lg
+    hover:bg-banana-400 active:bg-banana-600
+    transition-colors duration-150;
+  }
+
+  .btn-ghost {
+    @apply text-muted-foreground px-4 py-2 rounded-lg
+    hover:bg-surface-light hover:text-white
+    transition-colors duration-150;
+  }
+}
+
+/* Custom selection color */
+::selection {
+  background-color: rgba(230, 184, 0, 0.3);
+  color: white;
+}
+
+/* Input placeholder styles */
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Telegram Login Widget styling override */
+#telegram-login-widget iframe {
+  margin: 0 auto;
+}
