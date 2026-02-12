@@ -37,7 +37,7 @@ class UserContextMiddleware(BaseMiddleware):
 
         # Check if user is admin
         container = get_container()
-        data["is_admin"] = user.id in container.settings.admin_ids
+        data["is_admin"] = user.id in container.settings.admin_ids_list
 
         # Optionally sync user on every request
         if self.sync_on_every_request:

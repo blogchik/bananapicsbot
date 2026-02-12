@@ -1,7 +1,7 @@
 """Application configuration using Pydantic settings."""
 
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Union
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     # Payment settings
     payment_provider_token: str = Field(default="", description="Payment provider token")
 
-    # Admin settings
-    admin_ids: list[int] = Field(default_factory=list, description="Admin user IDs")
+    # Admin settings - use str to avoid JSON parsing, then convert via validator
+    admin_ids: Union[str, list[int]] = Field(default="", description="Admin user IDs (comma-separated)")
 
     # Rate limiting
     rate_limit_messages: int = Field(default=30, description="Messages per minute")
@@ -73,7 +73,14 @@ class Settings(BaseSettings):
         if isinstance(v, int):
             return [v]
         if isinstance(v, list):
-            return v
+            return [int(x) for x in v]
+        return []
+
+    @property
+    def admin_ids_list(self) -> list[int]:
+        """Get admin IDs as a list."""
+        if isinstance(self.admin_ids, list):
+            return self.admin_ids
         return []
 
     @field_validator("bot_token", mode="before")

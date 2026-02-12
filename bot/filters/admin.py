@@ -15,7 +15,7 @@ class AdminFilter(BaseFilter):
             return False
 
         container = get_container()
-        return user_id in container.settings.admin_ids
+        return user_id in container.settings.admin_ids_list
 
     def _get_user_id(self, event: TelegramObject) -> int | None:
         """Extract user ID from event."""
