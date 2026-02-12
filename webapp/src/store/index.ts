@@ -271,6 +271,18 @@ export const useAppStore = create<ExtendedState>((set, get) => ({
       return;
     }
 
+    // Pre-check balance before submitting
+    if (!get().trialAvailable && settings.creditsPerImage > 0) {
+      if (settings.balance < settings.creditsPerImage) {
+        logger.generation.warn('Insufficient balance', {
+          balance: settings.balance,
+          required: settings.creditsPerImage,
+        });
+        get().addToast({ message: 'Insufficient balance', type: 'error' });
+        return;
+      }
+    }
+
     logger.generation.info('Submitting generation', {
       promptLength: prompt.length,
       attachmentCount: attachments.length,
@@ -377,12 +389,24 @@ export const useAppStore = create<ExtendedState>((set, get) => ({
 
   // Retry failed generation
   retryGeneration: async (id) => {
-    const { generations, telegramId, selectedModelId } = get();
+    const { generations, telegramId, selectedModelId, settings } = get();
     const generation = generations.find((g) => g.id === id);
 
     if (!generation || !telegramId || !selectedModelId) {
       logger.generation.error('Cannot retry: missing data');
       return;
+    }
+
+    // Pre-check balance before retrying
+    if (!get().trialAvailable && settings.creditsPerImage > 0) {
+      if (settings.balance < settings.creditsPerImage) {
+        logger.generation.warn('Insufficient balance for retry', {
+          balance: settings.balance,
+          required: settings.creditsPerImage,
+        });
+        get().addToast({ message: 'Insufficient balance', type: 'error' });
+        return;
+      }
     }
 
     logger.generation.info('Retrying generation', { generationId: id });
