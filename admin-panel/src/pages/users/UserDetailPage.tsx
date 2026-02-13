@@ -21,6 +21,7 @@ import {
   TrendingDown,
   ExternalLink,
   Star,
+  X,
 } from 'lucide-react';
 import { usersApi, type UserGeneration, type UserPayment } from '@/api/users';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -46,6 +47,44 @@ function formatDateShort(dateStr: string | null): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+// --- Image Preview Modal ---
+
+function ImagePreviewModal({
+  images,
+  onClose,
+}: {
+  images: string[];
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-10 h-10 rounded-lg bg-surface-light/80 flex items-center justify-center hover:bg-surface-lighter transition-colors z-10"
+      >
+        <X className="w-5 h-5 text-white" />
+      </button>
+      <div
+        className="relative flex flex-wrap gap-4 justify-center items-center max-h-[90vh] overflow-auto p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {images.map((url, i) => (
+          <img
+            key={i}
+            src={url}
+            alt={`Result ${i + 1}`}
+            className="rounded-lg max-h-[80vh] object-contain shadow-xl"
+            style={{ maxWidth: 'min(100%, 800px)' }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // --- Skeleton ---
@@ -111,6 +150,33 @@ function GenerationStatusBadge({ status }: { status: string }) {
     <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', styles[status] ?? 'bg-surface-light text-muted-foreground')}>
       {status}
     </span>
+  );
+}
+
+function GenerationImages({ urls }: { urls: string[] }) {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <>
+      <div className="flex gap-2 flex-wrap">
+        {urls.map((url, idx) => (
+          <button
+            key={idx}
+            onClick={() => setShowModal(true)}
+            className="block w-20 h-20 rounded-lg overflow-hidden border border-surface-lighter hover:border-banana-500 transition-colors"
+          >
+            <img
+              src={url}
+              alt={`Result ${idx + 1}`}
+              className="w-full h-full object-cover"
+            />
+          </button>
+        ))}
+      </div>
+      {showModal && (
+        <ImagePreviewModal images={urls} onClose={() => setShowModal(false)} />
+      )}
+    </>
   );
 }
 
@@ -489,23 +555,7 @@ export function UserDetailPage() {
 
                       {/* Images */}
                       {gen.result_urls && gen.result_urls.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                          {gen.result_urls.map((url, idx) => (
-                            <a
-                              key={idx}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block w-20 h-20 rounded-lg overflow-hidden border border-surface-lighter hover:border-banana-500 transition-colors"
-                            >
-                              <img
-                                src={url}
-                                alt={`Result ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </a>
-                          ))}
-                        </div>
+                        <GenerationImages urls={gen.result_urls} />
                       )}
                     </div>
                   ))}

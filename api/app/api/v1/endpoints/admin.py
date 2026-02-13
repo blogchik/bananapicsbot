@@ -445,11 +445,38 @@ async def unban_user(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _get_user_language(telegram_id: int, bot_token: str) -> str:
+    """Get user's language from Redis (stored by bot) or Telegram API."""
+    import redis.asyncio as redis
+
+    settings = get_settings()
+
+    # Try to get language from Redis (where bot stores it)
+    try:
+        redis_url = (
+            f"redis://:{settings.redis_password}@{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
+            if settings.redis_password
+            else f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
+        )
+        r = redis.from_url(redis_url)
+        # Bot stores language with key pattern "user:{user_id}:language"
+        lang = await r.get(f"user:{telegram_id}:language")
+        await r.aclose()
+        if lang:
+            lang_str = lang.decode() if isinstance(lang, bytes) else str(lang)
+            if lang_str in ("uz", "ru", "en"):
+                return lang_str
+    except Exception as e:
+        logger.debug("Failed to get user language from Redis", error=str(e))
+
+    # Default to Uzbek (most common for this bot)
+    return "uz"
+
+
 async def _send_ban_notification(telegram_id: int, bot_token: str, reason: str | None) -> None:
-    """Send ban notification to user."""
+    """Send ban notification to user in their language."""
     import httpx
 
-    # Messages in different languages
     messages = {
         "en": "⛔️ You have been banned from using this bot.",
         "ru": "⛔️ Вы были заблокированы в этом боте.",
@@ -457,16 +484,19 @@ async def _send_ban_notification(telegram_id: int, bot_token: str, reason: str |
     }
 
     reason_texts = {
-        "en": "Reason: ",
-        "ru": "Причина: ",
-        "uz": "Sabab: ",
+        "en": "Reason",
+        "ru": "Причина",
+        "uz": "Sabab",
     }
 
-    # Try to detect user language (default to English)
-    # For now, send in all languages
-    text = f"{messages['uz']}\n{messages['ru']}\n{messages['en']}"
+    lang = await _get_user_language(telegram_id, bot_token)
+    if lang not in messages:
+        lang = "uz"
+
+    text = messages[lang]
     if reason:
-        text += f"\n\n{reason_texts['uz']}{reason}\n{reason_texts['ru']}{reason}\n{reason_texts['en']}{reason}"
+        reason_prefix = reason_texts.get(lang, reason_texts["en"])
+        text += f"\n\n{reason_prefix}: {reason}"
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         await client.post(
@@ -476,14 +506,20 @@ async def _send_ban_notification(telegram_id: int, bot_token: str, reason: str |
 
 
 async def _send_unban_notification(telegram_id: int, bot_token: str) -> None:
-    """Send unban notification to user."""
+    """Send unban notification to user in their language."""
     import httpx
 
-    text = (
-        "✅ Sizning blokingiz olib tashlandi. Botdan foydalanishingiz mumkin.\n"
-        "✅ Ваша блокировка снята. Вы можете использовать бота.\n"
-        "✅ You have been unbanned. You can use the bot again."
-    )
+    messages = {
+        "en": "✅ You have been unbanned. You can use the bot again.",
+        "ru": "✅ Ваша блокировка снята. Вы можете использовать бота.",
+        "uz": "✅ Sizning blokingiz olib tashlandi. Botdan foydalanishingiz mumkin.",
+    }
+
+    lang = await _get_user_language(telegram_id, bot_token)
+    if lang not in messages:
+        lang = "uz"
+
+    text = messages[lang]
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         await client.post(

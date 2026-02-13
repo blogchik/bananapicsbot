@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
-  Activity,
   Clock,
   Play,
   Layers,
@@ -12,23 +11,65 @@ import {
   ChevronUp,
   AlertCircle,
   Image,
-  ExternalLink,
   X,
+  CheckCircle2,
+  XCircle,
+  User,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { KpiCard } from '@/components/KpiCard';
 import { generationsApi, type AdminGeneration } from '@/api/generations';
 
 const PAGE_SIZE = 50;
 
-const STATUS_TABS = [
-  { label: 'All', value: '' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'Failed', value: 'failed' },
-  { label: 'Running', value: 'running' },
-  { label: 'Queued', value: 'queued' },
-];
+
+// --- Helpers ---
+
+function formatDate(dateStr: string): string {
+  try {
+    return format(parseISO(dateStr), 'MMM d, yyyy HH:mm');
+  } catch {
+    return dateStr;
+  }
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+// --- User Profile Cache ---
+const userProfileCache: Record<number, { first_name?: string; username?: string; photo_url?: string }> = {};
+
+async function fetchUserProfile(telegramId: number): Promise<{ first_name?: string; username?: string; photo_url?: string }> {
+  if (userProfileCache[telegramId]) {
+    return userProfileCache[telegramId];
+  }
+  try {
+    const response = await fetch(`/api/v1/admin/users/${telegramId}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const profile = {
+        first_name: data.first_name || data.username || `User`,
+        username: data.username,
+        photo_url: data.photo_url,
+      };
+      userProfileCache[telegramId] = profile;
+      return profile;
+    }
+  } catch (e) {
+    console.error('Failed to fetch user profile', e);
+  }
+  return { first_name: 'User' };
+}
 
 // --- Status Badge ---
 
@@ -99,7 +140,51 @@ function ImagePreviewModal({
   );
 }
 
-// --- Expandable Prompt Row ---
+// --- User Cell Component ---
+
+function UserCell({ telegramId }: { telegramId: number }) {
+  const [profile, setProfile] = useState<{ first_name?: string; username?: string; photo_url?: string } | null>(
+    userProfileCache[telegramId] || null
+  );
+
+  useEffect(() => {
+    if (!profile) {
+      fetchUserProfile(telegramId).then(setProfile);
+    }
+  }, [telegramId, profile]);
+
+  const name = profile?.first_name || 'Loading...';
+  const initials = getInitials(name);
+
+  return (
+    <Link
+      to={`/users/${telegramId}`}
+      className="flex items-center gap-3 group"
+    >
+      {profile?.photo_url ? (
+        <img
+          src={profile.photo_url}
+          alt={name}
+          className="w-8 h-8 rounded-full object-cover ring-2 ring-surface-lighter group-hover:ring-banana-500 transition-all"
+        />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-surface-light flex items-center justify-center text-xs font-medium text-muted-foreground group-hover:bg-banana-500/20 group-hover:text-banana-500 transition-all">
+          {profile ? initials : <User className="w-4 h-4" />}
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-white truncate group-hover:text-banana-400 transition-colors">
+          {name}
+        </p>
+        {profile?.username && (
+          <p className="text-xs text-muted-foreground truncate">@{profile.username}</p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// --- Generation Row ---
 
 function GenerationRow({ gen }: { gen: AdminGeneration }) {
   const [expanded, setExpanded] = useState(false);
@@ -115,13 +200,7 @@ function GenerationRow({ gen }: { gen: AdminGeneration }) {
     <>
       <tr className="border-b border-surface-lighter/30 hover:bg-surface-light/30 transition-colors">
         <td className="px-4 py-3">
-          <Link
-            to={`/users/${gen.telegram_id}`}
-            className="text-sm font-mono text-banana-500 hover:text-banana-400 flex items-center gap-1"
-          >
-            {gen.telegram_id}
-            <ExternalLink className="w-3 h-3 opacity-50" />
-          </Link>
+          <UserCell telegramId={gen.telegram_id} />
         </td>
         <td className="px-4 py-3">
           <div>
@@ -293,7 +372,7 @@ function TableSkeleton() {
               <div
                 className={cn(
                   'h-4 bg-surface-light rounded animate-pulse-soft',
-                  j === 2 ? 'w-40' : 'w-16',
+                  j === 0 ? 'w-32' : j === 2 ? 'w-40' : 'w-16',
                 )}
               />
             </td>
@@ -301,6 +380,47 @@ function TableSkeleton() {
         </tr>
       ))}
     </>
+  );
+}
+
+// --- Status Count Card ---
+
+function StatusCountCard({
+  label,
+  count,
+  icon: Icon,
+  color,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  icon: typeof Clock;
+  color: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'p-4 rounded-xl border transition-all text-left',
+        active
+          ? 'bg-banana-500/10 border-banana-500/50'
+          : 'bg-surface border-surface-lighter/30 hover:border-surface-lighter',
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center',
+          active ? 'bg-banana-500/20' : 'bg-surface-light')}>
+          <Icon className={cn('w-5 h-5', active ? 'text-banana-500' : color)} />
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-white">{count.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -332,7 +452,11 @@ export function GenerationsPage() {
   const generations = generationsQuery.data?.items ?? [];
   const total = generationsQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const queueLoading = queueQuery.isLoading;
+
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    setPage(0);
+  };
 
   return (
     <div className="space-y-6">
@@ -354,47 +478,48 @@ export function GenerationsPage() {
         </div>
       )}
 
-      {/* Queue Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard
-          icon={Activity}
-          label="Active"
-          value={queue?.active ?? 0}
-          loading={queueLoading}
+      {/* Status Count Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <StatusCountCard
+          label="All"
+          count={(queue?.completed ?? 0) + (queue?.failed ?? 0) + (queue?.running ?? 0) + (queue?.queued ?? 0)}
+          icon={Layers}
+          color="text-muted-foreground"
+          active={statusFilter === ''}
+          onClick={() => handleStatusFilter('')}
         />
-        <KpiCard
-          icon={Clock}
-          label="Queued"
-          value={queue?.queued ?? 0}
-          loading={queueLoading}
+        <StatusCountCard
+          label="Completed"
+          count={queue?.completed ?? 0}
+          icon={CheckCircle2}
+          color="text-success"
+          active={statusFilter === 'completed'}
+          onClick={() => handleStatusFilter('completed')}
         />
-        <KpiCard
-          icon={Play}
+        <StatusCountCard
+          label="Failed"
+          count={queue?.failed ?? 0}
+          icon={XCircle}
+          color="text-destructive"
+          active={statusFilter === 'failed'}
+          onClick={() => handleStatusFilter('failed')}
+        />
+        <StatusCountCard
           label="Running"
-          value={queue?.running ?? 0}
-          loading={queueLoading}
+          count={queue?.running ?? 0}
+          icon={Play}
+          color="text-info"
+          active={statusFilter === 'running'}
+          onClick={() => handleStatusFilter('running')}
         />
-      </div>
-
-      {/* Status Filter Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-surface rounded-lg w-fit">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => {
-              setStatusFilter(tab.value);
-              setPage(0);
-            }}
-            className={cn(
-              'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
-              statusFilter === tab.value
-                ? 'bg-banana-500 text-dark-500'
-                : 'text-muted-foreground hover:text-white hover:bg-surface-light',
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <StatusCountCard
+          label="Queued"
+          count={queue?.queued ?? 0}
+          icon={Clock}
+          color="text-warning"
+          active={statusFilter === 'queued'}
+          onClick={() => handleStatusFilter('queued')}
+        />
       </div>
 
       {/* Generations Table */}
@@ -404,7 +529,7 @@ export function GenerationsPage() {
             <thead>
               <tr className="border-b border-surface-lighter/50">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  User ID
+                  User
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Model
@@ -464,14 +589,4 @@ export function GenerationsPage() {
       )}
     </div>
   );
-}
-
-// --- Helpers ---
-
-function formatDate(dateStr: string): string {
-  try {
-    return format(parseISO(dateStr), 'MMM d, yyyy HH:mm');
-  } catch {
-    return dateStr;
-  }
 }

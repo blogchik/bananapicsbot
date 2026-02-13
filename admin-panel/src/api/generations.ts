@@ -27,6 +27,9 @@ export interface QueueStatus {
   active: number;
   queued: number;
   running: number;
+  completed: number;
+  failed: number;
+  pending: number;
 }
 
 export interface GenerationsParams {

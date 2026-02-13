@@ -796,23 +796,11 @@ class AdminService:
 
     async def get_generation_queue_status(self) -> Dict[str, int]:
         """Get current generation queue counts by status."""
-        query = (
-            select(
-                GenerationRequest.status,
-                func.count().label("count"),
-            )
-            .where(
-                GenerationRequest.status.in_(
-                    [
-                        GenerationStatus.pending,
-                        GenerationStatus.queued,
-                        GenerationStatus.running,
-                        GenerationStatus.configuring,
-                    ]
-                )
-            )
-            .group_by(GenerationRequest.status)
-        )
+        # Get all status counts
+        query = select(
+            GenerationRequest.status,
+            func.count().label("count"),
+        ).group_by(GenerationRequest.status)
         result = await self.session.execute(query)
         rows = result.all()
 
@@ -821,9 +809,17 @@ class AdminService:
             "configuring": 0,
             "queued": 0,
             "running": 0,
+            "completed": 0,
+            "failed": 0,
+            "active": 0,
         }
         for row_status, count in rows:
             status_counts[row_status.value] = count
+
+        # Active = pending + configuring + queued + running
+        status_counts["active"] = (
+            status_counts["pending"] + status_counts["configuring"] + status_counts["queued"] + status_counts["running"]
+        )
 
         return status_counts
 
