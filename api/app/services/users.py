@@ -19,16 +19,16 @@ def get_or_create_user(
     if user:
         # Update user profile if provided
         updated = False
-        if username is not None and hasattr(user, 'username'):
+        if username is not None and hasattr(user, "username"):
             user.username = username
             updated = True
-        if first_name is not None and hasattr(user, 'first_name'):
+        if first_name is not None and hasattr(user, "first_name"):
             user.first_name = first_name
             updated = True
-        if last_name is not None and hasattr(user, 'last_name'):
+        if last_name is not None and hasattr(user, "last_name"):
             user.last_name = last_name
             updated = True
-        if language_code is not None and hasattr(user, 'language_code'):
+        if language_code is not None and hasattr(user, "language_code"):
             user.language_code = language_code
             updated = True
         if not user.referral_code:
@@ -47,7 +47,7 @@ def get_or_create_user(
         username=username,
         first_name=first_name,
         last_name=last_name,
-        language_code=language_code or 'uz',
+        language_code=language_code or "uz",
     )
     referrer = None
     referral_applied = False

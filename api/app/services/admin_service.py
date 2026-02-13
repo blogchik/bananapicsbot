@@ -275,13 +275,10 @@ class AdminService:
 
     async def get_user_total_spent(self, user_id: int) -> int:
         """Get user's total credits spent on generations."""
-        query = (
-            select(func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0))
-            .where(
-                and_(
-                    LedgerEntry.user_id == user_id,
-                    LedgerEntry.entry_type == "generation",
-                )
+        query = select(func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0)).where(
+            and_(
+                LedgerEntry.user_id == user_id,
+                LedgerEntry.entry_type == "generation",
             )
         )
         result = await self.session.execute(query)
@@ -289,13 +286,10 @@ class AdminService:
 
     async def get_user_total_deposits(self, user_id: int) -> int:
         """Get user's total deposits (stars paid)."""
-        query = (
-            select(func.coalesce(func.sum(PaymentLedger.stars_amount), 0))
-            .where(
-                and_(
-                    PaymentLedger.user_id == user_id,
-                    PaymentLedger.is_refunded == False,
-                )
+        query = select(func.coalesce(func.sum(PaymentLedger.stars_amount), 0)).where(
+            and_(
+                PaymentLedger.user_id == user_id,
+                PaymentLedger.is_refunded.is_(False),
             )
         )
         result = await self.session.execute(query)
