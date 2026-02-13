@@ -1,7 +1,7 @@
 """Add ban_reason to users
 
 Revision ID: 2024_02_13_ban_reason
-Revises:
+Revises: 0020_add_more_settings
 Create Date: 2024-02-13 14:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "2024_02_13_ban_reason"
-down_revision: Union[str, None] = None
+down_revision: Union[str, None] = "0020_add_more_settings"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
