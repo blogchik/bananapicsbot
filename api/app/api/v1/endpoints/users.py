@@ -99,3 +99,31 @@ async def get_trial_status(
         trial_available=used_count == 0,
         used_count=used_count,
     )
+
+
+@router.get("/users/{telegram_id}/ban-status")
+async def get_ban_status(
+    telegram_id: int,
+    tg_user: TelegramUserDep,
+    db: Session = Depends(db_session_dep),
+):
+    """
+    Get user ban status.
+    Protected by Telegram initData authentication.
+    """
+    # Ensure user can only access their own ban status
+    if telegram_id != tg_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access ban status for another user",
+        )
+
+    user = get_user_by_telegram_id(db, telegram_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "telegram_id": telegram_id,
+        "is_banned": user.is_banned,
+        "ban_reason": user.ban_reason,
+    }

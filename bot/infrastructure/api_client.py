@@ -197,6 +197,18 @@ class ApiClient:
             payload["referral_code"] = referral_code
         return await self._request("POST", "/api/v1/users/sync", json=payload, telegram_user_id=telegram_id)
 
+    async def check_user_ban(self, telegram_id: int) -> dict | None:
+        """Check if user is banned."""
+        try:
+            data = await self._request(
+                "GET",
+                f"/api/v1/users/{telegram_id}/ban-status",
+                telegram_user_id=telegram_id,
+            )
+            return data
+        except Exception:
+            return None
+
     async def get_balance(self, telegram_id: int) -> int:
         """Get user balance."""
         data = await self._request("GET", f"/api/v1/users/{telegram_id}/balance", telegram_user_id=telegram_id)

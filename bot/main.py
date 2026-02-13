@@ -27,6 +27,7 @@ from handlers import setup_handlers
 from infrastructure.storage import create_fsm_storage
 from locales import LocaleManager, TranslationKey, get_translator
 from middlewares import (
+    BanCheckMiddleware,
     ErrorHandlerMiddleware,
     I18nMiddleware,
     LoggingMiddleware,
@@ -70,6 +71,10 @@ async def setup_middlewares(dp: Dispatcher) -> None:
     # User context injection
     dp.message.middleware(UserContextMiddleware())
     dp.callback_query.middleware(UserContextMiddleware())
+
+    # Ban check middleware (after user context)
+    dp.message.middleware(BanCheckMiddleware())
+    dp.callback_query.middleware(BanCheckMiddleware())
 
 
 async def on_startup(bot: Bot) -> None:

@@ -90,6 +90,14 @@ The admin panel uses **Telegram Login Widget** authentication:
 - Reason tracking
 - Balance history
 
+**Ban System:**
+- Ban users with optional reason
+- Banned users cannot use the bot
+- Ban notification sent to user in their language (uz/ru/en)
+- Ban reason displayed in admin panel
+- Unban restores full access
+- Unban notification sent to user
+
 ### 3. Broadcast Management
 
 **Create Broadcast:**

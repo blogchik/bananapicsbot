@@ -124,12 +124,16 @@ Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <j
 ### User Management
 
 - `GET /api/v1/admin/users?query=&offset=0&limit=50` - userlarni qidirish (telegram_id yoki referral_code)
-- `GET /api/v1/admin/users/{telegram_id}` - user tafsilotlari
+- `GET /api/v1/admin/users/{telegram_id}` - user tafsilotlari (Telegram API orqali profile, avatar oladi)
 - `GET /api/v1/admin/users/count?filter_type=...` - filter bo'yicha user soni
-- `POST /api/v1/admin/users/{telegram_id}/ban` - userni ban qilish
+- `POST /api/v1/admin/users/{telegram_id}/ban` - userni ban qilish (body: `{reason?: string}`)
 - `POST /api/v1/admin/users/{telegram_id}/unban` - userni unban qilish
-- `GET /api/v1/admin/users/{telegram_id}/generations?limit=10` - user generatsiyalari
+- `GET /api/v1/admin/users/{telegram_id}/generations?limit=10` - user generatsiyalari (rasmlar bilan)
 - `GET /api/v1/admin/users/{telegram_id}/payments?limit=10` - user to'lovlari
+
+### User Endpoints (Protected)
+
+- `GET /api/v1/users/{telegram_id}/ban-status` - user ban holatini tekshirish (is_banned, ban_reason)
 
 ### Credits
 
@@ -167,6 +171,24 @@ Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <j
 
 - `GET /api/v1/admin/settings` - barcha tizim sozlamalari
 - `PATCH /api/v1/admin/settings` - sozlamalarni yangilash `{key: value, ...}`
+
+**Mavjud sozlamalar:**
+- `trial_generations_limit` - bepul trial generatsiyalar soni
+- `stars_exchange_numerator` / `stars_exchange_denominator` - Stars → Credits kurs
+- `stars_min_amount` - minimal Stars miqdori
+- `referral_bonus_percent` - referral bonus foizi
+- `referral_join_bonus` - yangi referral qo'shilganda bonus
+- `max_parallel_generations_per_user` - parallel generatsiya limiti
+- `generation_price_markup` - narx qo'shimchasi (credits)
+- `generation_poll_interval_seconds` - generation status tekshirish intervali
+- `generation_poll_max_duration_seconds` - maksimal kutish vaqti
+- `rate_limit_rps` - API rate limit (requests per second)
+- `rate_limit_burst` - burst limit
+- `wavespeed_timeout_seconds` - Wavespeed API timeout
+- `wavespeed_min_balance` - minimal Wavespeed balans uchun alert
+- `wavespeed_balance_cache_ttl_seconds` - Wavespeed balance cache TTL
+- `redis_cache_ttl_seconds` - default Redis cache TTL
+- `redis_active_generation_ttl_seconds` - active generation data TTL
 
 ## Asosiy Endpointlar
 

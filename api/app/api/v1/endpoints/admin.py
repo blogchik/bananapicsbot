@@ -261,7 +261,7 @@ async def search_users(
                     language_code="uz",
                     is_active=True,
                     is_banned=user.is_banned,
-                    ban_reason=None,
+                    ban_reason=user.ban_reason,
                     trial_remaining=max(0, trial_limit - trial_used),
                     balance=Decimal(balance),
                     referrer_id=user.referred_by_id,
@@ -343,7 +343,7 @@ async def get_user(
             language_code="uz",
             is_active=True,
             is_banned=user.is_banned,
-            ban_reason=None,
+            ban_reason=user.ban_reason,
             trial_remaining=max(0, trial_limit - trial_used),
             balance=Decimal(balance),
             referrer_id=user.referred_by_id,
@@ -368,19 +368,40 @@ async def get_user(
 @router.post("/users/{telegram_id}/ban")
 async def ban_user(
     telegram_id: int,
+    data: dict | None = None,
     session: AsyncSession = Depends(get_async_session),
     admin: dict = Depends(require_admin),
 ):
-    """Ban a user."""
+    """Ban a user with optional reason."""
     try:
         service = AdminService(session)
         user = await service.get_user_by_telegram_id(telegram_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
+        ban_reason = data.get("reason") if data else None
         user.is_banned = True
+        user.ban_reason = ban_reason
         await session.commit()
-        return {"success": True, "telegram_id": telegram_id, "is_banned": True}
+
+        # Send ban notification to user via bot
+        settings = get_settings()
+        if settings.bot_token:
+            try:
+                await _send_ban_notification(
+                    telegram_id=telegram_id,
+                    bot_token=settings.bot_token,
+                    reason=ban_reason,
+                )
+            except Exception as e:
+                logger.warning("Failed to send ban notification", error=str(e))
+
+        return {
+            "success": True,
+            "telegram_id": telegram_id,
+            "is_banned": True,
+            "ban_reason": ban_reason,
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -402,13 +423,73 @@ async def unban_user(
             raise HTTPException(status_code=404, detail="User not found")
 
         user.is_banned = False
+        user.ban_reason = None
         await session.commit()
+
+        # Send unban notification to user via bot
+        settings = get_settings()
+        if settings.bot_token:
+            try:
+                await _send_unban_notification(
+                    telegram_id=telegram_id,
+                    bot_token=settings.bot_token,
+                )
+            except Exception as e:
+                logger.warning("Failed to send unban notification", error=str(e))
+
         return {"success": True, "telegram_id": telegram_id, "is_banned": False}
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("Failed to unban user", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _send_ban_notification(telegram_id: int, bot_token: str, reason: str | None) -> None:
+    """Send ban notification to user."""
+    import httpx
+
+    # Messages in different languages
+    messages = {
+        "en": "⛔️ You have been banned from using this bot.",
+        "ru": "⛔️ Вы были заблокированы в этом боте.",
+        "uz": "⛔️ Siz ushbu botdan foydalanishdan bloklangansiz.",
+    }
+
+    reason_texts = {
+        "en": "Reason: ",
+        "ru": "Причина: ",
+        "uz": "Sabab: ",
+    }
+
+    # Try to detect user language (default to English)
+    # For now, send in all languages
+    text = f"{messages['uz']}\n{messages['ru']}\n{messages['en']}"
+    if reason:
+        text += f"\n\n{reason_texts['uz']}{reason}\n{reason_texts['ru']}{reason}\n{reason_texts['en']}{reason}"
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        await client.post(
+            f"https://api.telegram.org/bot{bot_token}/sendMessage",
+            json={"chat_id": telegram_id, "text": text},
+        )
+
+
+async def _send_unban_notification(telegram_id: int, bot_token: str) -> None:
+    """Send unban notification to user."""
+    import httpx
+
+    text = (
+        "✅ Sizning blokingiz olib tashlandi. Botdan foydalanishingiz mumkin.\n"
+        "✅ Ваша блокировка снята. Вы можете использовать бота.\n"
+        "✅ You have been unbanned. You can use the bot again."
+    )
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        await client.post(
+            f"https://api.telegram.org/bot{bot_token}/sendMessage",
+            json={"chat_id": telegram_id, "text": text},
+        )
 
 
 # ============ Credits Management ============

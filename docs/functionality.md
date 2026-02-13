@@ -7,6 +7,7 @@
 - **Balans to'ldirish:** Telegram Stars orqali (min 70 ⭐, 6 ta preset + custom). Kurs ko'rsatiladi, preset tugmalarda Stars → credit ko'rinadi, to'lovdan keyin qabul qilingan Stars va qo'shilgan credit xabarda beriladi. To'lovlar ledgerda saqlanadi.
 - **Admin buyruqlar:** faqat admin user (`686980246`) uchun `/pay` bilan kredit qo'shish va `/refund` bilan Stars refund.
 - **Stars Refund:** Admin user ID kiritadi, Telegram API dan unrefunded to'lovlar olinadi, har biri button sifatida ko'rsatiladi (sana, vaqt, summa), admin tanlangan to'lovni refund qiladi.
+- **Ban tizimi:** Admin paneldan user ban qilish mumkin (ixtiyoriy sabab bilan). Banned user botni ishlata olmaydi - har bir so'rovda API orqali ban holati tekshiriladi. Ban qilinganda userga xabar yuboriladi (uz/ru/en tillarida). Unban qilganda ham xabar yuboriladi.
 - **Referral:** har bir userda referral link bor. Yangi referral qo'shilganda referrerga darhol 20 credit beriladi. Referral orqali kelgan user to'lov qilsa 10% (round up) bonus referrerga darhol tushadi. Bitta user faqat bitta referrerni oladi va o'ziga referal bo'la olmaydi. Referral faqat yangi userlar uchun ishlaydi. User referral soni va jami bonusni ko'radi (kimlar ekanligi ko'rsatilmaydi). Yangi referral bo'lganda referrerga xabar boradi.
 - **Generatsiya:** prompt va reference rasm(lar) bilan menyu ochiladi, reference rasm foto yoki fayl ko'rinishida yuborilishi mumkin (faqat image, 1-10 ta, doim prompt bilan birga), model/size/aspect ratio/resolution tanlanadi (size faqat `seedream-v4` va `qwen`, aspect ratio `nano-banana` va `nano-banana-pro`, resolution faqat `nano-banana-pro`), status backend Celery poller orqali kuzatilib, tayyor bo'lganda status xabari o'chadi va natija prompt xabariga reply bo'ladi.
 - **Parallel limit:** bitta user uchun bir paytda maksimal `MAX_PARALLEL_GENERATIONS_PER_USER` ta generatsiya ruxsat etiladi (default: `2`).
@@ -68,12 +69,24 @@ React 18, TypeScript, Vite, TailwindCSS, shadcn/ui, Recharts, TanStack Query, Zu
 ### Sahifalar
 
 - **Dashboard** — KPI kartochkalar (users, generations, revenue, payments), kunlik/haftalik grafiklar (user growth, generation volume, revenue trend, models breakdown), auto-refresh 60s
-- **Users** — qidiruv (telegram_id, referral_code), jadval (balance, generations, created, status), ban/unban, credit adjustment, user detail (generatsiyalar, to'lovlar, referral info), CSV eksport
-- **Broadcasts** — yaratish (content type, filter, inline button), ro'yxat, progress monitoring (sent/failed/blocked), start/cancel
+- **Users** — qidiruv (telegram_id, referral_code), jadval (avatar, ism, username, balance, generations, created, status), Telegram API orqali real-time profil, ban/unban (sabab bilan), credit adjustment, user detail (generatsiyalar rasmlar bilan, to'lovlar, referral info)
+- **Broadcasts** — yaratish (content type, filter, inline button), ro'yxat, progress monitoring (sent/failed/blocked) — completed status 100% ko'rsatadi, start/cancel
 - **Models** — barcha modellar (active + inactive), narx o'zgartirish, yoqish/o'chirish toggle, generation count
-- **Payments** — barcha to'lovlar ro'yxati, kunlik statistika grafik, KPI cards
-- **Generations** — barcha generatsiyalar (status filter), queue monitoring (pending/queued/running), auto-refresh 10s
-- **Settings** — tizim sozlamalari (trial limit, exchange rate, referral bonus, parallel limit, price markup)
+- **Payments** — barcha to'lovlar ro'yxati (user linklar bilan), kunlik statistika grafik, KPI cards
+- **Generations** — barcha generatsiyalar (status filter), thumbnail rasmlar row'da, modal bilan kattalashtirish, queue monitoring (pending/queued/running), auto-refresh 10s
+- **Settings** — kengaytirilgan tizim sozlamalari:
+  - Trial Settings: trial_generations_limit
+  - Pricing & Credits: generation_price_markup, stars_exchange_*, stars_min_amount
+  - Referral Program: referral_bonus_percent, referral_join_bonus
+  - Generation Limits: max_parallel, poll_interval, poll_max_duration
+  - Rate Limits: rate_limit_rps, rate_limit_burst
+  - Wavespeed API: timeout, min_balance, balance_cache_ttl
+  - Cache & Performance: redis_cache_ttl, redis_active_generation_ttl
+
+### Login
+
+- Telegram Login Widget (HMAC-SHA256)
+- Admin bo'lmagan userlar "Siz admin emassiz / You are not an admin" xabarini ko'radi
 
 ### Xavfsizlik
 

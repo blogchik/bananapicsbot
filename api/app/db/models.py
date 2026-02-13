@@ -28,6 +28,7 @@ class User(Base):
     referral_code: Mapped[str] = mapped_column(String(16), unique=True, index=True, nullable=False)
     referred_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    ban_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 

@@ -72,29 +72,28 @@ function ImagePreviewModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-10 h-10 rounded-lg bg-surface-light/80 flex items-center justify-center hover:bg-surface-lighter transition-colors z-10"
+      >
+        <X className="w-5 h-5 text-white" />
+      </button>
       <div
-        className="relative bg-surface rounded-xl p-4 max-w-4xl w-full max-h-[90vh] overflow-auto"
+        className="relative flex flex-wrap gap-4 justify-center items-center max-h-[90vh] overflow-auto p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-surface-light flex items-center justify-center hover:bg-surface-lighter transition-colors"
-        >
-          <X className="w-4 h-4 text-white" />
-        </button>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {images.map((url, i) => (
-            <img
-              key={i}
-              src={url}
-              alt={`Result ${i + 1}`}
-              className="rounded-lg w-full h-auto"
-            />
-          ))}
-        </div>
+        {images.map((url, i) => (
+          <img
+            key={i}
+            src={url}
+            alt={`Result ${i + 1}`}
+            className="rounded-lg max-h-[80vh] object-contain shadow-xl"
+            style={{ maxWidth: 'min(100%, 800px)' }}
+          />
+        ))}
       </div>
     </div>
   );

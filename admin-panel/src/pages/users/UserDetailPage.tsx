@@ -79,11 +79,13 @@ function StatItem({
   label,
   value,
   className,
+  noFormat = false,
 }: {
   icon: typeof User;
   label: string;
   value: string | number;
   className?: string;
+  noFormat?: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -92,7 +94,7 @@ function StatItem({
         <span className="text-xs text-muted-foreground">{label}</span>
       </div>
       <p className={cn('text-sm font-medium text-white', className)}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
+        {typeof value === 'number' && !noFormat ? value.toLocaleString() : value}
       </p>
     </div>
   );
@@ -304,7 +306,7 @@ export function UserDetailPage() {
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            <StatItem icon={Hash} label="Telegram ID" value={user.telegram_id} className="font-mono text-banana-500" />
+            <StatItem icon={Hash} label="Telegram ID" value={user.telegram_id} className="font-mono text-banana-500" noFormat />
             <StatItem icon={Wallet} label="Balance" value={`${user.balance} credits`} />
             <StatItem icon={Sparkles} label="Trial Remaining" value={user.trial_remaining} />
             <StatItem icon={Image} label="Generations" value={user.generation_count} />

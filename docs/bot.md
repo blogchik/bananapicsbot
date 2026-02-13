@@ -10,7 +10,7 @@ bot/
 ├── core/                # Configuration, logging, DI container
 ├── infrastructure/      # API client, Redis client, FSM storage
 ├── locales/            # Internationalization (uz, ru, en)
-├── middlewares/        # Logging, error handling, i18n, throttling
+├── middlewares/        # Logging, error handling, i18n, throttling, ban check
 ├── keyboards/          # Inline keyboard builders
 ├── states/             # FSM states
 ├── filters/            # Admin and chat type filters
@@ -35,6 +35,7 @@ bot/
 - **Rate limiting**: Redis-based sliding window throttling
 - **DI Container**: Singleton pattern for shared resources
 - **Professional error handling**: Centralized error middleware with user-friendly messages
+- **Ban system**: BanCheckMiddleware checks user ban status before processing any request
 - **Admin panel**: Full-featured inline admin with stats, user management, credits, broadcast, refund (Web admin panel ham mavjud — [functionality.md](functionality.md) ga qarang)
 - **Generation timeout**: 5-minute timeout protection with automatic cleanup
 - **Translation system**: All user-facing text uses translation keys for full localization
