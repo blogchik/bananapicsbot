@@ -5,7 +5,6 @@ import {
   Gift,
   DollarSign,
   Users,
-  Gauge,
   Save,
   Loader2,
   CheckCircle2,
