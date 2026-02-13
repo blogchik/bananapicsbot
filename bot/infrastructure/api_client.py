@@ -190,23 +190,11 @@ class ApiClient:
         self,
         telegram_id: int,
         referral_code: str | None = None,
-        username: str | None = None,
-        first_name: str | None = None,
-        last_name: str | None = None,
-        language_code: str | None = None,
     ) -> dict:
         """Sync user with API."""
         payload = {"telegram_id": telegram_id}
         if referral_code:
             payload["referral_code"] = referral_code
-        if username:
-            payload["username"] = username
-        if first_name:
-            payload["first_name"] = first_name
-        if last_name:
-            payload["last_name"] = last_name
-        if language_code:
-            payload["language_code"] = language_code
         return await self._request("POST", "/api/v1/users/sync", json=payload, telegram_user_id=telegram_id)
 
     async def get_balance(self, telegram_id: int) -> int:

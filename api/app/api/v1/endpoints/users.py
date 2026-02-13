@@ -36,15 +36,7 @@ async def sync_user(
         referral_code = referral_code[2:]
     referral_code = referral_code.strip() or None
 
-    user, referrer, referral_applied = get_or_create_user(
-        db,
-        payload.telegram_id,
-        referral_code,
-        username=payload.username,
-        first_name=payload.first_name,
-        last_name=payload.last_name,
-        language_code=payload.language_code,
-    )
+    user, referrer, referral_applied = get_or_create_user(db, payload.telegram_id, referral_code)
     settings = get_settings()
     return UserSyncOut(
         id=user.id,

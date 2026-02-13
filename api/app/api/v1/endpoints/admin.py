@@ -27,6 +27,7 @@ from app.schemas.admin import (
 from app.services.admin_auth import create_admin_token, verify_telegram_login
 from app.services.admin_service import AdminService
 from app.services.broadcast_service import BroadcastService
+from app.services.telegram_service import get_telegram_user_profile, get_telegram_user_profiles_batch
 
 logger = get_logger(__name__)
 
@@ -232,31 +233,43 @@ async def search_users(
             limit=limit,
         )
 
+        # Fetch Telegram profiles in batch
+        telegram_ids = [user.telegram_id for user in users]
+        profiles = await get_telegram_user_profiles_batch(telegram_ids)
+
+        # Get trial service for trial_remaining
+        settings = get_settings()
+        trial_limit = settings.trial_generations_limit
+
         result_users = []
         for user in users:
             balance = await service.get_user_balance(user.id)
             referral_count = await service.get_user_referral_count(user.id)
             gen_count = await service.get_user_generation_count(user.id)
+            trial_used = await service.get_user_trial_used(user.id)
+
+            # Get Telegram profile
+            profile = profiles.get(user.telegram_id, {})
 
             result_users.append(
                 AdminUserOut(
                     telegram_id=user.telegram_id,
-                    username=getattr(user, "username", None),
-                    first_name=getattr(user, "first_name", None),
-                    last_name=getattr(user, "last_name", None),
-                    photo_url=getattr(user, "photo_url", None),
-                    language_code=getattr(user, "language_code", None) or "uz",
+                    username=profile.get("username"),
+                    first_name=profile.get("first_name"),
+                    last_name=profile.get("last_name"),
+                    photo_url=profile.get("photo_url"),
+                    language_code="uz",
                     is_active=True,
-                    is_banned=getattr(user, "is_banned", False),
-                    ban_reason=getattr(user, "ban_reason", None),
-                    trial_remaining=getattr(user, "trial_remaining", 3),
+                    is_banned=user.is_banned,
+                    ban_reason=None,
+                    trial_remaining=max(0, trial_limit - trial_used),
                     balance=Decimal(balance),
                     referrer_id=user.referred_by_id,
-                    referral_code=getattr(user, "referral_code", None),
+                    referral_code=user.referral_code,
                     referral_count=referral_count,
                     generation_count=gen_count,
                     created_at=user.created_at,
-                    last_active_at=getattr(user, "last_active_at", None),
+                    last_active_at=user.last_active_at,
                 )
             )
 
@@ -307,32 +320,40 @@ async def get_user(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
+        # Fetch Telegram profile
+        profile = await get_telegram_user_profile(telegram_id)
+
+        # Get user stats
         balance = await service.get_user_balance(user.id)
         referral_count = await service.get_user_referral_count(user.id)
         gen_count = await service.get_user_generation_count(user.id)
         total_spent = await service.get_user_total_spent(user.id)
         total_deposits = await service.get_user_total_deposits(user.id)
+        trial_used = await service.get_user_trial_used(user.id)
+
+        settings = get_settings()
+        trial_limit = settings.trial_generations_limit
 
         return AdminUserOut(
             telegram_id=user.telegram_id,
-            username=getattr(user, "username", None),
-            first_name=getattr(user, "first_name", None),
-            last_name=getattr(user, "last_name", None),
-            photo_url=getattr(user, "photo_url", None),
-            language_code=getattr(user, "language_code", None) or "uz",
+            username=profile.get("username"),
+            first_name=profile.get("first_name"),
+            last_name=profile.get("last_name"),
+            photo_url=profile.get("photo_url"),
+            language_code="uz",
             is_active=True,
-            is_banned=getattr(user, "is_banned", False),
-            ban_reason=getattr(user, "ban_reason", None),
-            trial_remaining=getattr(user, "trial_remaining", 3),
+            is_banned=user.is_banned,
+            ban_reason=None,
+            trial_remaining=max(0, trial_limit - trial_used),
             balance=Decimal(balance),
             referrer_id=user.referred_by_id,
-            referral_code=getattr(user, "referral_code", None),
+            referral_code=user.referral_code,
             referral_count=referral_count,
             generation_count=gen_count,
             total_spent=total_spent,
             total_deposits=total_deposits,
             created_at=user.created_at,
-            last_active_at=getattr(user, "last_active_at", None),
+            last_active_at=user.last_active_at,
         )
     except HTTPException:
         raise

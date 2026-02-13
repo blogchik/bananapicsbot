@@ -25,16 +25,9 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
-    username: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    language_code: Mapped[str | None] = mapped_column(String(10), nullable=True, default="uz")
     referral_code: Mapped[str] = mapped_column(String(16), unique=True, index=True, nullable=False)
     referred_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
-    ban_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    trial_remaining: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
     last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 

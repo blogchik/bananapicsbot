@@ -26,21 +26,10 @@ class UserService:
     async def sync_user(
         telegram_id: int,
         referral_code: str | None = None,
-        username: str | None = None,
-        first_name: str | None = None,
-        last_name: str | None = None,
-        language_code: str | None = None,
     ) -> dict:
         """Sync user with API."""
         container = get_container()
-        return await container.api_client.sync_user(
-            telegram_id,
-            referral_code=referral_code,
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            language_code=language_code,
-        )
+        return await container.api_client.sync_user(telegram_id, referral_code)
 
     @staticmethod
     async def get_balance(telegram_id: int) -> int:

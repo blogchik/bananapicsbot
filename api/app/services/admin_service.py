@@ -273,6 +273,14 @@ class AdminService:
         result = await self.session.execute(query)
         return result.scalar() or 0
 
+    async def get_user_trial_used(self, user_id: int) -> int:
+        """Get user's trial generations used count."""
+        from app.db.models import TrialUse
+
+        query = select(func.count()).select_from(TrialUse).where(TrialUse.user_id == user_id)
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
     async def get_user_total_spent(self, user_id: int) -> int:
         """Get user's total credits spent on generations."""
         query = select(func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0)).where(
