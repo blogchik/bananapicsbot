@@ -16,7 +16,6 @@ import {
   TrendingUp,
   Zap,
   Server,
-  BarChart3,
 } from 'lucide-react';
 import { adminApi } from '@/api/admin';
 import { generationsApi } from '@/api/generations';
@@ -252,15 +251,15 @@ export function DashboardPage() {
           loading={isLoading}
         />
         <KpiCard
-          icon={BarChart3}
-          label="Avg. Gen Time"
-          value={stats?.avg_generation_time ? `${stats.avg_generation_time.toFixed(1)}s` : 'N/A'}
+          icon={CheckCircle2}
+          label="Completed"
+          value={stats?.completed_generations ?? 0}
           loading={isLoading}
         />
         <KpiCard
-          icon={TrendingUp}
-          label="Today's Generations"
-          value={stats?.today_generations ?? 0}
+          icon={XCircle}
+          label="Failed"
+          value={stats?.failed_generations ?? 0}
           loading={isLoading}
         />
       </div>
