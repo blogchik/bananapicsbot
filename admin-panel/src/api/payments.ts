@@ -5,7 +5,7 @@ import type { DailyDataPoint } from './admin';
 
 export interface Payment {
   id: number;
-  user_id: number;
+  telegram_id: number;
   provider: string;
   currency: string;
   stars_amount: number;

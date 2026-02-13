@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { authApi, type TelegramAuthData } from '@/api/auth';
 import { setToken } from '@/api/client';
-import { Shield, AlertCircle } from 'lucide-react';
+import { Shield, AlertCircle, ShieldX, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 declare global {
   interface Window {
@@ -16,6 +17,7 @@ export function LoginPage() {
   const { isAuthenticated, setAuth } = useAuthStore();
   const widgetRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'not_admin' | 'general' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const botUsername = import.meta.env.VITE_BOT_USERNAME;
@@ -24,17 +26,25 @@ export function LoginPage() {
     async (user: TelegramAuthData) => {
       setIsLoading(true);
       setError(null);
+      setErrorType(null);
       try {
         const response = await authApi.login(user);
         setToken(response.access_token);
         setAuth(response.access_token, response.admin);
         navigate('/', { replace: true });
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Authentication failed. You may not have admin access.',
-        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        const isNotAdmin = errorMessage.toLowerCase().includes('not an admin') ||
+          errorMessage.toLowerCase().includes('403') ||
+          errorMessage.toLowerCase().includes('forbidden');
+
+        if (isNotAdmin) {
+          setErrorType('not_admin');
+          setError('You are not an admin');
+        } else {
+          setErrorType('general');
+          setError(errorMessage || 'Authentication failed');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -127,9 +137,37 @@ export function LoginPage() {
             )}
 
             {error && (
-              <div className="flex items-start gap-2 text-destructive bg-destructive-muted rounded-lg px-4 py-3 w-full animate-slide-in-up">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span className="text-sm">{error}</span>
+              <div className={cn(
+                'w-full rounded-xl p-4 animate-slide-in-up',
+                errorType === 'not_admin'
+                  ? 'bg-gradient-to-br from-destructive/10 to-destructive/5 border border-destructive/20'
+                  : 'bg-destructive-muted'
+              )}>
+                {errorType === 'not_admin' ? (
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                      <ShieldX className="w-7 h-7 text-destructive" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-destructive mb-1">
+                        Access Denied
+                      </h3>
+                      <p className="text-sm text-destructive/80">
+                        Siz admin emassiz / You are not an admin
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your Telegram ID is not in the admin list.
+                      <br />
+                      Contact the bot owner for access.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 text-destructive">
+                    <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{error}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

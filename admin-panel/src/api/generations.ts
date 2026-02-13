@@ -5,12 +5,14 @@ import { api } from './client';
 export interface AdminGeneration {
   id: number;
   public_id: string;
-  user_telegram_id: number;
+  telegram_id: number;
   model_key: string;
   model_name: string;
   prompt: string;
+  full_prompt: string;
   status: string;
   cost: number | null;
+  result_urls: string[];
   error_message: string | null;
   created_at: string;
   completed_at: string | null;

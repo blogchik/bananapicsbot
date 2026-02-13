@@ -31,9 +31,16 @@ async def start_handler(
         if len(parts) > 1 and parts[1].startswith("r_"):
             referral_code = parts[1][2:].strip() or None
 
-    # Sync user with API
+    # Sync user with API (including profile data)
     try:
-        result = await UserService.sync_user(user.id, referral_code=referral_code)
+        result = await UserService.sync_user(
+            user.id,
+            referral_code=referral_code,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            language_code=user.language_code,
+        )
 
         # Notify referrer if new referral applied
         if result.get("referral_applied") and result.get("referrer_telegram_id"):

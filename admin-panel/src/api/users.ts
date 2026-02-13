@@ -7,14 +7,19 @@ export interface AdminUser {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
+  photo_url: string | null;
+  language_code: string | null;
   is_active: boolean;
   is_banned: boolean;
   ban_reason: string | null;
   trial_remaining: number;
   balance: number;
   referrer_id: number | null;
+  referral_code: string | null;
   referral_count: number;
   generation_count: number;
+  total_spent: number;
+  total_deposits: number;
   created_at: string;
   last_active_at: string | null;
 }

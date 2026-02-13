@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db.models import (
     GenerationRequest,
+    GenerationResult,
     GenerationStatus,
     LedgerEntry,
     ModelCatalog,
@@ -269,6 +270,34 @@ class AdminService:
     async def get_user_referral_count(self, user_id: int) -> int:
         """Get user's referral count."""
         query = select(func.count()).select_from(User).where(User.referred_by_id == user_id)
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
+    async def get_user_total_spent(self, user_id: int) -> int:
+        """Get user's total credits spent on generations."""
+        query = (
+            select(func.coalesce(func.abs(func.sum(LedgerEntry.amount)), 0))
+            .where(
+                and_(
+                    LedgerEntry.user_id == user_id,
+                    LedgerEntry.entry_type == "generation",
+                )
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
+    async def get_user_total_deposits(self, user_id: int) -> int:
+        """Get user's total deposits (stars paid)."""
+        query = (
+            select(func.coalesce(func.sum(PaymentLedger.stars_amount), 0))
+            .where(
+                and_(
+                    PaymentLedger.user_id == user_id,
+                    PaymentLedger.is_refunded == False,
+                )
+            )
+        )
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -725,6 +754,12 @@ class AdminService:
 
         items = []
         for gen, telegram_id, model_name, model_key in rows:
+            # Get result images
+            result_query = select(GenerationResult).where(GenerationResult.request_id == gen.id).limit(4)
+            result_res = await self.session.execute(result_query)
+            results = result_res.scalars().all()
+            result_urls = [r.image_url for r in results if r.image_url]
+
             items.append(
                 {
                     "id": gen.id,
@@ -733,8 +768,10 @@ class AdminService:
                     "model_name": model_name,
                     "model_key": model_key,
                     "prompt": gen.prompt[:100] if gen.prompt else "",
+                    "full_prompt": gen.prompt,
                     "status": gen.status.value if gen.status else "unknown",
                     "cost": gen.cost,
+                    "result_urls": result_urls,
                     "created_at": gen.created_at.isoformat() if gen.created_at else None,
                     "completed_at": gen.completed_at.isoformat() if gen.completed_at else None,
                 }

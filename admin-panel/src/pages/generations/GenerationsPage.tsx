@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   Clock,
@@ -11,6 +12,9 @@ import {
   ChevronUp,
   AlertCircle,
   Image,
+  ExternalLink,
+  Eye,
+  X,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -58,23 +62,68 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// --- Image Preview Modal ---
+
+function ImagePreviewModal({
+  images,
+  onClose,
+}: {
+  images: string[];
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-surface rounded-xl p-4 max-w-4xl w-full max-h-[90vh] overflow-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-surface-light flex items-center justify-center hover:bg-surface-lighter transition-colors"
+        >
+          <X className="w-4 h-4 text-white" />
+        </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {images.map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt={`Result ${i + 1}`}
+              className="rounded-lg w-full h-auto"
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Expandable Prompt Row ---
 
 function GenerationRow({ gen }: { gen: AdminGeneration }) {
   const [expanded, setExpanded] = useState(false);
+  const [showImages, setShowImages] = useState(false);
   const maxLength = 60;
   const isLongPrompt = gen.prompt.length > maxLength;
   const displayPrompt = expanded || !isLongPrompt
     ? gen.prompt
     : gen.prompt.slice(0, maxLength) + '...';
+  const hasImages = gen.result_urls && gen.result_urls.length > 0;
 
   return (
     <>
       <tr className="border-b border-surface-lighter/30 hover:bg-surface-light/30 transition-colors">
         <td className="px-4 py-3">
-          <span className="text-sm font-mono text-white">
-            {gen.user_telegram_id}
-          </span>
+          <Link
+            to={`/users/${gen.telegram_id}`}
+            className="text-sm font-mono text-banana-500 hover:text-banana-400 flex items-center gap-1"
+          >
+            {gen.telegram_id.toLocaleString()}
+            <ExternalLink className="w-3 h-3 opacity-50" />
+          </Link>
         </td>
         <td className="px-4 py-3">
           <div>
@@ -111,19 +160,38 @@ function GenerationRow({ gen }: { gen: AdminGeneration }) {
           </span>
         </td>
         <td className="px-4 py-3">
+          {hasImages ? (
+            <button
+              onClick={() => setShowImages(true)}
+              className="flex items-center gap-1.5 text-sm text-banana-500 hover:text-banana-400"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              {gen.result_urls.length} image{gen.result_urls.length > 1 ? 's' : ''}
+            </button>
+          ) : (
+            <span className="text-sm text-muted">--</span>
+          )}
+        </td>
+        <td className="px-4 py-3">
           <span className="text-sm text-muted-foreground">
             {formatDate(gen.created_at)}
           </span>
         </td>
       </tr>
-      {expanded && gen.error_message && (
-        <tr className="border-b border-surface-lighter/30 bg-destructive-muted/30">
-          <td colSpan={6} className="px-4 py-2">
-            <p className="text-xs text-destructive font-mono">
-              Error: {gen.error_message}
+      {expanded && gen.full_prompt && (
+        <tr className="border-b border-surface-lighter/30 bg-surface-light/20">
+          <td colSpan={7} className="px-4 py-3">
+            <p className="text-sm text-white whitespace-pre-wrap">
+              {gen.full_prompt}
             </p>
           </td>
         </tr>
+      )}
+      {showImages && hasImages && (
+        <ImagePreviewModal
+          images={gen.result_urls}
+          onClose={() => setShowImages(false)}
+        />
       )}
     </>
   );
@@ -210,7 +278,7 @@ function TableSkeleton() {
     <>
       {Array.from({ length: 8 }).map((_, i) => (
         <tr key={i} className="border-b border-surface-lighter/30">
-          {Array.from({ length: 6 }).map((_, j) => (
+          {Array.from({ length: 7 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
               <div
                 className={cn(
@@ -341,6 +409,9 @@ export function GenerationsPage() {
                   Cost
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Images
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Date
                 </th>
               </tr>
@@ -350,7 +421,7 @@ export function GenerationsPage() {
                 <TableSkeleton />
               ) : generations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
+                  <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center">
                       <div className="w-12 h-12 rounded-xl bg-accent-muted flex items-center justify-center mb-3">
                         <Image className="w-6 h-6 text-banana-500" />

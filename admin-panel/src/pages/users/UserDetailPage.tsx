@@ -16,6 +16,11 @@ import {
   Hash,
   Clock,
   Sparkles,
+  Globe,
+  Link2,
+  TrendingDown,
+  ExternalLink,
+  Star,
 } from 'lucide-react';
 import { usersApi, type UserGeneration, type UserPayment } from '@/api/users';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -221,14 +226,28 @@ export function UserDetailPage() {
           {/* User header */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-accent-muted flex items-center justify-center">
-                <User className="w-7 h-7 text-banana-500" />
-              </div>
+              {/* Avatar */}
+              {user.photo_url ? (
+                <img
+                  src={user.photo_url}
+                  alt=""
+                  className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-accent-muted flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl font-bold text-banana-500">
+                    {(user.first_name?.[0] || user.username?.[0] || '?').toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-white">
-                    {user.first_name || user.username || `User ${user.telegram_id}`}
-                    {user.last_name ? ` ${user.last_name}` : ''}
+                    {user.first_name || user.last_name
+                      ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                      : user.username
+                        ? `@${user.username}`
+                        : `User ${user.telegram_id}`}
                   </h3>
                   <span
                     className={cn(
@@ -249,6 +268,12 @@ export function UserDetailPage() {
                 </div>
                 {user.username && (
                   <p className="text-sm text-muted-foreground mt-0.5">@{user.username}</p>
+                )}
+                {user.language_code && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Globe className="w-3 h-3 text-muted" />
+                    <span className="text-xs text-muted-foreground uppercase">{user.language_code}</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -278,18 +303,34 @@ export function UserDetailPage() {
           </div>
 
           {/* Stats grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
             <StatItem icon={Hash} label="Telegram ID" value={user.telegram_id} className="font-mono text-banana-500" />
-            <StatItem icon={Wallet} label="Balance" value={user.balance} />
+            <StatItem icon={Wallet} label="Balance" value={`${user.balance} credits`} />
             <StatItem icon={Sparkles} label="Trial Remaining" value={user.trial_remaining} />
             <StatItem icon={Image} label="Generations" value={user.generation_count} />
             <StatItem icon={Users} label="Referrals" value={user.referral_count} />
+            <StatItem icon={Star} label="Total Deposits" value={`${user.total_deposits || 0} stars`} />
+            <StatItem icon={TrendingDown} label="Total Spent" value={`${user.total_spent || 0} credits`} />
             <StatItem icon={Calendar} label="Joined" value={formatDateShort(user.created_at)} />
             <StatItem icon={Clock} label="Last Active" value={formatDateShort(user.last_active_at)} />
-            {user.referrer_id && (
-              <StatItem icon={User} label="Referrer" value={user.referrer_id} className="font-mono" />
+            {user.referral_code && (
+              <StatItem icon={Link2} label="Referral Code" value={user.referral_code} className="font-mono" />
             )}
           </div>
+
+          {/* Referrer info */}
+          {user.referrer_id && (
+            <div className="mt-4 bg-surface-light/50 rounded-lg px-4 py-3">
+              <p className="text-xs text-muted-foreground mb-1">Referred By</p>
+              <a
+                href={`/users/${user.referrer_id}`}
+                className="text-sm text-banana-500 hover:text-banana-400 font-mono flex items-center gap-1"
+              >
+                {user.referrer_id}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
 
           {/* Ban reason */}
           {user.is_banned && user.ban_reason && (

@@ -103,23 +103,44 @@ export function UsersListPage() {
 
   const columns: Column<AdminUser>[] = [
     {
-      key: 'telegram_id',
-      header: 'Telegram ID',
+      key: 'user',
+      header: 'User',
       render: (user) => (
-        <span className="font-mono text-sm text-banana-500">{user.telegram_id}</span>
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          {user.photo_url ? (
+            <img
+              src={user.photo_url}
+              alt=""
+              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-surface-light flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-muted-foreground">
+                {(user.first_name?.[0] || user.username?.[0] || '?').toUpperCase()}
+              </span>
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">
+              {user.first_name || user.last_name
+                ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                : user.username
+                  ? `@${user.username}`
+                  : `User ${user.telegram_id}`}
+            </p>
+            {user.username && (user.first_name || user.last_name) && (
+              <p className="text-xs text-muted-foreground">@{user.username}</p>
+            )}
+          </div>
+        </div>
       ),
     },
     {
-      key: 'username',
-      header: 'Username',
+      key: 'telegram_id',
+      header: 'Telegram ID',
       render: (user) => (
-        <span className="text-white">
-          {user.username ? `@${user.username}` : (
-            <span className="text-muted">
-              {user.first_name || 'No name'}
-            </span>
-          )}
-        </span>
+        <span className="font-mono text-sm text-banana-500">{user.telegram_id.toLocaleString()}</span>
       ),
     },
     {

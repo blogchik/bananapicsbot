@@ -18,6 +18,10 @@ class UserOut(UserBase):
 class UserSyncIn(BaseModel):
     telegram_id: int
     referral_code: str | None = None
+    username: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    language_code: str | None = None
 
 
 class UserSyncOut(UserOut):

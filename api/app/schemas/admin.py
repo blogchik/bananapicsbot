@@ -87,6 +87,7 @@ class AdminUserOut(BaseModel):
     username: Optional[str]
     first_name: Optional[str]
     last_name: Optional[str]
+    photo_url: Optional[str] = None
     language_code: Optional[str]
     is_active: bool
     is_banned: bool
@@ -94,8 +95,11 @@ class AdminUserOut(BaseModel):
     trial_remaining: int
     balance: Decimal
     referrer_id: Optional[int]
+    referral_code: Optional[str] = None
     referral_count: int
     generation_count: int
+    total_spent: Optional[int] = 0
+    total_deposits: Optional[int] = 0
     created_at: datetime
     last_active_at: Optional[datetime]
 

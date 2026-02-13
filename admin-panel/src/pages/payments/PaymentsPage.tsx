@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   Star,
   CreditCard,
@@ -7,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -249,9 +251,13 @@ export function PaymentsPage() {
                     className="border-b border-surface-lighter/30 hover:bg-surface-light/30 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <span className="text-sm font-mono text-white">
-                        {payment.user_id}
-                      </span>
+                      <Link
+                        to={`/users/${payment.telegram_id}`}
+                        className="text-sm font-mono text-banana-500 hover:text-banana-400 flex items-center gap-1"
+                      >
+                        {payment.telegram_id.toLocaleString()}
+                        <ExternalLink className="w-3 h-3 opacity-50" />
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-medium text-banana-400">

@@ -10,16 +10,45 @@ def get_or_create_user(
     db: Session,
     telegram_id: int,
     referral_code: str | None = None,
+    username: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    language_code: str | None = None,
 ) -> tuple[User, User | None, bool]:
     user = db.execute(select(User).where(User.telegram_id == telegram_id)).scalar_one_or_none()
     if user:
+        # Update user profile if provided
+        updated = False
+        if username is not None and hasattr(user, 'username'):
+            user.username = username
+            updated = True
+        if first_name is not None and hasattr(user, 'first_name'):
+            user.first_name = first_name
+            updated = True
+        if last_name is not None and hasattr(user, 'last_name'):
+            user.last_name = last_name
+            updated = True
+        if language_code is not None and hasattr(user, 'language_code'):
+            user.language_code = language_code
+            updated = True
         if not user.referral_code:
             user.referral_code = generate_referral_code(db)
+            updated = True
+        if updated:
             db.add(user)
             db.commit()
             db.refresh(user)
         return user, None, False
-    user = User(telegram_id=telegram_id, referral_code=generate_referral_code(db))
+
+    # Create new user with profile data
+    user = User(
+        telegram_id=telegram_id,
+        referral_code=generate_referral_code(db),
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        language_code=language_code or 'uz',
+    )
     referrer = None
     referral_applied = False
     if referral_code:

@@ -241,20 +241,22 @@ async def search_users(
             result_users.append(
                 AdminUserOut(
                     telegram_id=user.telegram_id,
-                    username=None,
-                    first_name=None,
-                    last_name=None,
-                    language_code="uz",
+                    username=getattr(user, "username", None),
+                    first_name=getattr(user, "first_name", None),
+                    last_name=getattr(user, "last_name", None),
+                    photo_url=getattr(user, "photo_url", None),
+                    language_code=getattr(user, "language_code", None) or "uz",
                     is_active=True,
-                    is_banned=user.is_banned if hasattr(user, "is_banned") else False,
-                    ban_reason=None,
-                    trial_remaining=3,
+                    is_banned=getattr(user, "is_banned", False),
+                    ban_reason=getattr(user, "ban_reason", None),
+                    trial_remaining=getattr(user, "trial_remaining", 3),
                     balance=Decimal(balance),
                     referrer_id=user.referred_by_id,
+                    referral_code=getattr(user, "referral_code", None),
                     referral_count=referral_count,
                     generation_count=gen_count,
                     created_at=user.created_at,
-                    last_active_at=user.last_active_at if hasattr(user, "last_active_at") else None,
+                    last_active_at=getattr(user, "last_active_at", None),
                 )
             )
 
@@ -308,23 +310,29 @@ async def get_user(
         balance = await service.get_user_balance(user.id)
         referral_count = await service.get_user_referral_count(user.id)
         gen_count = await service.get_user_generation_count(user.id)
+        total_spent = await service.get_user_total_spent(user.id)
+        total_deposits = await service.get_user_total_deposits(user.id)
 
         return AdminUserOut(
             telegram_id=user.telegram_id,
-            username=None,
-            first_name=None,
-            last_name=None,
-            language_code="uz",
+            username=getattr(user, "username", None),
+            first_name=getattr(user, "first_name", None),
+            last_name=getattr(user, "last_name", None),
+            photo_url=getattr(user, "photo_url", None),
+            language_code=getattr(user, "language_code", None) or "uz",
             is_active=True,
-            is_banned=user.is_banned if hasattr(user, "is_banned") else False,
-            ban_reason=None,
-            trial_remaining=3,
+            is_banned=getattr(user, "is_banned", False),
+            ban_reason=getattr(user, "ban_reason", None),
+            trial_remaining=getattr(user, "trial_remaining", 3),
             balance=Decimal(balance),
             referrer_id=user.referred_by_id,
+            referral_code=getattr(user, "referral_code", None),
             referral_count=referral_count,
             generation_count=gen_count,
+            total_spent=total_spent,
+            total_deposits=total_deposits,
             created_at=user.created_at,
-            last_active_at=user.last_active_at if hasattr(user, "last_active_at") else None,
+            last_active_at=getattr(user, "last_active_at", None),
         )
     except HTTPException:
         raise
