@@ -4,6 +4,13 @@
 
 The BananaPics Admin Panel is a full-featured web dashboard for managing the bot, users, payments, generations, and broadcasts. Built with React 18, TypeScript, and Vite, it provides a modern, responsive interface for administrators.
 
+**Key Features:**
+- Real-time Telegram user profile fetching (username, name, photo)
+- Generation image previews with thumbnails and full-size modal
+- Broadcast progress tracking with status-based coloring
+- Comprehensive system settings management
+- User management with credit adjustments and ban controls
+
 ## Access
 
 ### URL
@@ -28,6 +35,7 @@ The admin panel uses **Telegram Login Widget** authentication:
 - JWT tokens with secure HttpOnly storage
 - Admin-only access enforcement
 - Automatic session validation
+- **Access Denied** - Beautiful error page shown if user is not an admin
 
 ## Features
 
@@ -55,17 +63,26 @@ The admin panel uses **Telegram Login Widget** authentication:
 ### 2. User Management
 
 **User List:**
+- **User avatars** fetched from Telegram API with fallback initials
+- **Full names** (first_name, last_name) from Telegram
+- **Usernames** displayed below names
 - Search by Telegram ID, username, or name
 - Pagination (50 users per page)
-- Sortable columns
 - Quick actions (view, ban, adjust credits)
 
 **User Detail View:**
-- Profile information
-- Current balance
-- Referral stats
-- Recent generations
-- Payment history
+- **Profile photo** from Telegram (real-time fetch)
+- **Full user info**: name, username, language, Telegram ID
+- **Statistics**: Balance, Trial Remaining, Generations, Referrals
+- **Financial**: Total Deposits (stars), Total Spent (credits)
+- **Referral info**: Code, Referrer link
+- **Recent generations** with:
+  - Model name and key
+  - Prompt preview
+  - Credit cost
+  - Status badge
+  - **Thumbnail images** (click to open full size)
+- **Payment history**
 - Admin actions (ban/unban, adjust credits)
 
 **Credit Adjustment:**
@@ -95,24 +112,27 @@ The admin panel uses **Telegram Login Widget** authentication:
 - Pause/cancel active broadcast
 - Real-time progress tracking
 
-**Broadcast Stats:**
-- Total users targeted
-- Messages sent
-- Failed deliveries
-- Blocked by users
-- Progress percentage
+**Progress Bar Features:**
+- **Status-based coloring**:
+  - Running: Yellow (banana-500)
+  - Completed: Green (100%)
+  - Failed: Red
+  - Cancelled: Gray
+- Percentage display
+- Sent/Total count with failed indicator
 
 ### 4. Payment Management
 
 **Payment List:**
 - All payment transactions
+- **User ID links** to user detail page
 - Filter by status
 - Sort by date/amount
 - Pagination
 
 **Payment Details:**
 - Transaction ID
-- User information
+- User information (clickable link)
 - Amount (Stars and credits)
 - Status
 - Timestamp
@@ -127,22 +147,24 @@ The admin panel uses **Telegram Login Widget** authentication:
 
 **Generation List:**
 - All generations (paginated)
+- **User ID links** to user detail page
 - Filter by status (completed, failed, processing)
 - Sort by date
-- User information
 - Model used
 
-**Generation Details:**
-- Prompt text
-- Model and parameters
-- Status and timestamps
+**Generation Row Features:**
+- User Telegram ID (clickable)
+- Model name and key
+- Expandable prompt
+- Status badge with animation
 - Credit cost
-- Result images (if completed)
+- **Thumbnail previews** (up to 3 images shown)
+- Click thumbnails to open full-size modal
 
-**Actions:**
-- View generation
-- Refund failed generation
-- Queue monitoring
+**Image Preview Modal:**
+- Full-size images
+- Multiple images in grid
+- Click outside to close
 
 ### 6. Model Management
 
@@ -160,19 +182,43 @@ The admin panel uses **Telegram Login Widget** authentication:
 
 ### 7. System Settings
 
-**Configurable Settings:**
+**Comprehensive Settings Categories:**
+
+**Trial Settings:**
+- Trial generations limit (0-100)
+
+**Pricing & Credits:**
 - Generation price markup
-- Referral bonus percentage
-- Referral join bonus
-- Stars exchange rates
-- Payment presets
-- Rate limits
+- Stars exchange numerator/denominator
+- Minimum stars purchase
+
+**Referral Program:**
+- Referral bonus percent (0-100%)
+- Referral join bonus credits
+
+**Generation Limits:**
+- Max parallel generations per user
+- Poll interval (seconds)
+- Max poll duration (seconds)
+
+**Rate Limits:**
+- Requests per second
+- Burst limit
+
+**Wavespeed API:**
+- API timeout
+- Minimum balance alert
+- Balance cache TTL
+
+**Cache & Performance:**
+- Default cache TTL
+- Active generation TTL
 
 **Settings Management:**
 - Real-time updates
 - No restart required
-- Change tracking
-- Admin audit log
+- Change tracking with toast notifications
+- Input validation with min/max limits
 
 ## Technical Architecture
 

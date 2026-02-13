@@ -58,13 +58,21 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ProgressBar({ sent, total }: { sent: number; total: number }) {
-  const percent = total > 0 ? Math.round((sent / total) * 100) : 0;
+function ProgressBar({ sent, total, status }: { sent: number; total: number; status?: string }) {
+  // If completed, always show 100%
+  const percent = status === 'completed'
+    ? 100
+    : (total > 0 ? Math.round((sent / total) * 100) : 0);
   return (
     <div className="flex items-center gap-2.5 min-w-[140px]">
       <div className="flex-1 h-1.5 bg-surface-light rounded-full overflow-hidden">
         <div
-          className="h-full bg-banana-500 rounded-full transition-all duration-300"
+          className={cn(
+            "h-full rounded-full transition-all duration-300",
+            status === 'completed' ? 'bg-success' :
+            status === 'failed' ? 'bg-destructive' :
+            status === 'cancelled' ? 'bg-muted' : 'bg-banana-500'
+          )}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -292,7 +300,7 @@ export function BroadcastsListPage() {
 
                       {/* Progress */}
                       <td className="px-4 py-3.5">
-                        <ProgressBar sent={broadcast.sent_count} total={broadcast.total_users} />
+                        <ProgressBar sent={broadcast.sent_count} total={broadcast.total_users} status={broadcast.status} />
                       </td>
 
                       {/* Sent / Total */}

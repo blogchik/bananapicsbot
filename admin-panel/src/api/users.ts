@@ -33,12 +33,16 @@ export interface UserListResponse {
 
 export interface UserGeneration {
   id: number;
+  public_id: string;
   model_key: string;
   model_name: string;
   prompt: string;
+  full_prompt: string;
   status: string;
-  credits_charged: number;
+  cost: number | null;
+  result_urls: string[];
   created_at: string;
+  completed_at: string | null;
 }
 
 export interface UserPayment {

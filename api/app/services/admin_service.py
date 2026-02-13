@@ -468,23 +468,36 @@ class AdminService:
 
         items = []
         for gen in generations:
-            # Get model name
+            # Get model info
             model_name = "Unknown"
+            model_key = "unknown"
             if gen.model_id:
                 model_query = select(ModelCatalog).where(ModelCatalog.id == gen.model_id)
                 model_result = await self.session.execute(model_query)
                 model = model_result.scalar_one_or_none()
                 if model:
                     model_name = model.name
+                    model_key = model.key
+
+            # Get result images
+            result_query = select(GenerationResult).where(GenerationResult.request_id == gen.id).limit(4)
+            result_res = await self.session.execute(result_query)
+            results = result_res.scalars().all()
+            result_urls = [r.image_url for r in results if r.image_url]
 
             items.append(
                 {
                     "id": gen.id,
                     "public_id": gen.public_id,
-                    "model": model_name,
+                    "model_key": model_key,
+                    "model_name": model_name,
                     "prompt": gen.prompt[:100] if gen.prompt else "",
+                    "full_prompt": gen.prompt or "",
                     "status": gen.status.value if gen.status else "unknown",
+                    "cost": gen.cost,
+                    "result_urls": result_urls,
                     "created_at": gen.created_at.isoformat() if gen.created_at else None,
+                    "completed_at": gen.completed_at.isoformat() if gen.completed_at else None,
                 }
             )
 

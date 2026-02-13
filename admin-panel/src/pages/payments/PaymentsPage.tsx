@@ -255,7 +255,7 @@ export function PaymentsPage() {
                         to={`/users/${payment.telegram_id}`}
                         className="text-sm font-mono text-banana-500 hover:text-banana-400 flex items-center gap-1"
                       >
-                        {payment.telegram_id.toLocaleString()}
+                        {payment.telegram_id}
                         <ExternalLink className="w-3 h-3 opacity-50" />
                       </Link>
                     </td>

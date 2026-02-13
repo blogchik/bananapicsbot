@@ -11,6 +11,10 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
+  Zap,
+  Shield,
+  Clock,
+  Server,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,8 +26,9 @@ interface SettingFieldDef {
   key: string;
   label: string;
   description: string;
-  type: 'number' | 'text';
+  type: 'number' | 'text' | 'boolean';
   min?: number;
+  max?: number;
   step?: string;
 }
 
@@ -44,39 +49,46 @@ const SETTING_SECTIONS: SettingSectionDef[] = [
         description: 'Number of free generations for new users',
         type: 'number',
         min: 0,
+        max: 100,
       },
     ],
   },
   {
-    title: 'Pricing',
+    title: 'Pricing & Credits',
     icon: DollarSign,
     fields: [
       {
         key: 'generation_price_markup',
         label: 'Generation Price Markup',
-        description: 'Multiplier applied to base generation cost',
+        description: 'Credits added to base Wavespeed price for each generation',
         type: 'number',
         min: 0,
-        step: '0.01',
       },
       {
         key: 'stars_exchange_numerator',
         label: 'Stars Exchange Numerator',
-        description: 'Numerator for stars-to-credits conversion ratio',
+        description: 'Credits received (numerator / denominator × stars paid)',
         type: 'number',
         min: 1,
       },
       {
         key: 'stars_exchange_denominator',
         label: 'Stars Exchange Denominator',
-        description: 'Denominator for stars-to-credits conversion ratio',
+        description: 'Stars paid (numerator / denominator × stars paid)',
+        type: 'number',
+        min: 1,
+      },
+      {
+        key: 'stars_min_amount',
+        label: 'Minimum Stars Purchase',
+        description: 'Minimum number of stars for a purchase',
         type: 'number',
         min: 1,
       },
     ],
   },
   {
-    title: 'Referral',
+    title: 'Referral Program',
     icon: Users,
     fields: [
       {
@@ -85,26 +97,118 @@ const SETTING_SECTIONS: SettingSectionDef[] = [
         description: 'Percentage of referred user purchases credited as bonus',
         type: 'number',
         min: 0,
+        max: 100,
       },
       {
         key: 'referral_join_bonus',
         label: 'Referral Join Bonus',
-        description: 'Credits awarded when a referred user joins',
+        description: 'Credits awarded to referrer when a new user joins',
         type: 'number',
         min: 0,
       },
     ],
   },
   {
-    title: 'Limits',
-    icon: Gauge,
+    title: 'Generation Limits',
+    icon: Zap,
     fields: [
       {
         key: 'max_parallel_generations_per_user',
-        label: 'Max Parallel Generations Per User',
-        description: 'Maximum number of concurrent generations allowed per user',
+        label: 'Max Parallel Generations',
+        description: 'Maximum concurrent generations per user',
         type: 'number',
         min: 1,
+        max: 10,
+      },
+      {
+        key: 'generation_poll_interval_seconds',
+        label: 'Poll Interval (seconds)',
+        description: 'How often to check generation status',
+        type: 'number',
+        min: 1,
+        max: 30,
+      },
+      {
+        key: 'generation_poll_max_duration_seconds',
+        label: 'Max Poll Duration (seconds)',
+        description: 'Maximum time to wait for generation completion',
+        type: 'number',
+        min: 60,
+        max: 600,
+      },
+    ],
+  },
+  {
+    title: 'Rate Limits',
+    icon: Shield,
+    fields: [
+      {
+        key: 'rate_limit_rps',
+        label: 'Requests Per Second',
+        description: 'API rate limit (requests per second)',
+        type: 'number',
+        min: 1,
+        max: 100,
+      },
+      {
+        key: 'rate_limit_burst',
+        label: 'Burst Limit',
+        description: 'Maximum burst requests allowed',
+        type: 'number',
+        min: 1,
+        max: 200,
+      },
+    ],
+  },
+  {
+    title: 'Wavespeed API',
+    icon: Server,
+    fields: [
+      {
+        key: 'wavespeed_timeout_seconds',
+        label: 'API Timeout (seconds)',
+        description: 'Timeout for Wavespeed API requests',
+        type: 'number',
+        min: 30,
+        max: 600,
+      },
+      {
+        key: 'wavespeed_min_balance',
+        label: 'Min Balance Alert',
+        description: 'Alert when Wavespeed balance falls below this amount',
+        type: 'number',
+        min: 0,
+        step: '0.1',
+      },
+      {
+        key: 'wavespeed_balance_cache_ttl_seconds',
+        label: 'Balance Cache TTL (seconds)',
+        description: 'How long to cache Wavespeed balance',
+        type: 'number',
+        min: 10,
+        max: 600,
+      },
+    ],
+  },
+  {
+    title: 'Cache & Performance',
+    icon: Clock,
+    fields: [
+      {
+        key: 'redis_cache_ttl_seconds',
+        label: 'Default Cache TTL (seconds)',
+        description: 'Default Redis cache time-to-live',
+        type: 'number',
+        min: 60,
+        max: 3600,
+      },
+      {
+        key: 'redis_active_generation_ttl_seconds',
+        label: 'Active Generation TTL (seconds)',
+        description: 'How long to keep active generation data',
+        type: 'number',
+        min: 300,
+        max: 3600,
       },
     ],
   },

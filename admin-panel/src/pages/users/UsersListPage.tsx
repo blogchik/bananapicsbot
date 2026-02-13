@@ -140,7 +140,7 @@ export function UsersListPage() {
       key: 'telegram_id',
       header: 'Telegram ID',
       render: (user) => (
-        <span className="font-mono text-sm text-banana-500">{user.telegram_id.toLocaleString()}</span>
+        <span className="font-mono text-sm text-banana-500">{user.telegram_id}</span>
       ),
     },
     {

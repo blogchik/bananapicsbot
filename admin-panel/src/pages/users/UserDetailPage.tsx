@@ -458,39 +458,55 @@ export function UserDetailPage() {
                   <p className="text-sm text-muted-foreground">No generations found for this user.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto scrollbar-thin">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-surface-lighter/50">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Model</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prompt</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Credits</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(generationsQuery.data ?? []).map((gen: UserGeneration) => (
-                        <tr key={gen.id} className="border-b border-surface-lighter/30">
-                          <td className="px-4 py-3 text-white whitespace-nowrap text-xs font-medium">
-                            {gen.model_name || gen.model_key}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate" title={gen.prompt}>
-                            {gen.prompt || '-'}
-                          </td>
-                          <td className="px-4 py-3 text-white font-mono text-xs">
-                            {gen.credits_charged}
-                          </td>
-                          <td className="px-4 py-3">
-                            <GenerationStatusBadge status={gen.status} />
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
-                            {formatDateShort(gen.created_at)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-4 p-4">
+                  {(generationsQuery.data ?? []).map((gen: UserGeneration) => (
+                    <div key={gen.id} className="bg-surface-light/30 rounded-lg p-4 space-y-3">
+                      {/* Header row */}
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-white">{gen.model_name}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{gen.model_key}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {gen.cost != null && (
+                            <span className="text-sm font-mono text-banana-400">{gen.cost} credits</span>
+                          )}
+                          <GenerationStatusBadge status={gen.status} />
+                          <span className="text-xs text-muted-foreground">{formatDateShort(gen.created_at)}</span>
+                        </div>
+                      </div>
+
+                      {/* Prompt */}
+                      {gen.prompt && (
+                        <p className="text-sm text-muted-foreground line-clamp-2" title={gen.full_prompt || gen.prompt}>
+                          {gen.prompt}
+                        </p>
+                      )}
+
+                      {/* Images */}
+                      {gen.result_urls && gen.result_urls.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {gen.result_urls.map((url, idx) => (
+                            <a
+                              key={idx}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block w-20 h-20 rounded-lg overflow-hidden border border-surface-lighter hover:border-banana-500 transition-colors"
+                            >
+                              <img
+                                src={url}
+                                alt={`Result ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

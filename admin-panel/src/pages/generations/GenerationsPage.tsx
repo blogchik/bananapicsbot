@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Image,
   ExternalLink,
-  Eye,
   X,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -121,7 +120,7 @@ function GenerationRow({ gen }: { gen: AdminGeneration }) {
             to={`/users/${gen.telegram_id}`}
             className="text-sm font-mono text-banana-500 hover:text-banana-400 flex items-center gap-1"
           >
-            {gen.telegram_id.toLocaleString()}
+            {gen.telegram_id}
             <ExternalLink className="w-3 h-3 opacity-50" />
           </Link>
         </td>
@@ -161,13 +160,25 @@ function GenerationRow({ gen }: { gen: AdminGeneration }) {
         </td>
         <td className="px-4 py-3">
           {hasImages ? (
-            <button
-              onClick={() => setShowImages(true)}
-              className="flex items-center gap-1.5 text-sm text-banana-500 hover:text-banana-400"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              {gen.result_urls.length} image{gen.result_urls.length > 1 ? 's' : ''}
-            </button>
+            <div className="flex items-center gap-1">
+              {gen.result_urls.slice(0, 3).map((url, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setShowImages(true)}
+                  className="w-8 h-8 rounded overflow-hidden border border-surface-lighter hover:border-banana-500 transition-colors"
+                >
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+              {gen.result_urls.length > 3 && (
+                <button
+                  onClick={() => setShowImages(true)}
+                  className="w-8 h-8 rounded bg-surface-light flex items-center justify-center text-xs text-muted-foreground hover:text-white transition-colors"
+                >
+                  +{gen.result_urls.length - 3}
+                </button>
+              )}
+            </div>
           ) : (
             <span className="text-sm text-muted">--</span>
           )}
