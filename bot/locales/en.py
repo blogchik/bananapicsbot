@@ -225,6 +225,18 @@ TRANSLATIONS: dict[str, str] = {
     "admin_refund_no_generations": "📭 This user has no generations.",
     "admin_refund_select": "🔙 Select generation to refund:",
     "admin_refund_success": "✅ Refunded {amount} credits.\nNew balance: {balance}",
+    # Admin - Wavespeed
+    "admin_wavespeed": "🌊 Wavespeed",
+    "admin_wavespeed_title": "🌊 Wavespeed Provider",
+    "admin_wavespeed_balance": "💰 Balance: {amount} {currency}",
+    "admin_wavespeed_status": "Status: {status}",
+    "admin_wavespeed_stats_24h": "📊 Last 24 hours:",
+    "admin_wavespeed_stats_7d": "📊 Last 7 days:",
+    "admin_wavespeed_queue": "⏳ Queue: {pending} pending | {running} running",
+    "admin_wavespeed_models": "📈 Models (24h):",
+    "admin_wavespeed_recent": "🕐 Recent Generations",
+    "admin_wavespeed_refresh": "🔄 Refresh",
+    "admin_wavespeed_error": "❌ Failed to load Wavespeed data.",
     # Admin - Broadcast
     "admin_broadcast_title": "📢 Broadcast",
     "admin_broadcast_enter_message": "📝 Send a message or media for broadcast:",

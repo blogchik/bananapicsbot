@@ -185,6 +185,11 @@ class AdminCallback:
         """Create callback for specific transaction refund by index."""
         return f"admin:refund:stars:tx:{index}"
 
+    # Wavespeed
+    WAVESPEED = "admin:wavespeed"
+    WAVESPEED_REFRESH = "admin:wavespeed:refresh"
+    WAVESPEED_RECENT = "admin:wavespeed:recent"
+
     # Broadcast
     BROADCAST = "admin:broadcast"
     BROADCAST_NEW = "admin:broadcast:new"

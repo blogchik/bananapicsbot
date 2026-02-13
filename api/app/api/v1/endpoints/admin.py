@@ -145,6 +145,67 @@ async def get_dashboard_stats(
         )
 
 
+# ============ Wavespeed Provider Status ============
+
+
+@router.get("/wavespeed/status")
+async def get_wavespeed_status(
+    session: AsyncSession = Depends(get_async_session),
+    admin: dict = Depends(require_admin),
+):
+    """Get Wavespeed provider status, balance, and generation analytics."""
+    try:
+        from app.deps.wavespeed import wavespeed_client
+
+        service = AdminService(session)
+        ws_client = wavespeed_client()
+
+        # Get Wavespeed balance
+        balance_data = {"amount": 0.0, "currency": "USD"}
+        provider_status = "online"
+        try:
+            balance_resp = await ws_client.get_balance()
+            if balance_resp.code == 200:
+                balance_data = {
+                    "amount": float(balance_resp.data.get("balance", 0)),
+                    "currency": balance_resp.data.get("currency", "USD"),
+                }
+            else:
+                provider_status = "degraded"
+        except Exception as e:
+            logger.warning("Failed to get Wavespeed balance", error=str(e))
+            provider_status = "offline"
+
+        # Get generation stats (24h and 7d)
+        stats_24h = await service.get_wavespeed_generation_stats(hours=24)
+        stats_7d = await service.get_wavespeed_generation_stats(hours=168)
+
+        # Get queue counts
+        queue = await service.get_wavespeed_queue_counts()
+
+        # Get model breakdown (24h)
+        models = await service.get_wavespeed_model_breakdown(hours=24)
+
+        # Get recent generations
+        recent = await service.get_wavespeed_recent_generations(limit=10)
+
+        return {
+            "balance": balance_data,
+            "provider_status": provider_status,
+            "generations_24h": stats_24h,
+            "generations_7d": stats_7d,
+            "queue": queue,
+            "models": models,
+            "recent_generations": recent,
+        }
+    except Exception as e:
+        logger.exception("Failed to get Wavespeed status", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
 # ============ Chart Data ============
 
 

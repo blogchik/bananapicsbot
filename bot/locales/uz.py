@@ -201,6 +201,18 @@ TRANSLATIONS: dict[str, str] = {
     "admin_refund_no_generations": "📭 Bu foydalanuvchida generatsiyalar yo'q.",
     "admin_refund_select": "🔙 Qaytarish uchun generatsiyani tanlang:",
     "admin_refund_success": "✅ {amount} credit qaytarildi.\nYangi balans: {balance}",
+    # Admin - Wavespeed
+    "admin_wavespeed": "🌊 Wavespeed",
+    "admin_wavespeed_title": "🌊 Wavespeed Provayder",
+    "admin_wavespeed_balance": "💰 Balans: {amount} {currency}",
+    "admin_wavespeed_status": "Holat: {status}",
+    "admin_wavespeed_stats_24h": "📊 Oxirgi 24 soat:",
+    "admin_wavespeed_stats_7d": "📊 Oxirgi 7 kun:",
+    "admin_wavespeed_queue": "⏳ Navbat: {pending} kutmoqda | {running} jarayonda",
+    "admin_wavespeed_models": "📈 Modellar (24s):",
+    "admin_wavespeed_recent": "🕐 So'nggi generatsiyalar",
+    "admin_wavespeed_refresh": "🔄 Yangilash",
+    "admin_wavespeed_error": "❌ Wavespeed ma'lumotlarini yuklashda xatolik.",
     # Admin - Broadcast
     "admin_broadcast_title": "📢 Broadcast",
     "admin_broadcast_enter_message": "📝 Yuborish uchun xabar yozing yoki media yuboring:",

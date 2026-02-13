@@ -823,6 +823,126 @@ class AdminService:
 
         return status_counts
 
+    # ============ Wavespeed Provider Status ============
+
+    async def get_wavespeed_generation_stats(self, hours: int = 24) -> Dict[str, Any]:
+        """Get generation statistics for a given time period."""
+        since = datetime.utcnow() - timedelta(hours=hours)
+
+        total_q = select(func.count()).select_from(GenerationRequest).where(GenerationRequest.created_at >= since)
+        total_r = await self.session.execute(total_q)
+        total = total_r.scalar() or 0
+
+        completed_q = (
+            select(func.count())
+            .select_from(GenerationRequest)
+            .where(and_(GenerationRequest.created_at >= since, GenerationRequest.status == GenerationStatus.completed))
+        )
+        completed_r = await self.session.execute(completed_q)
+        completed = completed_r.scalar() or 0
+
+        failed_q = (
+            select(func.count())
+            .select_from(GenerationRequest)
+            .where(and_(GenerationRequest.created_at >= since, GenerationRequest.status == GenerationStatus.failed))
+        )
+        failed_r = await self.session.execute(failed_q)
+        failed = failed_r.scalar() or 0
+
+        success_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+
+        return {"total": total, "completed": completed, "failed": failed, "success_rate": success_rate}
+
+    async def get_wavespeed_model_breakdown(self, hours: int = 24) -> Sequence[Dict[str, Any]]:
+        """Get per-model generation breakdown for a given time period."""
+        since = datetime.utcnow() - timedelta(hours=hours)
+
+        query = (
+            select(
+                ModelCatalog.key.label("model_key"),
+                ModelCatalog.name.label("model_name"),
+                func.count(GenerationRequest.id).label("total"),
+                func.count().filter(GenerationRequest.status == GenerationStatus.completed).label("completed"),
+                func.count().filter(GenerationRequest.status == GenerationStatus.failed).label("failed"),
+                func.coalesce(func.sum(GenerationRequest.cost), 0).label("credits"),
+            )
+            .join(ModelCatalog, GenerationRequest.model_id == ModelCatalog.id)
+            .where(GenerationRequest.created_at >= since)
+            .group_by(ModelCatalog.key, ModelCatalog.name)
+            .order_by(func.count(GenerationRequest.id).desc())
+        )
+        result = await self.session.execute(query)
+        items = []
+        for row in result.all():
+            rate = round((row.completed / row.total * 100), 1) if row.total > 0 else 0.0
+            items.append(
+                {
+                    "model_key": row.model_key,
+                    "model_name": row.model_name,
+                    "total": row.total,
+                    "completed": row.completed,
+                    "failed": row.failed,
+                    "success_rate": rate,
+                    "credits": int(row.credits),
+                }
+            )
+        return items
+
+    async def get_wavespeed_recent_generations(self, limit: int = 10) -> Sequence[Dict[str, Any]]:
+        """Get recent generations with details."""
+        query = (
+            select(
+                GenerationRequest,
+                ModelCatalog.key.label("model_key"),
+                ModelCatalog.name.label("model_name"),
+                User.telegram_id.label("telegram_id"),
+            )
+            .join(ModelCatalog, GenerationRequest.model_id == ModelCatalog.id)
+            .join(User, GenerationRequest.user_id == User.id)
+            .order_by(GenerationRequest.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        items = []
+        for gen, model_key, model_name, telegram_id in rows:
+            items.append(
+                {
+                    "id": gen.id,
+                    "public_id": gen.public_id,
+                    "telegram_id": telegram_id,
+                    "model_key": model_key,
+                    "model_name": model_name,
+                    "status": gen.status.value if gen.status else "unknown",
+                    "cost": gen.cost,
+                    "prompt": (gen.prompt[:80] + "...") if gen.prompt and len(gen.prompt) > 80 else (gen.prompt or ""),
+                    "created_at": gen.created_at.isoformat() if gen.created_at else None,
+                    "completed_at": gen.completed_at.isoformat() if gen.completed_at else None,
+                }
+            )
+        return items
+
+    async def get_wavespeed_queue_counts(self) -> Dict[str, int]:
+        """Get current queue counts (pending + running)."""
+        pending_q = (
+            select(func.count())
+            .select_from(GenerationRequest)
+            .where(GenerationRequest.status.in_([GenerationStatus.pending, GenerationStatus.queued]))
+        )
+        pending_r = await self.session.execute(pending_q)
+        pending = pending_r.scalar() or 0
+
+        running_q = (
+            select(func.count())
+            .select_from(GenerationRequest)
+            .where(GenerationRequest.status == GenerationStatus.running)
+        )
+        running_r = await self.session.execute(running_q)
+        running = running_r.scalar() or 0
+
+        return {"pending": pending, "running": running}
+
     # ============ User Payments ============
 
     async def get_user_payments(

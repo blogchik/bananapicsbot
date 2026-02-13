@@ -734,6 +734,10 @@ class ApiClient:
             f"/api/v1/admin/users/{telegram_id}/payments?limit={limit}",
         )
 
+    async def get_wavespeed_status(self) -> dict:
+        """Get Wavespeed provider status and analytics."""
+        return await self._request("GET", "/api/v1/admin/wavespeed/status")
+
     async def mark_payment_refunded(self, telegram_charge_id: str) -> dict:
         """Mark a payment as refunded by telegram_charge_id."""
         return await self._request(
