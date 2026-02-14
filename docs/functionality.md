@@ -13,6 +13,7 @@
 - **Parallel limit:** bitta user uchun bir paytda maksimal `MAX_PARALLEL_GENERATIONS_PER_USER` ta generatsiya ruxsat etiladi (default: `2`).
 - **Natija caption:** model hashtag, prompt blockquote va sarflangan credit ko'rsatiladi (file ko'rinishidagi natijada).
 - **Natija:** prompt va model nomi bilan xabar yuboriladi, rasmlar faqat file ko'rinishida jo'natiladi (asl format saqlanadi).
+- **Gallery Channel:** Har bir muvaffaqiyatli generatsiya `GALLERY_CHANNEL_ID` kanaliga joylashtiriladi: user ID, model, prompt, reference rasm(lar), natija rasm(lar).
 - **Cheklov:** user bir vaqtda faqat 1 ta generatsiya boshlaydi (Redis lock + DB advisory lock).
 - **Aktiv holat:** aktiv generatsiya bor paytda yangi so'rov yuborilsa, bot kutishni so'raydi va oldingi generatsiya davom etadi.
 - **Backend va saqlash:** FastAPI /api/v1, Postgres + Alembic, CORS, rate limit, request id, global error handling; requestlar `public_id` bilan unique, prompt/size/reference URL + telegram file id, input params, natijalar va joblar saqlanadi.

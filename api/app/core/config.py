@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     max_parallel_generations_per_user: int = 2
     generation_price_markup: int = 0  # Credits to add to base Wavespeed price
 
+    # Gallery Channel - post completed generations here
+    gallery_channel_id: int = 0  # Set to channel ID to enable (e.g., -1003722093782)
+
     # Admin
     admin_telegram_ids: str = ""
 

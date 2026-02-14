@@ -210,6 +210,14 @@ def process_generation(
                     prompt_message_id,
                     language,
                 )
+                # Post to gallery channel if configured
+                _post_to_gallery_channel(
+                    telegram_id=chat_id,
+                    prompt=request.prompt,
+                    model_name=model_name,
+                    outputs=outputs,
+                    reference_urls=request.input_params.get("reference_urls") if request.input_params else None,
+                )
                 logger.info(
                     "Generation completed",
                     generation_id=generation_request_id,
@@ -409,6 +417,98 @@ def _notify_user_generation_complete(
             caption_sent = True
     except Exception as e:
         logger.error("Failed to send generation result", error=str(e))
+
+
+def _post_to_gallery_channel(
+    telegram_id: int,
+    prompt: str,
+    model_name: str,
+    outputs: list[str],
+    reference_urls: list[str] | None = None,
+) -> None:
+    """Post completed generation to gallery channel."""
+    if not settings.bot_token or not settings.gallery_channel_id:
+        return
+
+    try:
+        channel_id = settings.gallery_channel_id
+        safe_prompt = escape_html(prompt[:800]) if prompt else "No prompt"
+        hashtag = format_model_hashtag(model_name)
+
+        # Build caption with user info, model, and prompt
+        caption = (
+            f"👤 <b>User:</b> <code>{telegram_id}</code>\n"
+            f"🤖 <b>Model:</b> {hashtag}\n"
+            f"📝 <b>Prompt:</b>\n<blockquote>{safe_prompt}</blockquote>"
+        )
+
+        # Send reference images first if available (before images)
+        if reference_urls:
+            ref_caption = f"📎 <b>Reference Images</b> (User: <code>{telegram_id}</code>)"
+            # Send reference images as media group
+            if len(reference_urls) == 1:
+                run_async(_send_gallery_photo(channel_id, reference_urls[0], ref_caption))
+            else:
+                run_async(_send_gallery_media_group(channel_id, reference_urls, ref_caption))
+
+        # Send generated images
+        if len(outputs) == 1:
+            # Single image - send with caption
+            run_async(_send_gallery_photo(channel_id, outputs[0], caption))
+        else:
+            # Multiple images - send as media group
+            run_async(_send_gallery_media_group(channel_id, outputs, caption))
+
+        logger.info(
+            "Posted to gallery channel",
+            channel_id=channel_id,
+            telegram_id=telegram_id,
+            outputs_count=len(outputs),
+        )
+    except Exception as e:
+        logger.error("Failed to post to gallery channel", error=str(e))
+
+
+async def _send_gallery_photo(channel_id: int, photo_url: str, caption: str) -> None:
+    """Send single photo to gallery channel."""
+    import httpx
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        await client.post(
+            f"{settings.telegram_api_base_url}/bot{settings.bot_token}/sendPhoto",
+            json={
+                "chat_id": channel_id,
+                "photo": photo_url,
+                "caption": caption,
+                "parse_mode": "HTML",
+            },
+        )
+
+
+async def _send_gallery_media_group(channel_id: int, photo_urls: list[str], caption: str) -> None:
+    """Send multiple photos as media group to gallery channel."""
+    import httpx
+
+    media = []
+    for i, url in enumerate(photo_urls[:10]):  # Telegram limit is 10
+        media_item = {
+            "type": "photo",
+            "media": url,
+        }
+        # Add caption only to first image
+        if i == 0:
+            media_item["caption"] = caption
+            media_item["parse_mode"] = "HTML"
+        media.append(media_item)
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        await client.post(
+            f"{settings.telegram_api_base_url}/bot{settings.bot_token}/sendMediaGroup",
+            json={
+                "chat_id": channel_id,
+                "media": media,
+            },
+        )
 
 
 def _notify_user_generation_failed(

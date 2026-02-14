@@ -43,6 +43,10 @@
 - `ADMIN_TELEGRAM_IDS`: Admin Telegram ID lari, vergul bilan ajratilgan (API uchun, kunlik hisobotlar uchun).
 - `MAX_PARALLEL_GENERATIONS_PER_USER`: Bitta user uchun parallel generatsiyalar limiti (default: `2`).
 
+## Gallery Channel
+
+- `GALLERY_CHANNEL_ID`: Completed generatsiyalarni joylashtirish uchun Telegram kanal ID'si. Masalan: `-1003722093782`. Bo'sh bo'lsa, kanalga yuborilmaydi.
+
 ## Wavespeed Provider
 
 - `WAVESPEED_API_BASE_URL`: Wavespeed provider API bazaviy manzili (`https://api.wavespeed.ai`).
