@@ -100,9 +100,10 @@ class ApiClient:
     def _get_auth_headers(self, telegram_user_id: int | None = None) -> dict[str, str]:
         """Get authentication headers for internal API calls."""
         headers: dict[str, str] = {}
-        if self._internal_api_key and telegram_user_id is not None:
+        if self._internal_api_key:
             headers["X-Internal-Api-Key"] = self._internal_api_key
-            headers["X-Telegram-User-Id"] = str(telegram_user_id)
+            if telegram_user_id is not None:
+                headers["X-Telegram-User-Id"] = str(telegram_user_id)
         return headers
 
     async def _request(

@@ -47,6 +47,55 @@ export interface ModelBreakdownItem {
   credits: number;
 }
 
+export interface WavespeedModelBreakdown {
+  model_key: string;
+  model_name: string;
+  total: number;
+  completed: number;
+  failed: number;
+  success_rate: number;
+  credits: number;
+}
+
+export interface WavespeedRecentGeneration {
+  id: number;
+  public_id: string;
+  telegram_id: number;
+  model_key: string;
+  model_name: string;
+  status: string;
+  cost: number;
+  prompt: string;
+  created_at: string | null;
+  completed_at: string | null;
+}
+
+export interface WavespeedStatus {
+  balance: {
+    amount: number;
+    currency: string;
+  };
+  provider_status: 'online' | 'degraded' | 'offline';
+  generations_24h: {
+    total: number;
+    completed: number;
+    failed: number;
+    success_rate: number;
+  };
+  generations_7d: {
+    total: number;
+    completed: number;
+    failed: number;
+    success_rate: number;
+  };
+  queue: {
+    pending: number;
+    running: number;
+  };
+  models: WavespeedModelBreakdown[];
+  recent_generations: WavespeedRecentGeneration[];
+}
+
 // --- API functions ---
 
 export const adminApi = {
@@ -72,4 +121,7 @@ export const adminApi = {
 
   getModelsBreakdown: () =>
     api.get<ModelBreakdownItem[]>('/admin/charts/models-breakdown'),
+
+  getWavespeedStatus: () =>
+    api.get<WavespeedStatus>('/admin/wavespeed/status'),
 };

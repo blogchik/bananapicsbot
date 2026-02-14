@@ -10,6 +10,7 @@ import { ModelsPage } from '@/pages/models/ModelsPage';
 import { PaymentsPage } from '@/pages/payments/PaymentsPage';
 import { GenerationsPage } from '@/pages/generations/GenerationsPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { WavespeedPage } from '@/pages/wavespeed/WavespeedPage';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { AuthGuard } from '@/components/layout/AuthGuard';
 
@@ -46,6 +47,7 @@ export function App() {
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="generations" element={<GenerationsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="wavespeed" element={<WavespeedPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
