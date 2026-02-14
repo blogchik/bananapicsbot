@@ -7,6 +7,7 @@ import {
   CreditCard,
   Image,
   Settings,
+  Waves,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { label: 'Models', path: '/models', icon: Box },
   { label: 'Payments', path: '/payments', icon: CreditCard },
   { label: 'Generations', path: '/generations', icon: Image },
+  { label: 'Wavespeed', path: '/wavespeed', icon: Waves },
   { label: 'Settings', path: '/settings', icon: Settings },
 ];
 
