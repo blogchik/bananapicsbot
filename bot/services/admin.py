@@ -542,6 +542,16 @@ class AdminService:
             return []
 
     @staticmethod
+    async def get_wavespeed_status() -> dict:
+        """Get Wavespeed provider status and analytics."""
+        container = get_container()
+        try:
+            return await container.api_client.get_wavespeed_status()
+        except (APIError, APIConnectionError) as e:
+            logger.warning("Failed to get wavespeed status", error=str(e))
+            return {"error": True}
+
+    @staticmethod
     async def get_stars_settings() -> dict:
         """Get stars payment settings."""
         container = get_container()

@@ -47,6 +47,12 @@ class AdminKeyboard:
                 ],
                 [
                     InlineKeyboardButton(
+                        text=_(TranslationKey.ADMIN_WAVESPEED, None),
+                        callback_data=AdminCallback.WAVESPEED,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
                         text=_(TranslationKey.HOME, None),
                         callback_data=MenuCallback.HOME,
                     )
@@ -758,5 +764,57 @@ class AdminKeyboard:
                         callback_data=AdminCallback.BROADCAST,
                     )
                 ]
+            ]
+        )
+
+    # ============ Wavespeed ============
+
+    @staticmethod
+    def wavespeed_menu(
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build wavespeed status menu."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.ADMIN_WAVESPEED_REFRESH, None),
+                        callback_data=AdminCallback.WAVESPEED_REFRESH,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.ADMIN_WAVESPEED_RECENT, None),
+                        callback_data=AdminCallback.WAVESPEED_RECENT,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.BACK, None),
+                        callback_data=AdminCallback.MAIN,
+                    )
+                ],
+            ]
+        )
+
+    @staticmethod
+    def wavespeed_back(
+        _: Callable[[TranslationKey, dict | None], str],
+    ) -> InlineKeyboardMarkup:
+        """Build back to wavespeed menu button."""
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.ADMIN_WAVESPEED_REFRESH, None),
+                        callback_data=AdminCallback.WAVESPEED_REFRESH,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=_(TranslationKey.BACK, None),
+                        callback_data=AdminCallback.WAVESPEED,
+                    )
+                ],
             ]
         )

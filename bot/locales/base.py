@@ -250,6 +250,19 @@ class TranslationKey(str, Enum):
     ADMIN_REFUND_SELECT = "admin_refund_select"
     ADMIN_REFUND_SUCCESS = "admin_refund_success"
 
+    # Admin - Wavespeed
+    ADMIN_WAVESPEED = "admin_wavespeed"
+    ADMIN_WAVESPEED_TITLE = "admin_wavespeed_title"
+    ADMIN_WAVESPEED_BALANCE = "admin_wavespeed_balance"
+    ADMIN_WAVESPEED_STATUS = "admin_wavespeed_status"
+    ADMIN_WAVESPEED_STATS_24H = "admin_wavespeed_stats_24h"
+    ADMIN_WAVESPEED_STATS_7D = "admin_wavespeed_stats_7d"
+    ADMIN_WAVESPEED_QUEUE = "admin_wavespeed_queue"
+    ADMIN_WAVESPEED_MODELS = "admin_wavespeed_models"
+    ADMIN_WAVESPEED_RECENT = "admin_wavespeed_recent"
+    ADMIN_WAVESPEED_REFRESH = "admin_wavespeed_refresh"
+    ADMIN_WAVESPEED_ERROR = "admin_wavespeed_error"
+
     # Admin - Broadcast
     ADMIN_BROADCAST_TITLE = "admin_broadcast_title"
     ADMIN_BROADCAST_ENTER_MESSAGE = "admin_broadcast_enter_message"
