@@ -410,7 +410,7 @@ export function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Settings</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -421,7 +421,7 @@ export function SettingsPage() {
           onClick={handleSave}
           disabled={!isDirty || saveMutation.isPending}
           className={cn(
-            'btn-primary flex items-center gap-2',
+            'btn-primary flex items-center gap-2 self-start sm:self-auto',
             (!isDirty || saveMutation.isPending) && 'opacity-50 cursor-not-allowed',
           )}
         >
@@ -460,13 +460,13 @@ export function SettingsPage() {
 
       {/* Unsaved Changes Bar */}
       {isDirty && (
-        <div className="sticky bottom-6 z-40">
-          <div className="flex items-center justify-between bg-dark-300 border border-banana-500/30 rounded-lg px-5 py-3 shadow-glow">
+        <div className="sticky bottom-4 lg:bottom-6 z-40">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-dark-300 border border-banana-500/30 rounded-lg px-5 py-3 shadow-glow">
             <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-banana-500" />
+              <Settings className="w-4 h-4 text-banana-500 flex-shrink-0" />
               <p className="text-sm text-white font-medium">You have unsaved changes</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 self-end sm:self-auto">
               <button
                 onClick={() => {
                   if (settingsQuery.data) {

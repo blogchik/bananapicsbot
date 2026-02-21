@@ -38,11 +38,11 @@ function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex items-center gap-2 px-4 py-3">
+      <p className="text-sm text-muted-foreground hidden sm:block mr-auto">
         Page {page + 1} of {totalPages}
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 ml-auto sm:ml-0">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page === 0}
@@ -293,7 +293,7 @@ export function PaymentsPage() {
 
       {/* Revenue Chart */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h3 className="text-sm font-semibold text-white">Payment Revenue</h3>
           <div className="flex items-center gap-1">
             {DATE_PRESETS.map((preset) => (

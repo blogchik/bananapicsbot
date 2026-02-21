@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, Menu, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { clearToken } from '@/api/client';
 
@@ -28,7 +28,11 @@ function getPageTitle(pathname: string): string {
   return 'Dashboard';
 }
 
-export function Topbar() {
+interface TopbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Topbar({ onMenuClick }: TopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { admin, logout } = useAuthStore();
@@ -42,9 +46,17 @@ export function Topbar() {
   };
 
   return (
-    <header className="h-topbar bg-dark-500/80 backdrop-blur-md border-b border-surface-lighter/30 flex items-center justify-between px-6 sticky top-0 z-20">
-      {/* Page title */}
-      <div>
+    <header className="h-topbar bg-dark-500/80 backdrop-blur-md border-b border-surface-lighter/30 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
+      {/* Left: hamburger (mobile) + page title */}
+      <div className="flex items-center gap-3">
+        {/* Hamburger button — mobile only */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-surface-light transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         <h1 className="text-lg font-semibold text-white">{title}</h1>
       </div>
 

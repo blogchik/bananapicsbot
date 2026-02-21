@@ -292,7 +292,7 @@ export function UserDetailPage() {
       ) : user ? (
         <div className="card-admin p-6">
           {/* User header */}
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div className="flex items-center gap-4">
               {/* Avatar */}
               {user.photo_url ? (
@@ -350,7 +350,7 @@ export function UserDetailPage() {
             <button
               onClick={() => setShowBanConfirm(true)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors self-start',
                 user.is_banned
                   ? 'bg-success-muted text-success hover:bg-success/20'
                   : 'bg-destructive-muted text-destructive hover:bg-destructive/20',
@@ -434,7 +434,7 @@ export function UserDetailPage() {
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs text-muted-foreground mb-1.5">Reason</label>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <textarea
                   value={creditReason}
                   onChange={(e) => setCreditReason(e.target.value)}
@@ -445,7 +445,7 @@ export function UserDetailPage() {
                 <button
                   onClick={() => creditMutation.mutate()}
                   disabled={!isCreditFormValid || creditMutation.isPending}
-                  className="btn-primary whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                 >
                   {creditMutation.isPending ? 'Adjusting...' : 'Adjust Credits'}
                 </button>
