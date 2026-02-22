@@ -160,8 +160,9 @@ export function DataTable<T>({
 
       {/* Pagination */}
       {pagination && pagination.total > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-surface-lighter/50">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 px-4 py-3 border-t border-surface-lighter/50">
+          {/* Showing X-Y of Z — hidden on very small screens */}
+          <p className="text-xs text-muted-foreground hidden sm:block mr-auto">
             Showing{' '}
             <span className="text-white font-medium">{pagination.offset + 1}</span>
             {' - '}
@@ -171,7 +172,7 @@ export function DataTable<T>({
             {' of '}
             <span className="text-white font-medium">{pagination.total.toLocaleString()}</span>
           </p>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 ml-auto sm:ml-0">
             <button
               onClick={() => handleGoToPage(1)}
               disabled={currentPage === 1}
@@ -188,8 +189,9 @@ export function DataTable<T>({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-3 text-xs text-muted-foreground">
-              Page <span className="text-white font-medium">{currentPage}</span> of{' '}
+            <span className="px-2 text-xs text-muted-foreground whitespace-nowrap">
+              <span className="text-white font-medium">{currentPage}</span>
+              {' / '}
               <span className="text-white font-medium">{totalPages}</span>
             </span>
             <button

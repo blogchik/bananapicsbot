@@ -195,7 +195,7 @@ export function BroadcastsListPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Broadcasts</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -204,7 +204,7 @@ export function BroadcastsListPage() {
         </div>
         <button
           onClick={() => navigate('/broadcasts/new')}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center gap-2 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           New Broadcast

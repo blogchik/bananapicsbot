@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -18,6 +19,11 @@ interface NavItem {
   icon: LucideIcon;
 }
 
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard },
   { label: 'Users', path: '/users', icon: Users },
@@ -29,8 +35,13 @@ const navItems: NavItem[] = [
   { label: 'Settings', path: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const location = useLocation();
+
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    onClose?.();
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function isActive(path: string): boolean {
     if (path === '/') return location.pathname === '/';
@@ -38,7 +49,15 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-sidebar bg-sidebar border-r border-sidebar-border flex flex-col z-30">
+    <aside
+      className={cn(
+        'fixed left-0 top-0 bottom-0 w-sidebar bg-sidebar border-r border-sidebar-border flex flex-col z-30',
+        'transition-transform duration-300 ease-in-out',
+        // Desktop: always visible; Mobile: slide in/out
+        'lg:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full',
+      )}
+    >
       {/* Logo */}
       <div className="h-topbar flex items-center px-6 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">

@@ -260,7 +260,7 @@ export function ModelsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold text-white">Models</h2>
           <p className="text-sm text-muted-foreground mt-1">
