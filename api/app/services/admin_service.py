@@ -227,18 +227,21 @@ class AdminService:
     ) -> tuple[Sequence[User], int]:
         """Search users with filters."""
         base_query = select(User)
+        count_query = select(func.count()).select_from(User)
 
         if query:
             # Try to search by telegram_id
             try:
                 tid = int(query)
-                base_query = base_query.where(User.telegram_id == tid)
+                filter_condition = User.telegram_id == tid
             except ValueError:
                 # Search by referral_code
-                base_query = base_query.where(User.referral_code.ilike(f"%{query}%"))
+                filter_condition = User.referral_code.ilike(f"%{query}%")
 
-        # Count total
-        count_query = select(func.count()).select_from(User)
+            base_query = base_query.where(filter_condition)
+            count_query = count_query.where(filter_condition)
+
+        # Count total (with the same filters applied)
         count_result = await self.session.execute(count_query)
         total = count_result.scalar() or 0
 
