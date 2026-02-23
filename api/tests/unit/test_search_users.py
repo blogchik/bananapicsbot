@@ -85,7 +85,6 @@ class TestSearchUsersCount:
         Regression test for bug #63: the count query must carry the same WHERE
         clause as the data query so the returned total matches the actual filter.
         """
-        from app.db.models import User
         from app.services.admin_service import AdminService
 
         captured_queries = []
