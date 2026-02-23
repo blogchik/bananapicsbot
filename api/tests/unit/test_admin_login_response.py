@@ -69,6 +69,4 @@ class TestAdminLoginResponseFields:
         """Schema must not expose a bare 'token' field — that would cause a frontend mismatch."""
         response = self._make_response()
         data = response.model_dump()
-        assert "token" not in data, (
-            "Found bare 'token' key in response; frontend expects 'access_token'"
-        )
+        assert "token" not in data, "Found bare 'token' key in response; frontend expects 'access_token'"
