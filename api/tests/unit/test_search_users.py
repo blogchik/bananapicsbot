@@ -112,7 +112,5 @@ class TestSearchUsersCount:
         data_query_str = str(captured_queries[1])
 
         # Both queries must contain the telegram_id filter
-        assert "telegram_id" in count_query_str, (
-            "Count query is missing the telegram_id filter — bug #63 regression"
-        )
+        assert "telegram_id" in count_query_str, "Count query is missing the telegram_id filter — bug #63 regression"
         assert "telegram_id" in data_query_str
