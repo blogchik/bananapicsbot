@@ -20,6 +20,7 @@ export interface LoginResponse {
   access_token: string;
   token_type: string;
   admin: AdminUser;
+  expires_at: string;
 }
 
 export const authApi = {
