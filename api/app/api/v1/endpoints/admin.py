@@ -141,7 +141,7 @@ async def get_dashboard_stats(
         logger.exception("Failed to get dashboard stats", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -202,7 +202,7 @@ async def get_wavespeed_status(
         logger.exception("Failed to get Wavespeed status", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -222,7 +222,7 @@ async def get_users_daily(
         return data
     except Exception as e:
         logger.exception("Failed to get daily users", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/charts/generations-daily")
@@ -238,7 +238,7 @@ async def get_generations_daily(
         return data
     except Exception as e:
         logger.exception("Failed to get daily generations", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/charts/revenue-daily")
@@ -254,7 +254,7 @@ async def get_revenue_daily(
         return data
     except Exception as e:
         logger.exception("Failed to get daily revenue", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/charts/models-breakdown")
@@ -270,7 +270,7 @@ async def get_models_breakdown(
         return data
     except Exception as e:
         logger.exception("Failed to get models breakdown", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============ User Management ============
@@ -344,7 +344,7 @@ async def search_users(
         logger.exception("Failed to search users", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -363,7 +363,7 @@ async def get_users_count(
         logger.exception("Failed to get users count", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -422,7 +422,7 @@ async def get_user(
         logger.exception("Failed to get user", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -467,7 +467,7 @@ async def ban_user(
         raise
     except Exception as e:
         logger.exception("Failed to ban user", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/users/{telegram_id}/unban")
@@ -503,7 +503,7 @@ async def unban_user(
         raise
     except Exception as e:
         logger.exception("Failed to unban user", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 async def _get_user_language(telegram_id: int, bot_token: str) -> str:
@@ -629,7 +629,7 @@ async def adjust_credits(
         logger.exception("Failed to adjust credits", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -659,7 +659,7 @@ async def get_user_generations(
         logger.exception("Failed to get user generations", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -697,7 +697,7 @@ async def refund_generation(
         logger.exception("Failed to refund generation", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -727,7 +727,7 @@ async def get_user_payments(
         logger.exception("Failed to get user payments", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -749,7 +749,7 @@ async def get_broadcast_users_count(
         logger.exception("Failed to get broadcast users count", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -777,7 +777,7 @@ async def create_broadcast(
         logger.exception("Failed to create broadcast", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -797,7 +797,7 @@ async def list_broadcasts(
         logger.exception("Failed to list broadcasts", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -836,7 +836,7 @@ async def get_broadcast_status(
         logger.exception("Failed to get broadcast status", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -869,7 +869,7 @@ async def start_broadcast(
         logger.exception("Failed to start broadcast", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -899,7 +899,7 @@ async def cancel_broadcast(
         logger.exception("Failed to cancel broadcast", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Internal server error",
         )
 
 
@@ -918,7 +918,7 @@ async def get_all_models(
         return models
     except Exception as e:
         logger.exception("Failed to get models", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.patch("/models/{model_id}")
@@ -939,7 +939,7 @@ async def update_model(
         raise
     except Exception as e:
         logger.exception("Failed to update model", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.put("/models/{model_id}/price")
@@ -964,7 +964,7 @@ async def update_model_price(
         raise
     except Exception as e:
         logger.exception("Failed to update model price", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============ Global Payments ============
@@ -984,7 +984,7 @@ async def get_global_payments(
         return {"items": items, "total": total}
     except Exception as e:
         logger.exception("Failed to get payments", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/payments/daily")
@@ -1000,7 +1000,7 @@ async def get_payment_daily_stats(
         return data
     except Exception as e:
         logger.exception("Failed to get payment daily stats", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============ Global Generations ============
@@ -1021,7 +1021,7 @@ async def get_global_generations(
         return {"items": items, "total": total}
     except Exception as e:
         logger.exception("Failed to get generations", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/generations/queue")
@@ -1036,7 +1036,7 @@ async def get_generation_queue(
         return queue
     except Exception as e:
         logger.exception("Failed to get queue status", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============ System Settings ============
@@ -1067,7 +1067,7 @@ async def get_system_settings(
         ]
     except Exception as e:
         logger.exception("Failed to get settings", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.patch("/settings")
@@ -1099,4 +1099,4 @@ async def update_system_settings(
         return {"updated": updated, "count": len(updated)}
     except Exception as e:
         logger.exception("Failed to update settings", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -190,7 +190,7 @@ async def get_telegram_user(
             logger.warning("WebApp auth failed", error=str(e))
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(e),
+                detail="Authentication failed",
             )
 
     # Method 2: Internal bot authentication via API key
