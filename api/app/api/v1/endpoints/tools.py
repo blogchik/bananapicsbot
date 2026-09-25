@@ -7,6 +7,7 @@ from app.api.v1.endpoints.generations import ensure_wavespeed_balance
 from app.core.config import get_settings
 from app.db.models import LedgerEntry
 from app.deps.db import db_session_dep
+from app.deps.telegram_auth import TelegramUserDep, ensure_same_user
 from app.deps.wavespeed import wavespeed_client
 from app.schemas.tools import (
     DenoiseIn,
@@ -36,9 +37,11 @@ ENHANCE_COST = 30  # estimated
 @router.post("/tools/watermark-remove", response_model=WatermarkRemoveOut)
 async def remove_watermark(
     payload: WatermarkRemoveIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> WatermarkRemoveOut:
     settings = get_settings()
+    ensure_same_user(tg_user, payload.telegram_id)
     user, _, _ = get_or_create_user(db, payload.telegram_id)
     await ensure_wavespeed_balance(settings)
 
@@ -96,10 +99,12 @@ def _extract_output_url(response_data: dict) -> str | None:
 @router.post("/tools/upscale", response_model=UpscaleOut)
 async def upscale_image(
     payload: UpscaleIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> UpscaleOut:
     """Upscale image to 2K, 4K, or 8K resolution."""
     settings = get_settings()
+    ensure_same_user(tg_user, payload.telegram_id)
     user, _, _ = get_or_create_user(db, payload.telegram_id)
     await ensure_wavespeed_balance(settings)
 
@@ -142,10 +147,12 @@ async def upscale_image(
 @router.post("/tools/denoise", response_model=DenoiseOut)
 async def denoise_image(
     payload: DenoiseIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> DenoiseOut:
     """Remove noise from image using Topaz AI."""
     settings = get_settings()
+    ensure_same_user(tg_user, payload.telegram_id)
     user, _, _ = get_or_create_user(db, payload.telegram_id)
     await ensure_wavespeed_balance(settings)
 
@@ -188,10 +195,12 @@ async def denoise_image(
 @router.post("/tools/restore", response_model=RestoreOut)
 async def restore_image(
     payload: RestoreIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> RestoreOut:
     """Restore old photos by removing dust and scratches."""
     settings = get_settings()
+    ensure_same_user(tg_user, payload.telegram_id)
     user, _, _ = get_or_create_user(db, payload.telegram_id)
     await ensure_wavespeed_balance(settings)
 
@@ -234,10 +243,12 @@ async def restore_image(
 @router.post("/tools/enhance", response_model=EnhanceOut)
 async def enhance_image(
     payload: EnhanceIn,
+    tg_user: TelegramUserDep,
     db: Session = Depends(db_session_dep),
 ) -> EnhanceOut:
     """Enhance image quality with AI upscaling and sharpening."""
     settings = get_settings()
+    ensure_same_user(tg_user, payload.telegram_id)
     user, _, _ = get_or_create_user(db, payload.telegram_id)
     await ensure_wavespeed_balance(settings)
 

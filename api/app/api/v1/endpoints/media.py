@@ -1,12 +1,17 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from app.deps.telegram_auth import require_internal_api_key
 from app.deps.wavespeed import wavespeed_client
 from app.schemas.media import MediaUploadOut
 
 router = APIRouter()
 
 
-@router.post("/media/upload", response_model=MediaUploadOut)
+@router.post(
+    "/media/upload",
+    response_model=MediaUploadOut,
+    dependencies=[Depends(require_internal_api_key)],
+)
 async def upload_media(file: UploadFile = File(...)) -> MediaUploadOut:
     try:
         client = wavespeed_client()

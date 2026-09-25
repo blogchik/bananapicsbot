@@ -206,7 +206,7 @@ Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <j
 
 ### Referrals
 
-- `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari
+- `GET /api/v1/referrals/{telegram_id}` - referral ma'lumotlari (Telegram auth; faqat o'z `telegram_id` si, aks holda 403)
 
 ### Models
 
@@ -214,6 +214,8 @@ Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <j
 - `GET /api/v1/sizes` - size variantlari
 
 ### Tools (Image Processing)
+
+Barcha tools endpointlari Telegram auth talab qiladi (`X-Telegram-Init-Data` yoki `X-Internal-Api-Key` + `X-Telegram-User-Id`). Body dagi `telegram_id` autentifikatsiya qilingan user bilan mos kelmasa 403.
 
 - `POST /api/v1/tools/watermark-remove` - watermark remover (12 credit), input: `telegram_id`, `image_url`, optional `output_format`
 - `POST /api/v1/tools/upscale` - image upscaler (60 credit), input: `telegram_id`, `image_url`, optional `target_resolution` (2k/4k/8k), `output_format`
@@ -224,7 +226,8 @@ Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <j
 ### Payments
 
 - `GET /api/v1/payments/stars/options` - Stars to'lov variantlari
-- `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash
+- `POST /api/v1/payments/stars/confirm` - Stars to'lovini tasdiqlash (faqat bot: `X-Internal-Api-Key` talab qilinadi)
+- `POST /api/v1/payments/stars/refund/{telegram_charge_id}` - to'lovni refund deb belgilash (faqat bot: `X-Internal-Api-Key`)
 
 ### Generations
 
@@ -240,7 +243,9 @@ Barcha admin endpointlar (auth va health dan tashqari) `Authorization: Bearer <j
 
 ### Media
 
-- `POST /api/v1/media/upload` - Wavespeed media upload
+- `POST /api/v1/media/upload` - Wavespeed media upload (faqat bot: `X-Internal-Api-Key`)
+
+**Rate limit:** API per-IP rate limit qo'llaydi (`RATE_LIMIT_RPS`/`RATE_LIMIT_BURST`). To'g'ri `X-Internal-Api-Key` bilan kelgan bot so'rovlari bu limitdan ozod, chunki barcha bot userlari bitta IP dan keladi.
 
 ## Caching Strategy
 

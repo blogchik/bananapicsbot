@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.db.models import LedgerEntry, PaymentLedger
 from app.deps.db import db_session_dep
+from app.deps.telegram_auth import require_internal_api_key
 from app.schemas.payments import (
     StarsPaymentConfirmIn,
     StarsPaymentConfirmOut,
@@ -31,7 +32,11 @@ async def get_stars_options() -> StarsPaymentOptionsOut:
     )
 
 
-@router.post("/payments/stars/confirm", response_model=StarsPaymentConfirmOut)
+@router.post(
+    "/payments/stars/confirm",
+    response_model=StarsPaymentConfirmOut,
+    dependencies=[Depends(require_internal_api_key)],
+)
 async def confirm_stars_payment(
     payload: StarsPaymentConfirmIn,
     db: Session = Depends(db_session_dep),
@@ -104,7 +109,10 @@ async def confirm_stars_payment(
     return StarsPaymentConfirmOut(credits_added=credits, balance=balance)
 
 
-@router.post("/payments/stars/refund/{telegram_charge_id}")
+@router.post(
+    "/payments/stars/refund/{telegram_charge_id}",
+    dependencies=[Depends(require_internal_api_key)],
+)
 async def mark_payment_refunded(
     telegram_charge_id: str,
     db: Session = Depends(db_session_dep),

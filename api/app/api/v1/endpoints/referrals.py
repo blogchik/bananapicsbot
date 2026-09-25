@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.deps.db import db_session_dep
+from app.deps.telegram_auth import TelegramUserDep, ensure_same_user
 from app.schemas.referrals import ReferralInfoOut
 from app.services.referrals import get_referral_stats
 from app.services.users import get_user_by_telegram_id
@@ -11,7 +12,12 @@ router = APIRouter()
 
 
 @router.get("/referrals/{telegram_id}", response_model=ReferralInfoOut)
-async def get_referral_info(telegram_id: int, db: Session = Depends(db_session_dep)) -> ReferralInfoOut:
+async def get_referral_info(
+    telegram_id: int,
+    tg_user: TelegramUserDep,
+    db: Session = Depends(db_session_dep),
+) -> ReferralInfoOut:
+    ensure_same_user(tg_user, telegram_id)
     user = get_user_by_telegram_id(db, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

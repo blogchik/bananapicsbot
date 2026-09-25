@@ -75,6 +75,10 @@ def verify_admin_token(token: str) -> Optional[dict]:
     """Verify and decode admin JWT token. Returns payload or None."""
     settings = get_settings()
 
+    if not settings.admin_jwt_secret:
+        logger.warning("Admin JWT secret is not configured; rejecting token")
+        return None
+
     try:
         payload = jwt.decode(token, settings.admin_jwt_secret, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError:

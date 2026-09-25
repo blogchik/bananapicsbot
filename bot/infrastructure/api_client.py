@@ -173,7 +173,7 @@ class ApiClient:
 
         try:
             session = await self._get_session()
-            async with session.post(url, data=data) as resp:
+            async with session.post(url, data=data, headers=self._get_auth_headers() or None) as resp:
                 if resp.status >= 400:
                     if resp.content_type == "application/json":
                         payload = await resp.json()
@@ -444,7 +444,7 @@ class ApiClient:
     # Referral endpoints
     async def get_referral_info(self, telegram_id: int) -> dict:
         """Get referral info."""
-        return await self._request("GET", f"/api/v1/referrals/{telegram_id}")
+        return await self._request("GET", f"/api/v1/referrals/{telegram_id}", telegram_user_id=telegram_id)
 
     # Admin endpoints
     async def add_admin_credits(

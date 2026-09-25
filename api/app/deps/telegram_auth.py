@@ -247,6 +247,35 @@ async def get_optional_telegram_user(
         return None
 
 
+async def require_internal_api_key(
+    x_internal_api_key: Annotated[str | None, Header(alias="X-Internal-Api-Key")] = None,
+) -> None:
+    """
+    FastAPI dependency for bot-only endpoints (payments, media upload).
+    Requires a valid X-Internal-Api-Key header.
+    """
+    settings = get_settings()
+    if not settings.bot_token:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Bot token not configured",
+        )
+    if not x_internal_api_key or not validate_internal_api_key(x_internal_api_key, settings.bot_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid internal API key",
+        )
+
+
+def ensure_same_user(tg_user: TelegramUser, telegram_id: int) -> None:
+    """Raise 403 if the authenticated user does not match the requested telegram_id."""
+    if tg_user.id != telegram_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+
 # Type aliases for cleaner dependency injection
 TelegramUserDep = Annotated[TelegramUser, Depends(get_telegram_user)]
 OptionalTelegramUserDep = Annotated[Optional[TelegramUser], Depends(get_optional_telegram_user)]
