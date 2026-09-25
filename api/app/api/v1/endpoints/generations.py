@@ -680,6 +680,7 @@ def get_active_generation(db: Session, user_id: int) -> GenerationRequest | None
             GenerationRequest.status.in_(active_statuses),
         )
         .order_by(GenerationRequest.created_at.desc())
+        .limit(1)
     ).scalar_one_or_none()
 
 

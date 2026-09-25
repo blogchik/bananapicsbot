@@ -1,8 +1,10 @@
 """Settings callback handlers."""
 
+from contextlib import suppress
 from typing import Callable
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 from core.logging import get_logger
 from keyboards import SettingsKeyboard
@@ -23,7 +25,9 @@ async def language_menu(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     await call.message.answer(
         _(TranslationKey.SETTINGS_LANGUAGE, {"language": language}),
@@ -56,7 +60,9 @@ async def set_language(
     language_name = manager.language_names.get(lang_code, lang_code)
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     from keyboards import ProfileKeyboard
 

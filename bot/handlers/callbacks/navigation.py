@@ -1,8 +1,10 @@
 """Navigation callback handlers."""
 
+from contextlib import suppress
 from typing import Callable
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 from core.logging import get_logger
 from keyboards import HomeKeyboard, ProfileKeyboard
@@ -23,7 +25,9 @@ async def home_callback(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     user = call.from_user
     name = user.first_name if user else ""
@@ -64,7 +68,9 @@ async def profile_callback(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     user = call.from_user
 
@@ -111,7 +117,9 @@ async def settings_callback(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     from keyboards import SettingsKeyboard
 
@@ -131,7 +139,9 @@ async def help_callback(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     from handlers.commands.help import HELP_TEXTS
 

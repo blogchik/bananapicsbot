@@ -499,12 +499,11 @@ export const useAppStore = create<ExtendedState>((set, get) => ({
   // Toast management
   addToast: (toast) => {
     const id = generateId();
-    const timeoutId = toast.duration
-      ? setTimeout(() => {
-          get().removeToast(id);
-        }, toast.duration)
-      : undefined;
-    const newToast: Toast = { ...toast, id, duration: toast.duration ?? 3000, timeoutId };
+    const duration = toast.duration ?? 3000;
+    const timeoutId = setTimeout(() => {
+      get().removeToast(id);
+    }, duration);
+    const newToast: Toast = { ...toast, id, duration, timeoutId };
     set({ toasts: [...get().toasts, newToast] });
   },
 

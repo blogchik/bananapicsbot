@@ -10,6 +10,24 @@ import { logger } from './logger';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 /**
+ * Normalize backend error payloads to a string. FastAPI may return `detail`
+ * as a string, an object ({ message }) or a list of validation errors.
+ */
+function extractErrorDetail(data: unknown): string {
+  const body = data as Record<string, unknown> | undefined;
+  const detail = body?.detail ?? body?.error ?? body?.message;
+  if (typeof detail === 'string' && detail) return detail;
+  if (Array.isArray(detail)) {
+    const first = detail[0] as { msg?: unknown } | undefined;
+    if (typeof first?.msg === 'string') return first.msg;
+  } else if (detail && typeof detail === 'object') {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === 'string' && message) return message;
+  }
+  return 'An error occurred';
+}
+
+/**
  * Custom error class for API errors
  */
 export class ApiError extends Error {
@@ -74,10 +92,7 @@ async function request<T>(
     }
 
     if (!response.ok) {
-      const detail =
-        (data as Record<string, unknown>)?.detail as string ||
-        (data as Record<string, unknown>)?.message as string ||
-        'An error occurred';
+      const detail = extractErrorDetail(data);
 
       logger.api.error(`${method} ${endpoint} failed`, {
         status: response.status,

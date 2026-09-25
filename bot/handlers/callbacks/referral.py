@@ -1,8 +1,10 @@
 """Referral callback handlers."""
 
+from contextlib import suppress
 from typing import Callable
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 from core.logging import get_logger
 from keyboards import ReferralKeyboard
@@ -23,7 +25,9 @@ async def referral_callback(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     user = call.from_user
 

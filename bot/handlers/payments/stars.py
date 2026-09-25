@@ -1,8 +1,10 @@
 """Stars payment handlers."""
 
+from contextlib import suppress
 from typing import Callable
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, PreCheckoutQuery
 from core.container import get_container
@@ -27,7 +29,9 @@ async def open_topup_menu(
     await call.answer()
 
     if call.message:
-        await call.message.delete()
+        # Telegram refuses to delete messages older than 48h
+        with suppress(TelegramBadRequest):
+            await call.message.delete()
 
     try:
         options = await PaymentService.get_stars_options()
@@ -140,7 +144,7 @@ async def handle_topup_custom(
     )
 
 
-@router.message(PaymentStates.waiting_stars_amount)
+@router.message(PaymentStates.waiting_stars_amount, F.text)
 async def handle_custom_stars(
     message: Message,
     state: FSMContext,
