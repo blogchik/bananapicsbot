@@ -47,7 +47,7 @@ export const GenerationCard = memo(function GenerationCard({
         type: 'success',
         duration: 2000,
       });
-    } catch (error) {
+    } catch {
       addToast({
         message: 'Failed to copy prompt',
         type: 'error',

@@ -11,7 +11,7 @@ import {
 
 interface BarChartCardProps {
   title: string;
-  data: Array<Record<string, any>>;
+  data: object[];
   dataKey: string;
   nameKey: string;
   color?: string;
@@ -24,7 +24,7 @@ function CustomTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ value: number; payload: Record<string, any> }>;
+  payload?: Array<{ value: number; payload: { model_name?: string; name?: string; credits?: number } }>;
 }) {
   if (!active || !payload?.length) return null;
 

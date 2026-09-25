@@ -27,3 +27,6 @@ Thumbs.db
 .claude
 
 node_modules
+
+# Build output
+dist/

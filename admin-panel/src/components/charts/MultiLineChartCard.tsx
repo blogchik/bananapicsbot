@@ -18,7 +18,7 @@ interface LineDef {
 
 interface MultiLineChartCardProps {
   title: string;
-  data: Array<Record<string, any>>;
+  data: object[];
   lines: LineDef[];
   xKey?: string;
   loading?: boolean;

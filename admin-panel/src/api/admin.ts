@@ -21,7 +21,7 @@ export interface DashboardStats {
   total_refunded: number;
   total_spent: number;
   net_revenue: number;
-  by_model: Record<string, any>;
+  by_model: Record<string, Record<string, unknown>>;
   total_payments: number;
   completed_payments: number;
   payment_success_rate: number;

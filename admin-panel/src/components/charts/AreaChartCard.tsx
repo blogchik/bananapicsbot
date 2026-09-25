@@ -11,7 +11,7 @@ import { format, parseISO } from 'date-fns';
 
 interface AreaChartCardProps {
   title: string;
-  data: Array<Record<string, any>>;
+  data: object[];
   dataKey: string;
   xKey?: string;
   color?: string;

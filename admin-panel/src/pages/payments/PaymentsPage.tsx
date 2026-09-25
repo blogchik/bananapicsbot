@@ -144,7 +144,7 @@ export function PaymentsPage() {
     refetchInterval: 60_000,
   });
 
-  const payments = paymentsQuery.data?.items ?? [];
+  const payments = useMemo(() => paymentsQuery.data?.items ?? [], [paymentsQuery.data]);
   const total = paymentsQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
